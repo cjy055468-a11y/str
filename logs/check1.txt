@@ -1,0 +1,2 @@
+PASS: MSVC compile/link completed for the patched client and matching server.
+

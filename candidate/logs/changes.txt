@@ -1,0 +1,4 @@
+ Code/client/Services/Generic/CharacterService.cpp | 10 ++++++++++
+ Code/client/Systems/AnimationSystem.cpp           | 21 +++++++++++++++------
+ Code/tests/xmake.lua                              |  3 ++-
+ 3 files changed, 27 insertions(+), 7 deletions(-)

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="TPTests.exe" errors="0" failures="0" tests="80" hostname="tbd" time="0.005" timestamp="2026-11-03T21:43:26Z">
+    <testcase classname="TPTests.exe.global" name="Exit-only replay requires a reset even when its action list is empty" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="A seated NPC replay preserves its enter state" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Exit followed by a different furniture enter retains the new action" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="A cache with no observed animations does not invent a reset or a pose" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="EnTT initializes the original replay counter on creation and replacement" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Encoding factory" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: GameId" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: Vector3_NetQuantize" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: Vector2_NetQuantize" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: Rotator2_NetQuantize" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: Rotator2_NetQuantize needing wrap" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Differential structures/Given: Full ActionEvent" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Differential structures/Given: A single cached event name" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Differential structures/Given: Full Mods" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Differential structures/Given: AnimationVariables" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/AuthenticationRequest" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/AuthenticationResponse" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/AssignCharacterRequest" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/Given: ClientReferencesMoveRequest" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/Given: RequestActionEvents" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/Given: NotifyActionEvents" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="StringCache/Messages" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Stays well under the old fixed 300ms delay on a stable connection" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Buffers more on a jittery connection and rarely runs out of snapshots" time="0.002" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Plays low rate actors further behind instead of starving them" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Quickly plays further behind when the owner starts sending less often" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Keeps up with a 60 fps owner whose frame times vary" time="0.001" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Is not thrown off by a long frame on our side" time="0.001" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/A long frame does not carry a catch-up past where playback should be" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Does not depend on the owner's clock matching ours" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Jumps instead of crawling when the owner's timeline jumps" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Ignores duplicate snapshots" time="0.000" status="run"/>
+    <system-out/>
+    <system-err/>
+  </testsuite>
+</testsuites>

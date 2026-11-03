@@ -1,0 +1,7 @@
+{
+  "test_cases": 32,
+  "executed_cases": 32,
+  "required_replay_cases": 5,
+  "failures": 0,
+  "errors": 0
+}
