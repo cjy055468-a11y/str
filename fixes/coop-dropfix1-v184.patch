@@ -113,10 +113,10 @@ index e5852696..a5937977 100644
      if (pActivator && apThis->baseForm->formType != FormType::Book)
 diff --git a/Code/client/Services/DroppedItemService.h b/Code/client/Services/DroppedItemService.h
 new file mode 100644
-index 00000000..31e20f25
+index 00000000..281127f1
 --- /dev/null
 +++ b/Code/client/Services/DroppedItemService.h
-@@ -0,0 +1,96 @@
+@@ -0,0 +1,97 @@
 +#pragma once
 +
 +#include <Structs/DroppedItemData.h>
@@ -163,6 +163,7 @@ index 00000000..31e20f25
 +        uint32_t WorldForm{};
 +        bool Prepared{};
 +        bool Sent{};
++        bool InventoryAlreadyReflected{};
 +        bool WantPick{};
 +        uint32_t WantActorForm{0x14};
 +    };
@@ -250,10 +251,10 @@ index 7d3ac21a..be6cfd02 100644
  
 diff --git a/Code/client/Services/Generic/DroppedItemService.cpp b/Code/client/Services/Generic/DroppedItemService.cpp
 new file mode 100644
-index 00000000..5b663165
+index 00000000..b673de9f
 --- /dev/null
 +++ b/Code/client/Services/Generic/DroppedItemService.cpp
-@@ -0,0 +1,574 @@
+@@ -0,0 +1,592 @@
 +#include <Services/DroppedItemService.h>
 +#include <Services/TransportService.h>
 +#include <Services/PapyrusService.h>
@@ -455,6 +456,7 @@ index 00000000..5b663165
 +            {
 +                pending.Handle = 0;
 +                pending.Sent = false;
++                pending.InventoryAlreadyReflected = true;
 +            }
 +    }
 +    m_drops.clear();
@@ -471,6 +473,9 @@ index 00000000..5b663165
 +    ClearReferences(true);
 +    m_claims.clear();
 +    m_claimActors.clear();
++    // The next actor snapshot includes everything already granted locally.
++    // Any recovered grant must acknowledge its new application state afresh.
++    m_acks.clear();
 +    // Retain process identity and applied grants. An unacknowledged grant can
 +    // then be replayed by the same server without awarding another copy.
 +}
@@ -529,6 +534,7 @@ index 00000000..5b663165
 +            request.ActorId = token->ServerId;
 +            request.OwnershipEpoch = token->OwnershipEpoch;
 +            request.Data = pending.Data;
++            request.InventoryAlreadyReflected = pending.InventoryAlreadyReflected;
 +            pending.Sent = m_transport.Send(request);
 +        }
 +    }
@@ -713,7 +719,10 @@ index 00000000..5b663165
 +            m_claimActors.clear();
 +            std::lock_guard lock(m_lock);
 +            for (auto& [nonce, pending] : m_pending)
++            {
 +                pending.Sent = false;
++                pending.InventoryAlreadyReflected = true;
++            }
 +        }
 +        m_serverSession = acMessage.ServerSession;
 +        m_enabled = acMessage.Enabled ? 1 : 0;
@@ -783,6 +792,16 @@ index 00000000..5b663165
 +            ScopedInventoryOverride inventoryOverride;
 +            PlayerCharacter::Get()->AddOrRemoveItem(origin->Data.Item);
 +            DeleteReference(origin->Handle);
++            if (origin->InventoryAlreadyReflected)
++            {
++                if (const auto token = Utils::GetLocalOwnershipToken(0x14))
++                {
++                    InventoryChangeEvent event(0x14, origin->Data.Item);
++                    event.ServerId = token->ServerId;
++                    event.OwnershipEpoch = token->OwnershipEpoch;
++                    m_world.GetRunner().Trigger(std::move(event));
++                }
++            }
 +        }
 +        else if (acMessage.Action == NotifyDroppedItem::Operation::Disabled)
 +        {
@@ -980,10 +999,10 @@ index 00000000..17760032
 +};
 diff --git a/Code/encoding/Messages/RequestDroppedItem.cpp b/Code/encoding/Messages/RequestDroppedItem.cpp
 new file mode 100644
-index 00000000..b3317262
+index 00000000..ff2462d0
 --- /dev/null
 +++ b/Code/encoding/Messages/RequestDroppedItem.cpp
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,28 @@
 +#include <Messages/RequestDroppedItem.h>
 +
 +void RequestDroppedItem::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
@@ -995,6 +1014,7 @@ index 00000000..b3317262
 +    Serialization::WriteVarInt(aWriter, ActorId);
 +    Serialization::WriteVarInt(aWriter, OwnershipEpoch);
 +    Serialization::WriteBool(aWriter, AppliedFresh);
++    Serialization::WriteBool(aWriter, InventoryAlreadyReflected);
 +    Data.Serialize(aWriter);
 +}
 +
@@ -1008,14 +1028,15 @@ index 00000000..b3317262
 +    ActorId = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
 +    OwnershipEpoch = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
 +    AppliedFresh = Serialization::ReadBool(aReader);
++    InventoryAlreadyReflected = Serialization::ReadBool(aReader);
 +    Data.Deserialize(aReader);
 +}
 diff --git a/Code/encoding/Messages/RequestDroppedItem.h b/Code/encoding/Messages/RequestDroppedItem.h
 new file mode 100644
-index 00000000..924d7a88
+index 00000000..54c4c2d7
 --- /dev/null
 +++ b/Code/encoding/Messages/RequestDroppedItem.h
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,27 @@
 +#pragma once
 +
 +#include "Message.h"
@@ -1038,6 +1059,9 @@ index 00000000..924d7a88
 +    uint32_t ActorId{};
 +    uint32_t OwnershipEpoch{};
 +    bool AppliedFresh{};
++    // A reconnect's initial inventory already includes this pending drop's
++    // local removal; the new actor must not be debited a second time.
++    bool InventoryAlreadyReflected{};
 +    DroppedItemData Data{};
 +};
 diff --git a/Code/encoding/Messages/ServerMessageFactory.h b/Code/encoding/Messages/ServerMessageFactory.h
@@ -1264,10 +1288,10 @@ index 00000000..c2e1ec8a
 +};
 diff --git a/Code/server/Services/DroppedItemService.cpp b/Code/server/Services/DroppedItemService.cpp
 new file mode 100644
-index 00000000..9b68e2b8
+index 00000000..e9f6a1c7
 --- /dev/null
 +++ b/Code/server/Services/DroppedItemService.cpp
-@@ -0,0 +1,243 @@
+@@ -0,0 +1,248 @@
 +#include <Services/DroppedItemService.h>
 +#include <Services/InventoryService.h>
 +#include <Events/PlayerLeaveEvent.h>
@@ -1431,14 +1455,14 @@ index 00000000..9b68e2b8
 +            candidate.ExtraWorn = candidate.ExtraWornLeft = false;
 +            return candidate.CanBeMerged(data.Item) && acEntry.Count >= data.Item.Count;
 +        });
-+        if (entry == pInventory->Content.Entries.end())
++        if (!request.InventoryAlreadyReflected && entry == pInventory->Content.Entries.end())
 +        {
 +            spdlog::warn("STR drop rejected: source inventory not available, actor {:X}, item {:X}:{:X}, count {}",
 +                request.ActorId, data.Item.BaseId.ModId, data.Item.BaseId.BaseId, data.Item.Count);
 +            reject(false);
 +            return;
 +        }
-+        Inventory::Entry removal = *entry;
++        Inventory::Entry removal = request.InventoryAlreadyReflected ? data.Item : *entry;
 +        removal.Count = -data.Item.Count;
 +        const auto created = m_ledger.Create(request.ClientSession, request.Nonce, data, reply.Enabled);
 +        if (!created)
@@ -1446,8 +1470,13 @@ index 00000000..9b68e2b8
 +            reject(false);
 +            return;
 +        }
-+        pInventory->Content.AddOrRemoveEntry(removal);
-+        BroadcastInventory(request.ActorId, removal, pPlayer);
++        // Like the original actor assignment, reconnect inventory is supplied
++        // by its owning client. It already reflects the local native removal.
++        if (!request.InventoryAlreadyReflected)
++        {
++            pInventory->Content.AddOrRemoveEntry(removal);
++            BroadcastInventory(request.ActorId, removal, pPlayer);
++        }
 +        reply.Data = created->Data;
 +        reply.Active = created->Active;
 +        reply.Action = reply.Enabled ? NotifyDroppedItem::Operation::Spawn : NotifyDroppedItem::Operation::Disabled;
@@ -1705,10 +1734,10 @@ index 00000000..e03110cc
 +}
 diff --git a/Code/tests/dropped_items.cpp b/Code/tests/dropped_items.cpp
 new file mode 100644
-index 00000000..98f428f5
+index 00000000..44b51208
 --- /dev/null
 +++ b/Code/tests/dropped_items.cpp
-@@ -0,0 +1,218 @@
+@@ -0,0 +1,220 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
@@ -1874,6 +1903,7 @@ index 00000000..98f428f5
 +        request.ActorId = 8;
 +        request.OwnershipEpoch = 7;
 +        request.AppliedFresh = true;
++        request.InventoryAlreadyReflected = operation == RequestDroppedItem::Operation::Create;
 +        request.Data = Drop(10);
 +        request.Data.Id = 0xCDEF0123456789ABULL;
 +        TiltedPhoques::Buffer buffer(16384);
@@ -1891,6 +1921,7 @@ index 00000000..98f428f5
 +        REQUIRE(result->ActorId == request.ActorId);
 +        REQUIRE(result->OwnershipEpoch == request.OwnershipEpoch);
 +        REQUIRE(result->AppliedFresh);
++        REQUIRE(result->InventoryAlreadyReflected == request.InventoryAlreadyReflected);
 +        REQUIRE(result->Data.Id == request.Data.Id);
 +        REQUIRE(result->Data.Item == request.Data.Item);
 +        REQUIRE(result->Data.Cell == request.Data.Cell);
