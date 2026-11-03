@@ -11,10 +11,27 @@ index 26ff80d2..34cd9548 100644
      bool ResetAnimationGraphForReplay{false};
  };
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
-index 9e1933e8..b700802d 100644
+index 9e1933e8..71e11a9d 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
-@@ -963,7 +963,7 @@ static TDamageActor* RealDamageActor = nullptr;
+@@ -360,6 +360,16 @@ bool Actor::IsInCombat() const noexcept
+     return s_pIsInCombat(this);
+ }
+ 
++bool Actor::IsHostileToActor(Actor* apActor) const noexcept
++{
++    const void* pFunction = World::Get().ctx().at<PapyrusService>().Get("Actor", "IsHostileToActor");
++    if (!apActor || !pFunction)
++        return false;
++
++    const PapyrusFunction<bool, Actor, Actor*> isHostileToActor(pFunction);
++    return isHostileToActor(this, apActor);
++}
++
+ Actor* Actor::GetCombatTarget() const noexcept
+ {
+     PAPYRUS_FUNCTION(Actor*, Actor, GetCombatTarget);
+@@ -963,7 +973,7 @@ static TDamageActor* RealDamageActor = nullptr;
  // TODO: this is flawed, since it does not account for invulnerable actors
  bool TP_MAKE_THISCALL(HookDamageActor, Actor, float aDamage, Actor* apHitter, bool aKillMove)
  {
@@ -23,8 +40,20 @@ index 9e1933e8..b700802d 100644
          World::Get().GetRunner().Trigger(HitEvent(apHitter->formID, apThis->formID));
  
      float realDamage = GameplayFormulas::CalculateRealDamage(apThis, aDamage, aKillMove);
+diff --git a/Code/client/Games/Skyrim/Actor.h b/Code/client/Games/Skyrim/Actor.h
+index 4c93c674..9c052c55 100644
+--- a/Code/client/Games/Skyrim/Actor.h
++++ b/Code/client/Games/Skyrim/Actor.h
+@@ -207,6 +207,7 @@ struct Actor : TESObjectREFR
+     [[nodiscard]] bool IsDragon() const noexcept;
+     [[nodiscard]] bool IsPlayerSummon() const noexcept;
+     [[nodiscard]] bool IsInCombat() const noexcept;
++    [[nodiscard]] bool IsHostileToActor(Actor* apActor) const noexcept;
+     [[nodiscard]] Actor* GetCombatTarget() const noexcept;
+     [[nodiscard]] bool HasPerk(uint32_t aPerkFormId) const noexcept;
+     [[nodiscard]] uint8_t GetPerkRank(uint32_t aPerkFormId) const noexcept;
 diff --git a/Code/client/Services/Generic/CombatService.cpp b/Code/client/Services/Generic/CombatService.cpp
-index df07fd32..fd03eae7 100644
+index df07fd32..f3e64b87 100644
 --- a/Code/client/Services/Generic/CombatService.cpp
 +++ b/Code/client/Services/Generic/CombatService.cpp
 @@ -162,22 +162,17 @@ void CombatService::OnNotifyProjectileLaunch(const NotifyProjectileLaunch& acMes
@@ -54,7 +83,7 @@ index df07fd32..fd03eae7 100644
          return;
  
      auto view = m_world.view<FormIdComponent, LocalComponent>(entt::exclude<ObjectComponent>);
-@@ -186,17 +181,18 @@ void CombatService::OnHitEvent(const HitEvent& acEvent) const noexcept
+@@ -186,17 +181,23 @@ void CombatService::OnHitEvent(const HitEvent& acEvent) const noexcept
  
      if (hitteeIt == std::end(view))
      {
@@ -64,8 +93,11 @@ index df07fd32..fd03eae7 100644
      }
  
 -    if (m_world.any_of<CombatComponent>(*hitteeIt))
--        return;
--
++    // Preserve friendly-fire tolerance and follower relationships. A damage
++    // event alone is not proof that this NPC should attack the player.
++    if (!pHittee->IsHostileToActor(pHitter))
+         return;
+ 
 -    m_world.emplace_or_replace<CombatComponent>(*hitteeIt, acEvent.HitterId);
 -
 -    pHittee->SetCombatTargetEx(pHitter);
