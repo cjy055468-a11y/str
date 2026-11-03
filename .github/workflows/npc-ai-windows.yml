@@ -1,0 +1,110 @@
+name: NPC AI v1.8.4 Windows 1.6.1170
+
+on:
+  push:
+    branches: [codex/npc-ai-v184]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      SOURCE_COMMIT: 54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: tiltedphoques/TiltedEvolution
+          ref: 54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
+          path: source
+          fetch-depth: 0
+          submodules: recursive
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: 3.1.0
+      - uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/.xmake/packages
+          key: windows-x64-str-v184-xmake310-${{ hashFiles('source/**/xmake.lua') }}
+      - name: Verify official source and apply candidate
+        run: |
+          New-Item -ItemType Directory -Force logs | Out-Null
+          if ((git -C source rev-parse HEAD) -ne $env:SOURCE_COMMIT) { throw 'Wrong source commit' }
+          git -C source submodule status --recursive | Tee-Object logs/submodules.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Submodule status failed' }
+          if (Select-String -Path logs/submodules.txt -Pattern '^[+\-U]') { throw 'Submodule mismatch' }
+          git -C source apply --check ../fixes/npc-ai-v184.patch
+          if ($LASTEXITCODE -ne 0) { throw 'Patch does not match official release' }
+          git -C source apply ../fixes/npc-ai-v184.patch
+          if ($LASTEXITCODE -ne 0) { throw 'Patch apply failed' }
+          git -C source diff --check
+          if ($LASTEXITCODE -ne 0) { throw 'Invalid patch whitespace' }
+          git -C source diff --stat | Out-File logs/changes.txt
+          git -C source switch -c master
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot set release build branch' }
+      - name: Configure Windows x64 for Skyrim 1.6.1170
+        working-directory: source
+        run: |
+          xmake config --plat=windows --arch=x64 --mode=release --skyrim_version=1.6.1170 --yes -vD 2>&1 | Tee-Object ../logs/configure.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Windows configure failed' }
+      - name: Check 1 - compile and link real client and server
+        working-directory: source
+        run: |
+          xmake build -y -vD SkyrimImmersiveLauncher 2>&1 | Tee-Object ../logs/build-client.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Client build failed' }
+          xmake build -y -vD SkyrimTogetherServer 2>&1 | Tee-Object ../logs/build-server.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Server build failed' }
+          if (-not (Test-Path build/windows/x64/release/SkyrimTogether.exe)) { throw 'EXE missing' }
+          'PASS: MSVC compile/link completed for the patched client and matching server.' | Out-File ../logs/check1.txt
+      - name: Check 2 - architecture, version, fix marker and imports
+        run: |
+          $out = 'source/build/windows/x64/release'
+          python tools/check-pe.py --require-fix "$out/SkyrimTogether.exe" "$out/EarlyLoad.dll" "$out/STServer.dll" | Tee-Object logs/check2.json
+          if ($LASTEXITCODE -ne 0) { throw 'PE/version/fix validation failed' }
+          Get-ChildItem source/.xmake -Recurse -Filter xmake.conf | ForEach-Object { Get-Content $_.FullName } | Out-File logs/xmake-config.txt
+          if (-not (Select-String logs/xmake-config.txt -Pattern '1.6.1170')) { throw 'Target config is not 1.6.1170' }
+      - name: Check 3 - repeat build and verify unchanged binary hashes
+        run: |
+          $out = 'source/build/windows/x64/release'
+          $files = @("$out/SkyrimTogether.exe", "$out/EarlyLoad.dll", "$out/STServer.dll")
+          $before = @($files | ForEach-Object { (Get-FileHash $_ -Algorithm SHA256).Hash })
+          Push-Location source
+          xmake build -y SkyrimImmersiveLauncher 2>&1 | Tee-Object ../logs/rebuild-client.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Client rebuild failed' }
+          xmake build -y SkyrimTogetherServer 2>&1 | Tee-Object ../logs/rebuild-server.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Server rebuild failed' }
+          Pop-Location
+          $after = @($files | ForEach-Object { (Get-FileHash $_ -Algorithm SHA256).Hash })
+          if (Compare-Object $before $after) { throw 'Repeated build changed artifacts; investigate before delivery' }
+          'PASS: repeated builds succeeded; all three binary hashes remained unchanged.' | Out-File logs/check3.txt
+      - name: Package only verified candidate files
+        run: |
+          New-Item -ItemType Directory -Force candidate/SkyrimTogetherReborn | Out-Null
+          $out = 'source/build/windows/x64/release'
+          Copy-Item "$out/SkyrimTogether.exe", "$out/EarlyLoad.dll", "$out/STServer.dll" candidate/SkyrimTogetherReborn/
+          Copy-Item fixes/npc-ai-v184.patch candidate/
+          Copy-Item fixes/README.zh-CN.md candidate/README.zh-CN.md
+          Copy-Item logs candidate/logs -Recurse
+          Get-ChildItem candidate/SkyrimTogetherReborn/* | Get-FileHash -Algorithm SHA256 | Format-List | Out-File candidate/SHA256.txt
+      - name: Upload candidate after all three checks pass
+        uses: actions/upload-artifact@v4
+        with:
+          name: STR-v184-SSE-161170-NPC-AI-candidate
+          path: candidate/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Always retain diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: STR-v184-build-diagnostics
+          path: logs/
+          if-no-files-found: warn
+          retention-days: 14
