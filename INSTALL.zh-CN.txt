@@ -1,0 +1,33 @@
+已编译的 NPC AI 修复候选包 — 官方 v1.8.4 / Skyrim SE 1.6.1170 / Windows x64
+
+本包由 Windows-2022 / VS 2022 / xmake 3.1.0 实际编译。
+三轮检查通过：编译与链接；x64 PE、版本及修复标记；重复构建成功且三个二进制 SHA256 不变。
+下载后另行确认：源码修订匹配、补丁一致、传输哈希一致；三个文件的导入依赖和导出接口均与用户提供的原版一致。
+游戏内双人测试未执行，不能据此声称全部 NPC 问题已解决。
+
+使用方法：
+1. 关闭游戏和服务器，备份原来的三个同名文件。
+2. 将 SkyrimTogetherReborn 目录中的 SkyrimTogether.exe、EarlyLoad.dll、STServer.dll
+   替换到原 MOD 的对应位置。服务器若使用独立目录，也需使用配套 STServer.dll。
+3. 保留原 v1.8.4 完整 MOD 的 UI、ESP、脚本、行为文件和其他 DLL；本包是覆盖包，不是完整安装包。
+4. 两位玩家使用同一候选包。重点检查：坐着的敌对 NPC 起身、攻击、追击；交换队长；进出场景与重连。
+   同时回归友军误伤、非敌对 NPC 对话、任务、骑乘和死亡同步。
+5. 若不正常，恢复备份。请保留客户端／服务器日志，并说明谁是队长、谁先进入场景和谁命中了 NPC。
+
+客户端修复实际链接在 SkyrimTogether.exe 内；EarlyLoad.dll 是加载器，STServer.dll 是服务器。
+请勿把这些文件当作独立 SKSE 插件安装。
+
+本次修复补上拥有者客户端对敌对远程玩家命中的战斗反应，并修正空回放的动画重置及目标动画事件回放。
+保留单一 AI 拥有者、控制权 epoch、协议与移动插值。引擎接口未通过 IDA/Ghidra 或游戏运行核实。
+更具体的覆盖限制与源码说明见 README.zh-CN.md 和 npc-ai-v184.patch。
+
+对应源码：
+https://github.com/tiltedphoques/TiltedEvolution/tree/54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
+精确子模块见 logs/submodules.txt；在此源码上应用包内 npc-ai-v184.patch。
+构建流程与补丁：
+https://github.com/cjy055468-a11y/str/tree/codex/npc-ai-v184
+本次 Windows 构建：
+https://github.com/cjy055468-a11y/str/actions/runs/41711397915
+
+源码修订：8d1e4376bb45099a51cc671cdda3eaae830d1a85
+打包时间：2026-11-04T05:46:56.754772+09:00
