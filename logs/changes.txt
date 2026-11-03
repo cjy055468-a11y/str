@@ -1,0 +1,16 @@
+ Code/client/Games/Skyrim/Actor.cpp                | 35 +++++++++++++++++++++--
+ Code/client/Games/Skyrim/PlayerCharacter.cpp      |  4 +++
+ Code/client/Games/Skyrim/TESObjectREFR.cpp        |  5 ++++
+ Code/client/Services/Generic/CharacterService.cpp | 10 +++++++
+ Code/client/Systems/AnimationSystem.cpp           | 21 ++++++++++----
+ Code/client/World.cpp                             |  2 ++
+ Code/common/BuildInfo.h.in                        |  2 +-
+ Code/encoding/Messages/ClientMessageFactory.h     |  3 +-
+ Code/encoding/Messages/ServerMessageFactory.h     |  3 +-
+ Code/encoding/Opcodes.h                           |  2 ++
+ Code/server/Services/InventoryService.cpp         |  5 ++++
+ Code/server/Services/InventoryService.h           |  1 +
+ Code/server/World.cpp                             |  2 ++
+ Code/tests/xmake.lua                              |  3 +-
+ 14 files changed, 86 insertions(+), 12 deletions(-)
+
