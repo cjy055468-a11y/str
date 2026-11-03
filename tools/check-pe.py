@@ -25,8 +25,8 @@ def inspect(path, require_fix=False):
         for marker in (b"v1.8.4", b"1.6.1170.0", b"EarlyLoad.dll", b"libcef.dll"):
             if marker not in data:
                 raise ValueError(f"{path.name}: missing expected marker {marker!r}")
-        if require_fix and b"Restored combat reaction for owned NPC" not in data:
-            raise ValueError("EXE lacks the candidate combat fix marker")
+        if require_fix and b"STR replay audit v2:" not in data:
+            raise ValueError("EXE lacks the replay audit v2 marker")
     return {"file": path.name, "bytes": len(data), "machine": "AMD64",
             "format": "PE32+", "dll": is_dll,
             "sha256": hashlib.sha256(data).hexdigest()}

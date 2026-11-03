@@ -1,15 +1,15 @@
-name: NPC AI v1.8.4 Windows 1.6.1170
+name: NPC replay audit v2 Windows 1.6.1170
 
 on:
   push:
-    branches: [codex/npc-ai-v184]
+    branches: [codex/npc-animation-audit-v184]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: str-npc-ai-v184-windows
+  group: str-npc-replay-audit-v184-windows
   cancel-in-progress: true
 
 jobs:
@@ -44,13 +44,15 @@ jobs:
           git -C source submodule status --recursive | Tee-Object logs/submodules.txt
           if ($LASTEXITCODE -ne 0) { throw 'Submodule status failed' }
           if (Select-String -Path logs/submodules.txt -Pattern '^[+\-U]') { throw 'Submodule mismatch' }
-          git -C source apply --check ../fixes/npc-ai-v184.patch
+          git -C source apply --check ../fixes/npc-replay-audit-v184.patch
           if ($LASTEXITCODE -ne 0) { throw 'Patch does not match official release' }
-          git -C source apply ../fixes/npc-ai-v184.patch
+          git -C source apply ../fixes/npc-replay-audit-v184.patch
           if ($LASTEXITCODE -ne 0) { throw 'Patch apply failed' }
           git -C source diff --check
           if ($LASTEXITCODE -ne 0) { throw 'Invalid patch whitespace' }
           git -C source diff --stat | Out-File logs/changes.txt
+          git -C source diff --quiet -- Code/client/Games/Skyrim/Actor.cpp Code/client/Games/Skyrim/Actor.h Code/client/Services/Generic/CombatService.cpp Code/client/Components/RemoteAnimationComponent.h
+          if ($LASTEXITCODE -ne 0) { throw 'Audit build must retain original native combat and component initialization' }
           git -C source switch -c master
           if ($LASTEXITCODE -ne 0) { throw 'Cannot set release build branch' }
       - name: Configure Windows x64 for Skyrim 1.6.1170
@@ -67,6 +69,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Server build failed' }
           if (-not (Test-Path build/windows/x64/release/SkyrimTogether.exe)) { throw 'EXE missing' }
           'PASS: MSVC compile/link completed for the patched client and matching server.' | Out-File ../logs/check1.txt
+      - name: Run production replay-contract and existing unit tests
+        working-directory: source
+        run: |
+          xmake build -y -vD TPTests 2>&1 | Tee-Object ../logs/build-tests.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Unit test build failed' }
+          & ./build/windows/x64/release/TPTests.exe -r junit -o "$env:GITHUB_WORKSPACE/logs/tests.xml"
+          if ($LASTEXITCODE -ne 0) { throw 'Unit test execution failed' }
+          python ../tools/check-replay-tests.py "$env:GITHUB_WORKSPACE/logs/tests.xml" | Tee-Object ../logs/test-summary.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Required replay tests did not complete successfully' }
       - name: Check 2 - architecture, version, fix marker and imports
         run: |
           $out = 'source/build/windows/x64/release'
@@ -93,14 +104,14 @@ jobs:
           New-Item -ItemType Directory -Force candidate/SkyrimTogetherReborn | Out-Null
           $out = 'source/build/windows/x64/release'
           Copy-Item "$out/SkyrimTogether.exe", "$out/EarlyLoad.dll", "$out/STServer.dll" candidate/SkyrimTogetherReborn/
-          Copy-Item fixes/npc-ai-v184.patch candidate/
-          Copy-Item fixes/README.zh-CN.md candidate/README.zh-CN.md
+          Copy-Item fixes/npc-replay-audit-v184.patch candidate/
+          Copy-Item fixes/README-replay-audit.zh-CN.md candidate/README.zh-CN.md
           Copy-Item logs candidate/logs -Recurse
           Get-ChildItem candidate/SkyrimTogetherReborn/* | Get-FileHash -Algorithm SHA256 | Format-List | Out-File candidate/SHA256.txt
       - name: Upload candidate after all three checks pass
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-SSE-161170-NPC-AI-candidate
+          name: STR-v184-SSE-161170-replay-audit-v2
           path: candidate/
           if-no-files-found: error
           retention-days: 14
@@ -108,7 +119,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-build-diagnostics
+          name: STR-v184-replay-audit-diagnostics
           path: logs/
           if-no-files-found: warn
           retention-days: 14
@@ -117,11 +128,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: build-results
-          ref: codex/npc-ai-v184
+          ref: codex/npc-animation-audit-v184
       - name: Save inspectable results on a separate branch
         if: always()
         run: |
-          $results = 'codex/npc-ai-v184-results'
+          $results = 'codex/npc-animation-audit-v184-results'
           Push-Location build-results
           $existing = git ls-remote --heads origin "refs/heads/$results"
           if ($LASTEXITCODE -ne 0) { throw 'Cannot check results branch' }
@@ -134,12 +145,14 @@ jobs:
           }
           if ($LASTEXITCODE -ne 0) { throw 'Cannot select isolated results branch' }
           Pop-Location
+          if (Test-Path build-results/logs) { Remove-Item build-results/logs -Recurse -Force }
           New-Item -ItemType Directory -Force build-results/logs | Out-Null
           if (Test-Path logs) {
             Get-ChildItem logs -File | ForEach-Object {
               $text = Get-Content $_.FullName -Raw
               $text = $text -replace '(gh[pousr]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+)', '[REDACTED]'
               $text = $text -replace '(?im)(Authorization:|AUTHORIZATION:|extraheader[ =]+).*', '$1 [REDACTED]'
+              $text = $text -replace '(https://[^\s\"<>?]+)\?[^\s\"<>]+', '$1?[QUERY-REDACTED]'
               $text | Set-Content "build-results/logs/$($_.Name)"
             }
           }
