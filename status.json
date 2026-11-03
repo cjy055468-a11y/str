@@ -2,5 +2,6 @@
   "job_status": "success",
   "checked_candidate": true,
   "source_revision": "8d1e4376bb45099a51cc671cdda3eaae830d1a85",
-  "run_id": "41711397915"
+  "run_id": "41711397915",
+  "recommendation": "withdrawn; root-cause assumptions not established"
 }
