@@ -1,6 +1,7 @@
  Code/client/Components/RemoteAnimationComponent.h |  2 +-
- Code/client/Games/Skyrim/Actor.cpp                |  2 +-
- Code/client/Services/Generic/CombatService.cpp    | 30 ++++++++++-------------
- Code/client/Systems/AnimationSystem.cpp           | 21 +++++++++++-----
- 4 files changed, 30 insertions(+), 25 deletions(-)
+ Code/client/Games/Skyrim/Actor.cpp                | 12 ++++++++-
+ Code/client/Games/Skyrim/Actor.h                  |  1 +
+ Code/client/Services/Generic/CombatService.cpp    | 31 ++++++++++++-----------
+ Code/client/Systems/AnimationSystem.cpp           | 21 ++++++++++-----
+ 5 files changed, 44 insertions(+), 23 deletions(-)
 

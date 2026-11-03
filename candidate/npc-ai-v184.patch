@@ -1,0 +1,161 @@
+diff --git a/Code/client/Components/RemoteAnimationComponent.h b/Code/client/Components/RemoteAnimationComponent.h
+index 26ff80d2..34cd9548 100644
+--- a/Code/client/Components/RemoteAnimationComponent.h
++++ b/Code/client/Components/RemoteAnimationComponent.h
+@@ -9,6 +9,6 @@ struct RemoteAnimationComponent
+     List<ActionEvent> TimePoints;
+     ActionEvent LastRanAction;
+     ActionEvent LastProcessedAction;
+-    uint32_t ReplayCount;
++    uint32_t ReplayCount{0};
+     bool ResetAnimationGraphForReplay{false};
+ };
+diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
+index 9e1933e8..71e11a9d 100644
+--- a/Code/client/Games/Skyrim/Actor.cpp
++++ b/Code/client/Games/Skyrim/Actor.cpp
+@@ -360,6 +360,16 @@ bool Actor::IsInCombat() const noexcept
+     return s_pIsInCombat(this);
+ }
+ 
++bool Actor::IsHostileToActor(Actor* apActor) const noexcept
++{
++    const void* pFunction = World::Get().ctx().at<PapyrusService>().Get("Actor", "IsHostileToActor");
++    if (!apActor || !pFunction)
++        return false;
++
++    const PapyrusFunction<bool, Actor, Actor*> isHostileToActor(pFunction);
++    return isHostileToActor(this, apActor);
++}
++
+ Actor* Actor::GetCombatTarget() const noexcept
+ {
+     PAPYRUS_FUNCTION(Actor*, Actor, GetCombatTarget);
+@@ -963,7 +973,7 @@ static TDamageActor* RealDamageActor = nullptr;
+ // TODO: this is flawed, since it does not account for invulnerable actors
+ bool TP_MAKE_THISCALL(HookDamageActor, Actor, float aDamage, Actor* apHitter, bool aKillMove)
+ {
+-    if (apHitter)
++    if (apHitter && aDamage > 0.f)
+         World::Get().GetRunner().Trigger(HitEvent(apHitter->formID, apThis->formID));
+ 
+     float realDamage = GameplayFormulas::CalculateRealDamage(apThis, aDamage, aKillMove);
+diff --git a/Code/client/Games/Skyrim/Actor.h b/Code/client/Games/Skyrim/Actor.h
+index 4c93c674..9c052c55 100644
+--- a/Code/client/Games/Skyrim/Actor.h
++++ b/Code/client/Games/Skyrim/Actor.h
+@@ -207,6 +207,7 @@ struct Actor : TESObjectREFR
+     [[nodiscard]] bool IsDragon() const noexcept;
+     [[nodiscard]] bool IsPlayerSummon() const noexcept;
+     [[nodiscard]] bool IsInCombat() const noexcept;
++    [[nodiscard]] bool IsHostileToActor(Actor* apActor) const noexcept;
+     [[nodiscard]] Actor* GetCombatTarget() const noexcept;
+     [[nodiscard]] bool HasPerk(uint32_t aPerkFormId) const noexcept;
+     [[nodiscard]] uint8_t GetPerkRank(uint32_t aPerkFormId) const noexcept;
+diff --git a/Code/client/Services/Generic/CombatService.cpp b/Code/client/Services/Generic/CombatService.cpp
+index df07fd32..f3e64b87 100644
+--- a/Code/client/Services/Generic/CombatService.cpp
++++ b/Code/client/Services/Generic/CombatService.cpp
+@@ -162,22 +162,17 @@ void CombatService::OnNotifyProjectileLaunch(const NotifyProjectileLaunch& acMes
+ 
+ void CombatService::OnHitEvent(const HitEvent& acEvent) const noexcept
+ {
+-#if 0
+     if (!m_transport.IsConnected())
+         return;
+ 
+-    // The targeting system does not apply to players, and only local actors should be considered.
++    // Remote player damage does not call RealDamageActor on this client. Restore
++    // its combat reaction only on the NPC's simulation owner, never on replicas.
+     auto* pHittee = Cast<Actor>(TESForm::GetById(acEvent.HitteeId));
+-    if (!pHittee || pHittee->GetExtension()->IsPlayer() || pHittee->GetExtension()->IsRemote())
++    if (!pHittee || pHittee->GetExtension()->IsPlayer() || pHittee->GetExtension()->IsRemote() || pHittee->IsDead())
+         return;
+ 
+-    // NPCs should not affect targeting.
+     auto* pHitter = Cast<Actor>(TESForm::GetById(acEvent.HitterId));
+-    if (!pHitter || !pHitter->GetExtension()->IsPlayer())
+-        return;
+-
+-    // If the target is not in combat, don't start combat, let the game take care of that first.
+-    if (!pHittee->IsInCombat())
++    if (!pHitter || !pHitter->GetExtension()->IsRemotePlayer() || pHitter->IsDead() || pHitter == pHittee)
+         return;
+ 
+     auto view = m_world.view<FormIdComponent, LocalComponent>(entt::exclude<ObjectComponent>);
+@@ -186,17 +181,23 @@ void CombatService::OnHitEvent(const HitEvent& acEvent) const noexcept
+ 
+     if (hitteeIt == std::end(view))
+     {
+-        spdlog::warn(__FUNCTION__ ": hittee form id component not found, form id: {:X}", acEvent.HitterId);
++        spdlog::warn(__FUNCTION__ ": hittee form id component not found, form id: {:X}", acEvent.HitteeId);
+         return;
+     }
+ 
+-    if (m_world.any_of<CombatComponent>(*hitteeIt))
++    // Preserve friendly-fire tolerance and follower relationships. A damage
++    // event alone is not proof that this NPC should attack the player.
++    if (!pHittee->IsHostileToActor(pHitter))
+         return;
+ 
+-    m_world.emplace_or_replace<CombatComponent>(*hitteeIt, acEvent.HitterId);
+-
+-    pHittee->SetCombatTargetEx(pHitter);
+-#endif
++    // SetCombatTargetEx is a no-op without a combat controller. StartCombat
++    // creates the combat state and lets the engine leave its idle/furniture
++    // package. Do not repeatedly stop combat or pin an existing valid target.
++    if (!pHittee->IsInCombat() || !pHittee->GetCombatTarget())
++    {
++        pHittee->StartCombat(pHitter);
++        spdlog::debug("Restored combat reaction for owned NPC {:X} hit by remote player {:X}", acEvent.HitteeId, acEvent.HitterId);
++    }
+ }
+ 
+ void CombatService::RunTargetUpdates(const float acDelta) const noexcept
+diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
+index 5d2a12b1..68fcd39b 100644
+--- a/Code/client/Systems/AnimationSystem.cpp
++++ b/Code/client/Systems/AnimationSystem.cpp
+@@ -24,6 +24,20 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+ {
+     auto& actions = aAnimationComponent.TimePoints;
+ 
++    // An exit-only replay has no actions: the server drops the exit and asks
++    // us to reset the graph instead. Apply that reset even with an empty queue,
++    // otherwise a replica can remain in its previous furniture/idle state.
++    if (aAnimationComponent.ResetAnimationGraphForReplay)
++    {
++        if (!apActor->animationGraphHolder.IsReady())
++            return;
++
++        apActor->animationGraphHolder.RevertAnimationGraphManager();
++        aAnimationComponent.ResetAnimationGraphForReplay = false;
++        // Recheck readiness on the next update before consuming any actions.
++        return;
++    }
++
+     const auto it = std::begin(actions);
+     if (it != std::end(actions) && it->Tick <= aTick)
+     {
+@@ -33,12 +47,6 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+             // Animation graph not ready, keep the action in queue and try again later
+             return;
+         }
+-        if (aAnimationComponent.ReplayCount > 0 && aAnimationComponent.ResetAnimationGraphForReplay)
+-        {
+-            apActor->animationGraphHolder.RevertAnimationGraphManager();
+-            aAnimationComponent.ResetAnimationGraphForReplay = false;
+-        }
+-
+         const auto& first = *it;
+ 
+         const auto actionId = first.ActionId;
+@@ -57,6 +65,7 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+         // Play the animation
+         TESActionData actionData(first.Type & 0x3, apActor, pAction, pTarget);
+         actionData.eventName = BSFixedString(first.EventName.c_str());
++        actionData.targetEventName = BSFixedString(first.TargetEventName.c_str());
+         actionData.idleForm = Cast<TESIdleForm>(TESForm::GetById(first.IdleId));
+         actionData.someFlag = ((first.Type & 0x4) != 0) ? 1 : 0;
+ 

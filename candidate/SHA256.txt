@@ -1,0 +1,13 @@
+
+Algorithm : SHA256
+Hash      : 6E8F992008200EBB10D610771162A3FA0D51F11724098EE585CCC7C31BB7F3CD
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\EarlyLoad.dll
+
+Algorithm : SHA256
+Hash      : 53E7E3BAF7E83F21BD3DC5BC9F99C197716157594128D686E1D22D27DCE273AB
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\SkyrimTogether.exe
+
+Algorithm : SHA256
+Hash      : C8258F26658AA645ECE1670958C21CED99878EAE551E7FE5D93BBE696C6400D2
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\STServer.dll
+
