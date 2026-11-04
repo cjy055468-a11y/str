@@ -1,15 +1,15 @@
-name: Furniture recovery and drop proxy coopfix3r1 Windows 1.6.1170
+name: Furniture recovery and drop proxy coopfix3r2 Windows 1.6.1170
 
 on:
   push:
-    branches: [codex/furniture-drop-coopfix3r1-v184]
+    branches: [codex/furniture-drop-coopfix3r2-v184]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: str-furniture-drop-coopfix3r1-v184-windows
+  group: str-furniture-drop-coopfix3r2-v184-windows
   cancel-in-progress: true
 
 jobs:
@@ -44,9 +44,9 @@ jobs:
           git -C source submodule status --recursive | Tee-Object logs/submodules.txt
           if ($LASTEXITCODE -ne 0) { throw 'Submodule status failed' }
           if (Select-String -Path logs/submodules.txt -Pattern '^[+\-U]') { throw 'Submodule mismatch' }
-          git -C source apply --check ../fixes/coopfix3r1-v184.patch
+          git -C source apply --check ../fixes/coopfix3r2-v184.patch
           if ($LASTEXITCODE -ne 0) { throw 'Patch does not match official release' }
-          git -C source apply ../fixes/coopfix3r1-v184.patch
+          git -C source apply ../fixes/coopfix3r2-v184.patch
           if ($LASTEXITCODE -ne 0) { throw 'Patch apply failed' }
           git -C source diff --check
           if ($LASTEXITCODE -ne 0) { throw 'Invalid patch whitespace' }
@@ -88,36 +88,31 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'PE/version/fix validation failed' }
           Get-ChildItem source/.xmake -Recurse -Filter xmake.conf | ForEach-Object { Get-Content $_.FullName } | Out-File logs/xmake-config.txt
           if (-not (Select-String logs/xmake-config.txt -Pattern '1.6.1170')) { throw 'Target config is not 1.6.1170' }
-      - name: Check 3 - repeat build and verify unchanged binary hashes
+      - name: Check 3 - match deliverable hashes to the PE report
         run: |
           $out = 'source/build/windows/x64/release'
-          $files = @("$out/SkyrimTogether.exe", "$out/EarlyLoad.dll", "$out/STServer.dll", "$out/SkyrimTogetherServer.exe")
-          $before = @($files | ForEach-Object { (Get-FileHash $_ -Algorithm SHA256).Hash })
-          Push-Location source
-          xmake build -y SkyrimImmersiveLauncher 2>&1 | Tee-Object ../logs/rebuild-client.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Client rebuild failed' }
-          xmake build -y SkyrimServerRunner 2>&1 | Tee-Object ../logs/rebuild-server.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Server rebuild failed' }
-          Pop-Location
-          $after = @($files | ForEach-Object { (Get-FileHash $_ -Algorithm SHA256).Hash })
-          if (Compare-Object $before $after) { throw 'Repeated build changed artifacts; investigate before delivery' }
-          'PASS: repeated builds succeeded; all four binary hashes remained unchanged.' | Out-File logs/check3.txt
+          $metadata = Get-Content logs/check2.json -Raw | ConvertFrom-Json
+          foreach ($entry in $metadata) {
+            $file = Join-Path $out $entry.file
+            if ((Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) { throw "Delivery hash mismatch: $file" }
+          }
+          'PASS: all four delivery hashes match the PE report; one build round was requested.' | Out-File logs/check3.txt
       - name: Package only verified candidate files
         run: |
           New-Item -ItemType Directory -Force candidate/SkyrimTogetherReborn | Out-Null
           $out = 'source/build/windows/x64/release'
           Copy-Item "$out/SkyrimTogether.exe", "$out/EarlyLoad.dll", "$out/STServer.dll", "$out/SkyrimTogetherServer.exe" candidate/SkyrimTogetherReborn/
-          Copy-Item fixes/coopfix3r1-v184.patch candidate/
-          Copy-Item fixes/README-coopfix3r1.zh-CN.md candidate/README.zh-CN.md
-          Copy-Item fixes/REVIEW-coopfix3r1.zh-CN.md candidate/REVIEW.zh-CN.md
+          Copy-Item fixes/coopfix3r2-v184.patch candidate/
+          Copy-Item fixes/README-coopfix3r2.zh-CN.md candidate/README.zh-CN.md
+          Copy-Item fixes/REVIEW-coopfix3r2.zh-CN.md candidate/REVIEW.zh-CN.md
           Copy-Item source/LICENSE candidate/LICENSE
-          Copy-Item fixes/UPSTREAM-AUDIT-coopfix3r1.zh-CN.md candidate/UPSTREAM-AUDIT.zh-CN.md
+          Copy-Item fixes/UPSTREAM-AUDIT-coopfix3r2.zh-CN.md candidate/UPSTREAM-AUDIT.zh-CN.md
           Copy-Item logs candidate/logs -Recurse
           Get-ChildItem candidate/SkyrimTogetherReborn/* | Get-FileHash -Algorithm SHA256 | Format-List | Out-File candidate/SHA256.txt
       - name: Upload candidate after all three checks pass
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-SSE-161170-coopfix3r1
+          name: STR-v184-SSE-161170-coopfix3r2
           path: candidate/
           if-no-files-found: error
           retention-days: 14
@@ -125,7 +120,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-coopfix3r1-diagnostics
+          name: STR-v184-coopfix3r2-diagnostics
           path: logs/
           if-no-files-found: warn
           retention-days: 14
@@ -134,11 +129,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: build-results
-          ref: codex/furniture-drop-coopfix3r1-v184
+          ref: codex/furniture-drop-coopfix3r2-v184
       - name: Save inspectable results on a separate branch
         if: always()
         run: |
-          $results = 'codex/furniture-drop-coopfix3r1-v184-results'
+          $results = 'codex/furniture-drop-coopfix3r2-v184-results'
           Push-Location build-results
           $existing = git ls-remote --heads origin "refs/heads/$results"
           if ($LASTEXITCODE -ne 0) { throw 'Cannot check results branch' }

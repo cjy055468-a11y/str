@@ -33,6 +33,10 @@ expected = {
     'A delayed furniture poll preserves the grace period after reevaluation',
     'Furniture recovery exit replaces a stale chair replay',
     'Drop setup waits for cell attachment even while the old geometry is present',
+    'A registration ACK preserves a pickup reserved before its queue task runs',
+    'Pickup-before-ACK and ACK-before-pickup retain the same registered identity',
+    'A delayed pickup cannot retarget a recycled reference or a different drop nonce',
+    'An unreserved drop remains pickable after its registration ACK',
 }
 root = ET.parse(Path(sys.argv[1])).getroot()
 cases = root.findall('.//testcase')
@@ -42,5 +46,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r1_cases': 8,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12,
                   'failures': 0, 'errors': 0}, indent=2))
