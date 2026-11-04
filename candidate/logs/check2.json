@@ -1,0 +1,34 @@
+[
+  {
+    "file": "SkyrimTogether.exe",
+    "bytes": 6562304,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": false,
+    "sha256": "2cb11c1de97c42a3a83940cc2a5344d39c9f47fe96e4f7496907ededc4ca4f11"
+  },
+  {
+    "file": "EarlyLoad.dll",
+    "bytes": 103424,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": true,
+    "sha256": "2ef73d8c0f783b45ad30511925c56c7471531e95e166e37ccb6ade721a0f9493"
+  },
+  {
+    "file": "STServer.dll",
+    "bytes": 7351808,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": true,
+    "sha256": "d62b60c7dd5851384567233c85b6dccff3d6e9509cee9667cc8b13d3db829bc6"
+  },
+  {
+    "file": "SkyrimTogetherServer.exe",
+    "bytes": 875008,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": false,
+    "sha256": "e89bb99483a0bd6761785d42d4f5906cfe6b8cf8ec06ce33a44186cb2836e1e2"
+  }
+]

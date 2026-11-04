@@ -1,0 +1,2 @@
+[0m[32;1m[100%]:[0m [32;1mbuild ok, spent 0.484s[0m
+[0m[1;33;1mwarning: [33;1madd_cxflags("-fPIC") is ignored, please pass `{force = true}` or call `set_policy("check.auto_ignore_flags", false)` if you want to set it.[0m

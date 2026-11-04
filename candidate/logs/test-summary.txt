@@ -1,0 +1,10 @@
+{
+  "test_cases": 55,
+  "executed_cases": 55,
+  "required_replay_cases": 5,
+  "required_drop_cases": 9,
+  "required_actor_cases": 7,
+  "required_coopfix3_cases": 7,
+  "failures": 0,
+  "errors": 0
+}
