@@ -1618,7 +1618,7 @@ index 00000000..62002783
 +    }
 +}
 diff --git a/Code/client/Services/Generic/InventoryService.cpp b/Code/client/Services/Generic/InventoryService.cpp
-index 8d9f2c78..85aa9653 100644
+index 8d9f2c78..941860fe 100644
 --- a/Code/client/Services/Generic/InventoryService.cpp
 +++ b/Code/client/Services/Generic/InventoryService.cpp
 @@ -1,4 +1,5 @@
@@ -1708,7 +1708,7 @@ index 8d9f2c78..85aa9653 100644
 +                auto missing = entry;
 +                missing.Count = 1;
 +                missing.ExtraWorn = missing.ExtraWornLeft = false;
-+                pActor->AddOrRemoveItem(missing);
++                pActor->AddOrRemoveItem(missing, true); // Appearance repair, not a quest-loot transfer.
 +            }
 +            if (auto* pArmor = TESForm::GetById(modSystem.GetGameId(entry.BaseId)))
 +                pEquipManager->Equip(pActor, pArmor, nullptr, 1, nullptr, false, true, false, false);
