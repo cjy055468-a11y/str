@@ -1,0 +1,22 @@
+ .../Components/WaitingForAssignmentComponent.h     |  4 ++
+ Code/client/Games/Skyrim/Actor.cpp                 | 35 ++++++++++++-
+ Code/client/Games/Skyrim/PlayerCharacter.cpp       |  4 ++
+ Code/client/Games/Skyrim/TESObjectREFR.cpp         | 21 ++++++++
+ Code/client/Services/CharacterService.h            |  2 +
+ Code/client/Services/Generic/ActorValueService.cpp |  9 ++++
+ Code/client/Services/Generic/CharacterService.cpp  | 61 ++++++++++++++++++++--
+ Code/client/Services/Generic/InventoryService.cpp  |  9 ++++
+ Code/client/Systems/AnimationSystem.cpp            | 21 +++++---
+ Code/client/World.cpp                              |  2 +
+ Code/common/BuildInfo.h.in                         |  2 +-
+ Code/encoding/Messages/AssignCharacterRequest.cpp  |  6 +++
+ Code/encoding/Messages/AssignCharacterRequest.h    |  4 +-
+ Code/encoding/Messages/ClientMessageFactory.h      |  3 +-
+ Code/encoding/Messages/ServerMessageFactory.h      |  3 +-
+ Code/encoding/Opcodes.h                            |  2 +
+ Code/server/Services/CharacterService.cpp          | 22 ++++++++
+ Code/server/Services/InventoryService.cpp          |  5 ++
+ Code/server/Services/InventoryService.h            |  1 +
+ Code/server/World.cpp                              |  2 +
+ Code/tests/xmake.lua                               |  3 +-
+ 21 files changed, 205 insertions(+), 16 deletions(-)

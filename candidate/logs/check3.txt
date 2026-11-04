@@ -1,0 +1,1 @@
+PASS: repeated builds succeeded; all four binary hashes remained unchanged.
