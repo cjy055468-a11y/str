@@ -1,13 +1,20 @@
 diff --git a/Code/client/Components/WaitingForAssignmentComponent.h b/Code/client/Components/WaitingForAssignmentComponent.h
-index 1dfe4aff..e11db05e 100644
+index 1dfe4aff..20c63e27 100644
 --- a/Code/client/Components/WaitingForAssignmentComponent.h
 +++ b/Code/client/Components/WaitingForAssignmentComponent.h
-@@ -8,4 +8,6 @@ struct WaitingForAssignmentComponent
+@@ -1,4 +1,5 @@
+ #pragma once
++#include <optional>
+ 
+ #ifndef TP_INTERNAL_COMPONENTS_GUARD
+ #error Include Components.h instead
+@@ -8,4 +9,7 @@ struct WaitingForAssignmentComponent
  {
      uint32_t Cookie;
      bool Cancelled{false};
 +    uint32_t ReferenceForm{};
 +    uint32_t ReferenceHandle{};
++    std::optional<uint32_t> KnownServerId{};
  };
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
 index 9e1933e8..88cdcdf4 100644
@@ -273,7 +280,7 @@ index b3f309a7..69e04d62 100644
  
      const auto it = std::find_if(std::begin(view), std::end(view), [&acMessage, view](entt::entity entity)
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 7d3ac21a..0eb7680e 100644
+index 7d3ac21a..a1a21438 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
 @@ -4,6 +4,7 @@
@@ -327,7 +334,26 @@ index 7d3ac21a..0eb7680e 100644
      if (acMessage.PlayerId != 0)
          m_world.emplace_or_replace<PlayerComponent>(cEntity, acMessage.PlayerId);
  
-@@ -465,12 +487,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -441,6 +463,18 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+     {
+         spdlog::info("Received local actor, form id: {:X}", pActor->formID);
+ 
++        if (pendingIdentity.KnownServerId && *pendingIdentity.KnownServerId == acMessage.ServerId)
++        {
++            // A reattachment response is the surviving NPC's canonical state,
++            // not an echo of this discovery request. Restore loot changes made
++            // while the native reference was unloaded, without resetting a
++            // locally dead actor back to life.
++            pActor->GetExtension()->SetRemote(true);
++            ReconcileActorData(cEntity, pActor, acMessage.OwnershipEpoch, actorData, true, true);
++            CacheSystem::Setup(m_world, cEntity, pActor);
++            spdlog::info("STR NPC reattach owner snapshot: ref {:X}, server {:X}, epoch {}", pActor->formID, acMessage.ServerId, acMessage.OwnershipEpoch);
++        }
++
+         // We are the authority, and the server's data is only an echo of our own request snapshot, which can already be stale.
+         // Applying it would e.g. Respawn() (Resurrect + Reset) an actor that was killed while the request was in flight,
+         // which re-rolls leveled temporary actors, removes them, and makes them get rediscovered as new entities endlessly.
+@@ -465,12 +499,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
          localComponent.IsDead = acMessage.IsDead;
          localComponent.IsWeaponDrawn = acMessage.IsWeaponDrawn;
          pActor->GetExtension()->SetRemote(false);
@@ -344,7 +370,7 @@ index 7d3ac21a..0eb7680e 100644
  
          pActor->GetExtension()->SetRemote(true);
  
-@@ -485,6 +510,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -485,6 +522,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
          ReconcileActorData(cEntity, pActor, acMessage.OwnershipEpoch, actorData, true, false);
  
@@ -355,7 +381,7 @@ index 7d3ac21a..0eb7680e 100644
          MoveActor(pActor, acMessage.WorldSpaceId, acMessage.CellId, acMessage.Position);
  
          // The owner's leveled pick rides the assignment response for actors we discovered ourselves
-@@ -631,6 +660,7 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+@@ -631,6 +672,7 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
          ApplyLeveledNpcPick(pActor, acMessage.LeveledNpcPickId);
  
      m_world.emplace_or_replace<RemoteComponent>(*entity, acMessage.ServerId, pActor->formID, acMessage.OwnershipEpoch);
@@ -363,7 +389,7 @@ index 7d3ac21a..0eb7680e 100644
  
      auto& interpolationComponent = InterpolationSystem::Setup(m_world, *entity);
      interpolationComponent.Position = acMessage.Position;
-@@ -787,10 +817,12 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -787,10 +829,12 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
      const entt::entity cEntity = *entity;
      const auto* pFormIdComponent = m_world.try_get<FormIdComponent>(cEntity);
      Actor* pActor = pFormIdComponent ? Cast<Actor>(TESForm::GetById(pFormIdComponent->Id)) : nullptr;
@@ -377,7 +403,7 @@ index 7d3ac21a..0eb7680e 100644
  
      if (isLocalOwner)
      {
-@@ -832,6 +864,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -832,6 +876,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
          // LocalComponent is installed only after canonical reconciliation is complete.
          pActor->GetExtension()->SetRemote(false);
          spdlog::info("Gained ownership of actor {:X} at epoch {}", acMessage.ServerId, acMessage.OwnershipEpoch);
@@ -387,7 +413,7 @@ index 7d3ac21a..0eb7680e 100644
          return;
      }
  
-@@ -1360,6 +1395,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1360,6 +1407,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
      AssignCharacterRequest message{};
  
      message.Cookie = sCookieSeed;
@@ -398,7 +424,7 @@ index 7d3ac21a..0eb7680e 100644
  
      if (!m_world.GetModSystem().GetServerModId(formIdComponent.Id, message.ReferenceId))
      {
-@@ -1490,7 +1529,9 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1490,7 +1541,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
  
      if (m_transport.Send(message))
      {
@@ -406,10 +432,11 @@ index 7d3ac21a..0eb7680e 100644
 +        auto& pending = m_world.emplace<WaitingForAssignmentComponent>(aEntity, sCookieSeed);
 +        pending.ReferenceForm = pActor->formID;
 +        pending.ReferenceHandle = pActor->GetHandle().handle.iBits;
++        pending.KnownServerId = message.KnownServerId;
  
          sCookieSeed++;
      }
-@@ -1624,6 +1665,7 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
+@@ -1624,6 +1678,7 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
          return nullptr;
      }
  
