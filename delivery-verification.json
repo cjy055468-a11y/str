@@ -1,0 +1,45 @@
+{
+  "source_revision": "10a3795b08201b69544bd623c89a2b54dab4025e",
+  "run_id": "41848535720",
+  "binaries": [
+    {
+      "file": "SkyrimTogether.exe",
+      "bytes": 6535168,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "db1d1379a40e510b39e7cc4c5ffa7a35b0ce969ac23399f52a0b5984104b502b",
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "EarlyLoad.dll",
+      "bytes": 103424,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "62e869a3d9970d4fe0583ad3a418bc7e241300adc607d0fc06a11461e5645c3e",
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "STServer.dll",
+      "bytes": 7351808,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "30b03f541a896bf3b968d6fb127c9a8e2d6eeb2693260fb71e20fb3f7629bd95",
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "SkyrimTogetherServer.exe",
+      "bytes": 875008,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "ff1bdfa0202706928ff166e84bb40f41a57edb698dde6fce067a7b724a4123cf"
+    }
+  ],
+  "game_test": "not run; two-player testing required"
+}
