@@ -273,10 +273,18 @@ index b3f309a7..69e04d62 100644
  
      const auto it = std::find_if(std::begin(view), std::end(view), [&acMessage, view](entt::entity entity)
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 7d3ac21a..f2ce9be7 100644
+index 7d3ac21a..0eb7680e 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
-@@ -331,6 +331,7 @@ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const
+@@ -4,6 +4,7 @@
+ #include <Services/PartyService.h>
+ 
+ #include <Services/CharacterService.h>
++#include <Systems/PendingActorUpdates.h>
+ #include <Services/QuestService.h>
+ #include <Services/TransportService.h>
+ 
+@@ -331,6 +332,7 @@ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const
  
  void CharacterService::OnDisconnected(const DisconnectedEvent& acDisconnectedEvent) const noexcept
  {
@@ -284,7 +292,7 @@ index 7d3ac21a..f2ce9be7 100644
      auto remoteView = m_world.view<FormIdComponent, RemoteComponent>();
      for (auto entity : remoteView)
      {
-@@ -378,7 +379,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -378,7 +380,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
      }
  
      const auto cEntity = *itor;
@@ -295,7 +303,7 @@ index 7d3ac21a..f2ce9be7 100644
  
      m_world.remove<WaitingForAssignmentComponent>(cEntity);
  #if (!IS_MASTER)
-@@ -428,6 +432,23 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -428,6 +433,23 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
      // TODO: how could this possibly trigger?
      // it's kinda interfering with my WaitingFor3D code
@@ -319,7 +327,7 @@ index 7d3ac21a..f2ce9be7 100644
      if (acMessage.PlayerId != 0)
          m_world.emplace_or_replace<PlayerComponent>(cEntity, acMessage.PlayerId);
  
-@@ -465,12 +486,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -465,12 +487,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
          localComponent.IsDead = acMessage.IsDead;
          localComponent.IsWeaponDrawn = acMessage.IsWeaponDrawn;
          pActor->GetExtension()->SetRemote(false);
@@ -336,7 +344,7 @@ index 7d3ac21a..f2ce9be7 100644
  
          pActor->GetExtension()->SetRemote(true);
  
-@@ -485,6 +509,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -485,6 +510,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
          ReconcileActorData(cEntity, pActor, acMessage.OwnershipEpoch, actorData, true, false);
  
@@ -347,7 +355,7 @@ index 7d3ac21a..f2ce9be7 100644
          MoveActor(pActor, acMessage.WorldSpaceId, acMessage.CellId, acMessage.Position);
  
          // The owner's leveled pick rides the assignment response for actors we discovered ourselves
-@@ -631,6 +659,7 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+@@ -631,6 +660,7 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
          ApplyLeveledNpcPick(pActor, acMessage.LeveledNpcPickId);
  
      m_world.emplace_or_replace<RemoteComponent>(*entity, acMessage.ServerId, pActor->formID, acMessage.OwnershipEpoch);
@@ -355,7 +363,7 @@ index 7d3ac21a..f2ce9be7 100644
  
      auto& interpolationComponent = InterpolationSystem::Setup(m_world, *entity);
      interpolationComponent.Position = acMessage.Position;
-@@ -787,6 +816,8 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -787,10 +817,12 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
      const entt::entity cEntity = *entity;
      const auto* pFormIdComponent = m_world.try_get<FormIdComponent>(cEntity);
      Actor* pActor = pFormIdComponent ? Cast<Actor>(TESForm::GetById(pFormIdComponent->Id)) : nullptr;
@@ -364,7 +372,12 @@ index 7d3ac21a..f2ce9be7 100644
  
      // Preserve the accepted epoch's pick for actors that still need to be created.
      if (auto* pWaitingFor3D = m_world.try_get<WaitingFor3D>(cEntity))
-@@ -832,6 +863,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+-        pWaitingFor3D->SpawnRequest.LeveledNpcPickId = acMessage.LeveledNpcPickId;
++        ApplyPendingOwnership(pWaitingFor3D->SpawnRequest, acMessage);
+ 
+     if (isLocalOwner)
+     {
+@@ -832,6 +864,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
          // LocalComponent is installed only after canonical reconciliation is complete.
          pActor->GetExtension()->SetRemote(false);
          spdlog::info("Gained ownership of actor {:X} at epoch {}", acMessage.ServerId, acMessage.OwnershipEpoch);
@@ -374,7 +387,7 @@ index 7d3ac21a..f2ce9be7 100644
          return;
      }
  
-@@ -1360,6 +1394,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1360,6 +1395,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
      AssignCharacterRequest message{};
  
      message.Cookie = sCookieSeed;
@@ -385,7 +398,7 @@ index 7d3ac21a..f2ce9be7 100644
  
      if (!m_world.GetModSystem().GetServerModId(formIdComponent.Id, message.ReferenceId))
      {
-@@ -1490,7 +1528,9 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1490,7 +1529,9 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
  
      if (m_transport.Send(message))
      {
@@ -396,7 +409,7 @@ index 7d3ac21a..f2ce9be7 100644
  
          sCookieSeed++;
      }
-@@ -1624,6 +1664,7 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
+@@ -1624,6 +1665,7 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
          return nullptr;
      }
  
@@ -1104,15 +1117,29 @@ index 5d2a12b1..c587ca53 100644
          const auto actionId = first.ActionId;
 diff --git a/Code/client/Systems/PendingActorUpdates.h b/Code/client/Systems/PendingActorUpdates.h
 new file mode 100644
-index 00000000..629f935e
+index 00000000..b491f6ca
 --- /dev/null
 +++ b/Code/client/Systems/PendingActorUpdates.h
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,37 @@
 +#pragma once
 +
 +#include <Messages/CharacterSpawnRequest.h>
 +#include <Messages/NotifyDeathStateChange.h>
 +#include <Messages/NotifyInventoryChanges.h>
++#include <Messages/NotifyOwnershipTransfer.h>
++
++inline bool ApplyPendingOwnership(CharacterSpawnRequest& aSpawn, const NotifyOwnershipTransfer& acUpdate) noexcept
++{
++    if (!acUpdate.OwnershipEpoch || aSpawn.ServerId != acUpdate.ServerId || acUpdate.OwnershipEpoch <= aSpawn.OwnershipEpoch)
++        return false;
++    aSpawn.OwnershipEpoch = acUpdate.OwnershipEpoch;
++    aSpawn.InitialActorValues = acUpdate.CurrentActorData.InitialActorValues;
++    aSpawn.InventoryContent = acUpdate.CurrentActorData.InitialInventory;
++    aSpawn.IsDead = acUpdate.CurrentActorData.IsDead;
++    aSpawn.IsWeaponDrawn = acUpdate.CurrentActorData.IsWeaponDrawn;
++    aSpawn.LeveledNpcPickId = acUpdate.LeveledNpcPickId;
++    return true;
++}
 +
 +// Reliable updates can arrive after the spawn snapshot, before its 3D exists.
 +// Update that snapshot so materialization cannot restore an older corpse state.
@@ -1952,10 +1979,10 @@ index 8bfd5104..503505bb 100644
      ctx().emplace<CommandService>(*this, m_dispatcher);
 diff --git a/Code/tests/actor_identity_pending.cpp b/Code/tests/actor_identity_pending.cpp
 new file mode 100644
-index 00000000..ee6396c6
+index 00000000..5e91674c
 --- /dev/null
 +++ b/Code/tests/actor_identity_pending.cpp
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,171 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
@@ -2087,6 +2114,45 @@ index 00000000..ee6396c6
 +    update.ServerId = 5;
 +    update.Drop = true;
 +    REQUIRE_FALSE(ApplyPendingInventory(spawn, update));
++}
++
++TEST_CASE("Ownership handoff advances the pending snapshot before subsequent death and loot", "[actors.pending]")
++{
++    CharacterSpawnRequest spawn;
++    spawn.ServerId = 5;
++    spawn.OwnershipEpoch = 3;
++    NotifyOwnershipTransfer handoff;
++    handoff.ServerId = 5;
++    handoff.OwnershipEpoch = 4;
++    handoff.CurrentActorData.IsDead = true;
++    Inventory::Entry item;
++    item.BaseId = GameId(0, 0x123);
++    item.Count = 3;
++    handoff.CurrentActorData.InitialInventory.AddOrRemoveEntry(item);
++    REQUIRE(ApplyPendingOwnership(spawn, handoff));
++    REQUIRE(spawn.OwnershipEpoch == 4);
++    REQUIRE(spawn.IsDead);
++    REQUIRE_FALSE(ApplyPendingOwnership(spawn, handoff));
++    NotifyDeathStateChange death;
++    death.Id = 5;
++    death.OwnershipEpoch = 3;
++    death.IsDead = false;
++    REQUIRE_FALSE(ApplyPendingDeath(spawn, death));
++    death.OwnershipEpoch = 4;
++    death.IsDead = true;
++    REQUIRE(ApplyPendingDeath(spawn, death));
++    NotifyInventoryChanges loot;
++    loot.ServerId = 5;
++    loot.OwnershipEpoch = 4;
++    loot.Item = item;
++    loot.Item.Count = -3;
++    REQUIRE(ApplyPendingInventory(spawn, loot));
++    REQUIRE(spawn.InventoryContent.Entries.empty());
++    handoff.OwnershipEpoch = 3;
++    REQUIRE_FALSE(ApplyPendingOwnership(spawn, handoff));
++    handoff.OwnershipEpoch = 5;
++    handoff.ServerId = 6;
++    REQUIRE_FALSE(ApplyPendingOwnership(spawn, handoff));
 +}
 diff --git a/Code/tests/animation_replay_cache.cpp b/Code/tests/animation_replay_cache.cpp
 new file mode 100644

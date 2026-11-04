@@ -24,6 +24,7 @@ expected = {
     'Death received before 3D updates the pending spawn snapshot',
     'Loot received before 3D changes the pending corpse inventory',
     'Pending inventory guard leaves legacy drop events on their existing path',
+    'Ownership handoff advances the pending snapshot before subsequent death and loot',
 }
 root = ET.parse(Path(sys.argv[1])).getroot()
 cases = root.findall('.//testcase')

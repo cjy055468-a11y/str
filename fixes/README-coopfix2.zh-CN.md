@@ -11,7 +11,7 @@
 - 新增客户端身份缓存，键为本地引用编号和引擎 handle 的代际值，保留卸载前的服务器实体身份；取消中的分配响应也保留绑定。断线时清空，避免接到另一个服务器后误用旧 ID。
 - 分配请求增加可选 KnownServerId；服务器发现该临时 NPC 实体仍存在时返回已有实体及其当前控制权、死亡和背包快照，避免另建实体。服务器实体已销毁时允许正常登记。
 - 已有远端代理和重新加载的原生引用同时对应同一服务器 NPC 时，客户端保留重载引用，退休同实体的旧临时代理；不会按名字或基础模板合并不同 NPC。
-- 等待模型加载期间，匹配实体和 ownership epoch 的死亡通知、非 Drop 背包变化先合入待加载快照，防止稍后用旧生死/搜刮数据覆盖。原常规处理路径与服务器背包处理不变；过期 epoch 被拒绝，玩家不会经过延迟死亡处理。
+- 等待模型加载期间，匹配实体和 ownership epoch 的死亡通知、非 Drop 背包变化先合入待加载快照，防止稍后用旧生死/搜刮数据覆盖。原常规处理路径与服务器背包处理不变；过期 epoch 被拒绝，玩家不会经过延迟死亡处理。控制权交接也先推进待加载快照的 epoch 和权威状态，包含无法立即接受控制权的情况。
 - 保留 dropfix1 的空动画队列重置及诊断日志，保留原生战斗目标、伤害、AI 更新及移动钩子。
 
 原生引擎的 handle 生命周期与删除调用副作用未通过 IDA/Ghidra 验证，属于用户已同意的源码接口实现假设。新日志 `STR NPC reattach request`、`STR NPC reattach`、`STR NPC duplicate proxy retired`、`STR corpse pending` 用于复测核对这些假设。
@@ -45,6 +45,6 @@
 
 ## 检查
 
-Windows MSVC x64 实际编译客户端/服务器并启动服务器生成配置；运行所有原测试、dropfix1 测试和六个新的身份/协议/待加载快照测试。检查 PE 架构、1.6.1170 与修复版本标记和四文件 SHA-256，重复构建核对哈希。交付时再核对实际下载文件、提交、补丁和原导入/导出接口。游戏运行效果不计入这些自动检查。
+Windows MSVC x64 实际编译客户端/服务器并启动服务器生成配置；运行所有原测试、dropfix1 测试和七个新的身份/协议/待加载快照测试。检查 PE 架构、1.6.1170 与修复版本标记和四文件 SHA-256，重复构建核对哈希。交付时再核对实际下载文件、提交、补丁和原导入/导出接口。游戏运行效果不计入这些自动检查。
 
 源码变化完整清单见 coopfix2-v184.patch。相对 dropfix1 新改动集中在 CharacterService、WaitingForAssignmentComponent、ActorIdentityCache、分配请求编码、ActorValueService/InventoryService 的待加载前缀、PendingActorUpdates、构建版本和 actor_identity_pending.cpp；未改原掉落物实现。
