@@ -181,7 +181,7 @@ index efe4f697..d80f5d88 100644
  
      Inventory::Entry item{};
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-index e5852696..2c6197dd 100644
+index e5852696..d61645a2 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
 @@ -1,4 +1,5 @@
@@ -217,6 +217,44 @@ index e5852696..2c6197dd 100644
      // Exclude books from activation since only reading them removes them from the cell
      // Note: Books are now unsynced 
      if (pActivator && apThis->baseForm->formType != FormType::Book)
+@@ -1146,6 +1167,19 @@ void TP_MAKE_THISCALL(HookLockChange, TESObjectREFR)
+         World::Get().GetRunner().Trigger(LockChangeEvent(apThis->formID, false, 0));
+ }
+ 
++TP_THIS_FUNCTION(TCheckDropSave, bool, TESObjectREFR, BGSSaveFormBuffer*);
++static TCheckDropSave* RealCheckDropSave = nullptr;
++
++bool TP_MAKE_THISCALL(HookCheckDropSave, TESObjectREFR, BGSSaveFormBuffer* apBuffer)
++{
++    // Exclude only handle-qualified network drops. Keep the original save
++    // path for every other reference; never mark a live drop as deleted.
++    if (apThis->IsTemporary())
++        if (auto* pDrops = DroppedItemService::Get(); pDrops && pDrops->IsTracked(apThis))
++            return false;
++    return TiltedPhoques::ThisCall(RealCheckDropSave, apThis, apBuffer);
++}
++
+ static TiltedPhoques::Initializer s_objectReferencesHooks(
+     []()
+     {
+@@ -1159,6 +1193,10 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
+         POINTER_SKYRIMSE(TRemoveInventoryItem, s_removeInventoryItem, 19689);
+         POINTER_SKYRIMSE(TPlayAnimationAndWait, s_playAnimationAndWait, 56206);
+         POINTER_SKYRIMSE(TPlayAnimation, s_playAnimation, 56205);
++        // CommonLibSSE-NG AE VTABLE_TESObjectREFR[0], CheckSaveGame slot 0D.
++        // Detour the existing implementation; do not modify a virtual layout.
++        POINTER_SKYRIMSE(uintptr_t, s_referenceVtable, 190259);
++        RealCheckDropSave = reinterpret_cast<TCheckDropSave*>(s_referenceVtable.Get()[0xD]);
+ 
+         RealLockChange = s_lockChange.Get();
+         // RealSetLeveledCreature = s_SetLeveledCreature.Get();
+@@ -1181,4 +1219,6 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
+         TP_HOOK(&RealRemoveInventoryItem, HookRemoveInventoryItem);
+         TP_HOOK(&RealPlayAnimationAndWait, HookPlayAnimationAndWait);
+         TP_HOOK(&RealPlayAnimation, HookPlayAnimation);
++        TP_HOOK(&RealCheckDropSave, HookCheckDropSave);
++        spdlog::info("STR drop save filter installed: tracked references only; runtime flags preserved");
+     });
 diff --git a/Code/client/Services/CharacterService.h b/Code/client/Services/CharacterService.h
 index 031d4e24..21b8e28f 100644
 --- a/Code/client/Services/CharacterService.h
@@ -590,10 +628,10 @@ index 7d3ac21a..a1a21438 100644
      pActor->rotation.z = acMessage.Rotation.y;
 diff --git a/Code/client/Services/Generic/DroppedItemService.cpp b/Code/client/Services/Generic/DroppedItemService.cpp
 new file mode 100644
-index 00000000..46ed5f3b
+index 00000000..c33805fd
 --- /dev/null
 +++ b/Code/client/Services/Generic/DroppedItemService.cpp
-@@ -0,0 +1,721 @@
+@@ -0,0 +1,718 @@
 +#include <Services/DroppedItemService.h>
 +#include <NetImmerse/NiNode.h>
 +#include <Services/TransportService.h>
@@ -668,7 +706,8 @@ index 00000000..46ed5f3b
 +        m_pending.emplace(nonce, std::move(pending));
 +    }
 +    // Do not save a client-generated overlay that could reappear from a save.
-+    apReference->SetSkipSaveFlag(true);
++    // Save filtering is handled separately. SetSkipSaveFlag writes all runtime
++    // form bits, including deletion state; it is unsafe for live pickup refs.
 +    m_world.GetRunner().Queue([this, nonce]() { PrepareDrop(nonce); });
 +    return true;
 +}
@@ -1080,7 +1119,6 @@ index 00000000..46ed5f3b
 +        return;
 +    }
 +    aDrop.Handle = handle;
-+    pRef->SetSkipSaveFlag(true);
 +    {
 +        std::lock_guard lock(m_lock);
 +        m_bindings[pRef->formID] = {handle, aDrop.Data.Id, 0, false};
@@ -1273,9 +1311,6 @@ index 00000000..46ed5f3b
 +        }
 +        else if (acMessage.Action == NotifyDroppedItem::Operation::Disabled)
 +        {
-+            auto reference = TESObjectREFR::GetByHandle(origin->Handle);
-+            if (reference)
-+                reference->SetSkipSaveFlag(false);
 +            if (!origin->WantPick || origin->WantActorForm != 0x14)
 +            {
 +                std::lock_guard lock(m_lock);

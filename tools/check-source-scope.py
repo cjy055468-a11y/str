@@ -5,6 +5,7 @@ from pathlib import Path
 
 root = Path(sys.argv[1])
 unchanged = [
+    'Code/client/Games/Forms.cpp',
     'Code/client/Games/Skyrim/Actor.h',
     'Code/client/Services/Generic/CombatService.cpp',
     'Code/client/Services/Generic/ObjectService.cpp',
