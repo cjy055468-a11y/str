@@ -277,10 +277,10 @@ index 031d4e24..21b8e28f 100644
  
 diff --git a/Code/client/Services/DroppedItemService.h b/Code/client/Services/DroppedItemService.h
 new file mode 100644
-index 00000000..c42bd919
+index 00000000..092184f7
 --- /dev/null
 +++ b/Code/client/Services/DroppedItemService.h
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,109 @@
 +#pragma once
 +
 +#include <Structs/DroppedItemData.h>
@@ -370,6 +370,7 @@ index 00000000..c42bd919
 +    bool m_snapshotReady{};
 +    bool m_querySent{};
 +    bool m_collectingSnapshot{};
++    bool m_equipmentDirty{};
 +    std::set<uint64_t> m_snapshotIds;
 +    GameId m_lastCell{};
 +    GameId m_lastWorld{};
@@ -628,10 +629,10 @@ index 7d3ac21a..a1a21438 100644
      pActor->rotation.z = acMessage.Rotation.y;
 diff --git a/Code/client/Services/Generic/DroppedItemService.cpp b/Code/client/Services/Generic/DroppedItemService.cpp
 new file mode 100644
-index 00000000..c33805fd
+index 00000000..91ac1633
 --- /dev/null
 +++ b/Code/client/Services/Generic/DroppedItemService.cpp
-@@ -0,0 +1,718 @@
+@@ -0,0 +1,733 @@
 +#include <Services/DroppedItemService.h>
 +#include <NetImmerse/NiNode.h>
 +#include <Services/TransportService.h>
@@ -639,6 +640,7 @@ index 00000000..c33805fd
 +#include <Services/RunnerService.h>
 +#include <Messages/RequestDroppedItem.h>
 +#include <Messages/NotifyDroppedItem.h>
++#include <Messages/RequestEquipmentChanges.h>
 +#include <Events/UpdateEvent.h>
 +#include <Events/InventoryChangeEvent.h>
 +#include <World.h>
@@ -973,7 +975,21 @@ index 00000000..c33805fd
 +            request.Data = pending.Data;
 +            request.InventoryAlreadyReflected = pending.InventoryAlreadyReflected;
 +            pending.Sent = m_transport.Send(request);
++            if (pending.Sent)
++                m_equipmentDirty = true;
 +        }
++    }
++    if (m_equipmentDirty)
++    {
++        // Ordered after native inventory removals: removing an unworn copy of
++        // a worn base item must not leave the remote actor's outfit stripped.
++        RequestEquipmentChanges request;
++        request.ServerId = token->ServerId;
++        request.OwnershipEpoch = token->OwnershipEpoch;
++        request.SnapshotOnly = true;
++        request.CurrentInventory = pPlayer->GetEquipment();
++        if (m_transport.Send(request))
++            m_equipmentDirty = false;
 +    }
 +    for (auto& [id, drop] : m_drops)
 +    {
@@ -1519,7 +1535,7 @@ index 00000000..62002783
 +    }
 +}
 diff --git a/Code/client/Services/Generic/InventoryService.cpp b/Code/client/Services/Generic/InventoryService.cpp
-index 8d9f2c78..eefe7c8f 100644
+index 8d9f2c78..85aa9653 100644
 --- a/Code/client/Services/Generic/InventoryService.cpp
 +++ b/Code/client/Services/Generic/InventoryService.cpp
 @@ -1,4 +1,5 @@
@@ -1563,6 +1579,15 @@ index 8d9f2c78..eefe7c8f 100644
          return;
  
      auto& modSystem = World::Get().GetModSystem();
+@@ -220,7 +233,7 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
+     uint32_t itemId = modSystem.GetGameId(acMessage.ItemId);
+     TESForm* pItem = TESForm::GetById(itemId);
+ 
+-    if (!pItem)
++    if (!pItem && !acMessage.SnapshotOnly)
+     {
+         spdlog::error("Could not find inventory item {:X}:{:X}", acMessage.ItemId.ModId, acMessage.ItemId.BaseId);
+         return;
 @@ -235,6 +248,49 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
  
      auto* pEquipManager = EquipManager::Get();
@@ -1607,7 +1632,7 @@ index 8d9f2c78..eefe7c8f 100644
 +        }
 +        spdlog::info("STR owner armor reconciled: actor {:X}, previous {}, desired {}", acMessage.ServerId, wornArmor.Entries.size(), desiredArmor.Entries.size());
 +    }
-+    if (pItem->formType == FormType::Armor && !acMessage.IsSpell && !acMessage.IsShout)
++    if (acMessage.SnapshotOnly || (pItem->formType == FormType::Armor && !acMessage.IsSpell && !acMessage.IsShout))
 +        return;
 +
      if (acMessage.IsSpell)
@@ -2075,25 +2100,27 @@ index 00000000..17760032
 +    DroppedItemData Data{};
 +};
 diff --git a/Code/encoding/Messages/NotifyEquipmentChanges.cpp b/Code/encoding/Messages/NotifyEquipmentChanges.cpp
-index 2f4a4bba..317afa70 100644
+index 2f4a4bba..3421deb9 100644
 --- a/Code/encoding/Messages/NotifyEquipmentChanges.cpp
 +++ b/Code/encoding/Messages/NotifyEquipmentChanges.cpp
-@@ -11,6 +11,7 @@ void NotifyEquipmentChanges::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter
+@@ -11,6 +11,8 @@ void NotifyEquipmentChanges::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter
      Serialization::WriteBool(aWriter, Unequip);
      Serialization::WriteBool(aWriter, IsSpell);
      Serialization::WriteBool(aWriter, IsShout);
 +    CurrentInventory.Serialize(aWriter);
++    Serialization::WriteBool(aWriter, SnapshotOnly);
  }
  
  void NotifyEquipmentChanges::DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept
-@@ -25,4 +26,5 @@ void NotifyEquipmentChanges::DeserializeRaw(TiltedPhoques::Buffer::Reader& aRead
+@@ -25,4 +27,6 @@ void NotifyEquipmentChanges::DeserializeRaw(TiltedPhoques::Buffer::Reader& aRead
      Unequip = Serialization::ReadBool(aReader);
      IsSpell = Serialization::ReadBool(aReader);
      IsShout = Serialization::ReadBool(aReader);
 +    CurrentInventory.Deserialize(aReader);
++    SnapshotOnly = Serialization::ReadBool(aReader);
  }
 diff --git a/Code/encoding/Messages/NotifyEquipmentChanges.h b/Code/encoding/Messages/NotifyEquipmentChanges.h
-index 92faf9b9..28b13fc6 100644
+index 92faf9b9..1f0346c0 100644
 --- a/Code/encoding/Messages/NotifyEquipmentChanges.h
 +++ b/Code/encoding/Messages/NotifyEquipmentChanges.h
 @@ -3,6 +3,7 @@
@@ -2109,15 +2136,16 @@ index 92faf9b9..28b13fc6 100644
      bool operator==(const NotifyEquipmentChanges& acRhs) const noexcept
      {
 -        return GetOpcode() == acRhs.GetOpcode() && ServerId == acRhs.ServerId && OwnershipEpoch == acRhs.OwnershipEpoch && ItemId == acRhs.ItemId && EquipSlotId == acRhs.EquipSlotId && Count == acRhs.Count && Unequip == acRhs.Unequip && IsSpell == acRhs.IsSpell && IsShout == acRhs.IsShout;
-+        return GetOpcode() == acRhs.GetOpcode() && ServerId == acRhs.ServerId && OwnershipEpoch == acRhs.OwnershipEpoch && ItemId == acRhs.ItemId && EquipSlotId == acRhs.EquipSlotId && Count == acRhs.Count && Unequip == acRhs.Unequip && IsSpell == acRhs.IsSpell && IsShout == acRhs.IsShout && CurrentInventory == acRhs.CurrentInventory;
++        return GetOpcode() == acRhs.GetOpcode() && ServerId == acRhs.ServerId && OwnershipEpoch == acRhs.OwnershipEpoch && ItemId == acRhs.ItemId && EquipSlotId == acRhs.EquipSlotId && Count == acRhs.Count && Unequip == acRhs.Unequip && IsSpell == acRhs.IsSpell && IsShout == acRhs.IsShout && CurrentInventory == acRhs.CurrentInventory && SnapshotOnly == acRhs.SnapshotOnly;
      }
  
      uint32_t ServerId{};
-@@ -29,4 +30,5 @@ struct NotifyEquipmentChanges final : ServerMessage
+@@ -29,4 +30,6 @@ struct NotifyEquipmentChanges final : ServerMessage
      bool Unequip = false;
      bool IsSpell = false;
      bool IsShout = false;
 +    Inventory CurrentInventory{};
++    bool SnapshotOnly = false;
  };
 diff --git a/Code/encoding/Messages/RequestDroppedItem.cpp b/Code/encoding/Messages/RequestDroppedItem.cpp
 new file mode 100644
@@ -2186,6 +2214,45 @@ index 00000000..54c4c2d7
 +    bool InventoryAlreadyReflected{};
 +    DroppedItemData Data{};
 +};
+diff --git a/Code/encoding/Messages/RequestEquipmentChanges.cpp b/Code/encoding/Messages/RequestEquipmentChanges.cpp
+index 36e9ef34..e8fad17d 100644
+--- a/Code/encoding/Messages/RequestEquipmentChanges.cpp
++++ b/Code/encoding/Messages/RequestEquipmentChanges.cpp
+@@ -13,6 +13,7 @@ void RequestEquipmentChanges::SerializeRaw(TiltedPhoques::Buffer::Writer& aWrite
+     Serialization::WriteBool(aWriter, IsShout);
+     Serialization::WriteBool(aWriter, IsAmmo);
+     CurrentInventory.Serialize(aWriter);
++    Serialization::WriteBool(aWriter, SnapshotOnly);
+ }
+ 
+ void RequestEquipmentChanges::DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept
+@@ -29,4 +30,5 @@ void RequestEquipmentChanges::DeserializeRaw(TiltedPhoques::Buffer::Reader& aRea
+     IsShout = Serialization::ReadBool(aReader);
+     IsAmmo = Serialization::ReadBool(aReader);
+     CurrentInventory.Deserialize(aReader);
++    SnapshotOnly = Serialization::ReadBool(aReader);
+ }
+diff --git a/Code/encoding/Messages/RequestEquipmentChanges.h b/Code/encoding/Messages/RequestEquipmentChanges.h
+index 3b4c5cf9..52082469 100644
+--- a/Code/encoding/Messages/RequestEquipmentChanges.h
++++ b/Code/encoding/Messages/RequestEquipmentChanges.h
+@@ -21,7 +21,7 @@ struct RequestEquipmentChanges final : ClientMessage
+     bool operator==(const RequestEquipmentChanges& acRhs) const noexcept
+     {
+         return GetOpcode() == acRhs.GetOpcode() && ServerId == acRhs.ServerId && OwnershipEpoch == acRhs.OwnershipEpoch && ItemId == acRhs.ItemId && EquipSlotId == acRhs.EquipSlotId && Count == acRhs.Count && Unequip == acRhs.Unequip && IsSpell == acRhs.IsSpell && IsShout == acRhs.IsShout && IsAmmo == acRhs.IsAmmo &&
+-               CurrentInventory == acRhs.CurrentInventory;
++               CurrentInventory == acRhs.CurrentInventory && SnapshotOnly == acRhs.SnapshotOnly;
+     }
+ 
+     uint32_t ServerId{};
+@@ -33,6 +33,7 @@ struct RequestEquipmentChanges final : ClientMessage
+     bool IsSpell = false;
+     bool IsShout = false;
+     bool IsAmmo = false;
++    bool SnapshotOnly = false;
+ 
+     Inventory CurrentInventory{};
+ };
 diff --git a/Code/encoding/Messages/ServerMessageFactory.h b/Code/encoding/Messages/ServerMessageFactory.h
 index 516878b1..445715b2 100644
 --- a/Code/encoding/Messages/ServerMessageFactory.h
@@ -2801,7 +2868,7 @@ index 00000000..e6d299d5
 +    entt::scoped_connection m_leaveConnection;
 +};
 diff --git a/Code/server/Services/InventoryService.cpp b/Code/server/Services/InventoryService.cpp
-index 2d7d0f07..5948b727 100644
+index 2d7d0f07..1dfe6e45 100644
 --- a/Code/server/Services/InventoryService.cpp
 +++ b/Code/server/Services/InventoryService.cpp
 @@ -1,4 +1,5 @@
@@ -2834,11 +2901,12 @@ index 2d7d0f07..5948b727 100644
  
      NotifyEquipmentChanges notify;
      notify.ServerId = message.ServerId;
-@@ -139,6 +148,7 @@ void InventoryService::OnEquipmentChanges(const PacketEvent<RequestEquipmentChan
+@@ -139,6 +148,8 @@ void InventoryService::OnEquipmentChanges(const PacketEvent<RequestEquipmentChan
      notify.Unequip = message.Unequip;
      notify.IsSpell = message.IsSpell;
      notify.IsShout = message.IsShout;
 +    notify.CurrentInventory = message.CurrentInventory;
++    notify.SnapshotOnly = message.SnapshotOnly;
  
      const entt::entity cOrigin = static_cast<entt::entity>(message.ServerId);
      if (!GameServer::Get()->SendToPlayersInRange(notify, cOrigin, acMessage.GetSender()))
@@ -3494,10 +3562,10 @@ index 00000000..71561908
 +}
 diff --git a/Code/tests/owned_inventory.cpp b/Code/tests/owned_inventory.cpp
 new file mode 100644
-index 00000000..3c655648
+index 00000000..db2e1055
 --- /dev/null
 +++ b/Code/tests/owned_inventory.cpp
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,185 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
@@ -3506,6 +3574,8 @@ index 00000000..3c655648
 +#include <catch2/catch.hpp>
 +#include <Structs/OwnedInventory.h>
 +#include <Messages/ServerMessageFactory.h>
++#include <Messages/ClientMessageFactory.h>
++#include <Messages/RequestEquipmentChanges.h>
 +#include "../client/Systems/PendingActorUpdates.h"
 +#include "../client/Systems/DropProxySetup.h"
 +
@@ -3631,6 +3701,7 @@ index 00000000..3c655648
 +    message.OwnershipEpoch = 3;
 +    message.ItemId = Item().BaseId;
 +    message.Count = 1;
++    message.SnapshotOnly = true;
 +    auto worn = Item();
 +    worn.ExtraWorn = true;
 +    worn.ExtraHealth = 1.75f;
@@ -3656,6 +3727,29 @@ index 00000000..3c655648
 +    REQUIRE(setup.Advance(true, true, 10601, true) == A::Wake);
 +    REQUIRE(setup.Advance(true, true, 11101, true) == A::Wake);
 +    REQUIRE(setup.Advance(true, true, 11601, true) == A::Done);
++}
++
++TEST_CASE("A drop outfit refresh round trips without requesting another native equip action", "[equipment][encoding]")
++{
++    RequestEquipmentChanges message;
++    message.ServerId = 9;
++    message.OwnershipEpoch = 3;
++    message.SnapshotOnly = true;
++    auto worn = Item();
++    worn.ExtraWorn = true;
++    message.CurrentInventory.Entries = {worn};
++    TiltedPhoques::Buffer buffer(16384);
++    TiltedPhoques::Buffer::Writer writer(&buffer);
++    message.Serialize(writer);
++    TiltedPhoques::Buffer::Reader reader(&buffer);
++    auto decoded = ClientMessageFactory{}.Extract(reader);
++    REQUIRE(decoded);
++    REQUIRE(decoded->GetOpcode() == kRequestEquipmentChanges);
++    const auto* result = static_cast<RequestEquipmentChanges*>(decoded.get());
++    REQUIRE(*result == message);
++    REQUIRE(result->SnapshotOnly);
++    REQUIRE_FALSE(result->ItemId);
++    REQUIRE(result->Count == 0);
 +}
 diff --git a/Code/tests/proxy_furniture_timing.cpp b/Code/tests/proxy_furniture_timing.cpp
 new file mode 100644
