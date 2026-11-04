@@ -634,10 +634,10 @@ index 7d3ac21a..a1a21438 100644
      pActor->rotation.z = acMessage.Rotation.y;
 diff --git a/Code/client/Services/Generic/DroppedItemService.cpp b/Code/client/Services/Generic/DroppedItemService.cpp
 new file mode 100644
-index 00000000..7f45bf37
+index 00000000..e2b71300
 --- /dev/null
 +++ b/Code/client/Services/Generic/DroppedItemService.cpp
-@@ -0,0 +1,811 @@
+@@ -0,0 +1,817 @@
 +#include <Services/DroppedItemService.h>
 +#include <NetImmerse/NiNode.h>
 +#include <Services/TransportService.h>
@@ -1068,8 +1068,14 @@ index 00000000..7f45bf37
 +    const uint64_t now = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
 +    auto* pNode = pReference->GetNiNode();
 +    auto* pUI = UI::Get();
++    // A stationary cached creation pose is not proof that Havok has landed.
++    // Require observed native movement before freezing replicas to that pose;
++    // otherwise keep the dynamic fallback. Once published, track later moves.
++    const bool observedMovement = aDrop.Data.PlacementReady
++        || glm::distance(pReference->position, static_cast<const glm::vec3&>(aDrop.Data.Position)) > 1.f
++        || glm::distance(pReference->rotation, aDrop.Data.Rotation) > 0.02f;
 +    const bool ready = token && pCell && pCell->IsAttached() && !pReference->IsDeleted() && !pReference->IsDisabled()
-+        && pNode && pNode->GetCollisionObject() && (!pUI || pUI->numPausesGame == 0);
++        && pNode && pNode->GetCollisionObject() && (!pUI || pUI->numPausesGame == 0) && observedMovement;
 +    if (!aDrop.PlacementClock.Observe(ready, pReference->position, pReference->rotation, now))
 +        return;
 +    RequestDroppedItem request;
