@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="TPTests.exe" errors="0" failures="0" tests="267" hostname="tbd" time="0.009" timestamp="2026-11-04T07:10:48Z">
+  <testsuite name="TPTests.exe" errors="0" failures="0" tests="267" hostname="tbd" time="0.010" timestamp="2026-11-04T07:36:00Z">
     <testcase classname="TPTests.exe.global" name="Exit-only replay requires a reset even when its action list is empty" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="A seated NPC replay preserves its enter state" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Exit followed by a different furniture enter retains the new action" time="0.000" status="run"/>
@@ -37,9 +37,9 @@
     <testcase classname="TPTests.exe.global" name="Playback clock/Plays low rate actors further behind instead of starving them" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Quickly plays further behind when the owner starts sending less often" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Keeps up with a 60 fps owner whose frame times vary" time="0.001" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Playback clock/Is not thrown off by a long frame on our side" time="0.001" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Is not thrown off by a long frame on our side" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/A long frame does not carry a catch-up past where playback should be" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Playback clock/Does not depend on the owner's clock matching ours" time="0.001" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Does not depend on the owner's clock matching ours" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Jumps instead of crawling when the owner's timeline jumps" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Ignores duplicate snapshots" time="0.000" status="run"/>
     <system-out/>

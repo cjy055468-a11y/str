@@ -1,0 +1,1979 @@
+diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
+index 9e1933e8..88cdcdf4 100644
+--- a/Code/client/Games/Skyrim/Actor.cpp
++++ b/Code/client/Games/Skyrim/Actor.cpp
+@@ -24,6 +24,7 @@
+ #include <Games/TES.h>
+ #include <World.h>
+ #include <Services/PapyrusService.h>
++#include <Services/DroppedItemService.h>
+ 
+ #include <Forms/ActorValueInfo.h>
+ #include <Forms/TESRace.h>
+@@ -1081,6 +1082,9 @@ void TP_MAKE_THISCALL(HookAddInventoryItem, Actor, TESBoundObject* apItem, Extra
+ 
+ void* TP_MAKE_THISCALL(HookPickUpObject, Actor, TESObjectREFR* apObject, int32_t aCount, bool aUnk1, float aUnk2)
+ {
++    if (auto* pDrops = DroppedItemService::Get(); pDrops && pDrops->InterceptPickup(apThis, apObject))
++        return nullptr;
++
+     if (!ScopedInventoryOverride::IsOverriden())
+     {
+         auto& modSystem = World::Get().GetModSystem();
+@@ -1109,6 +1113,15 @@ void Actor::PickUpObject(TESObjectREFR* apObject, int32_t aCount, bool aUnk1, fl
+ 
+ void* TP_MAKE_THISCALL(HookDropObject, Actor, void* apResult, TESBoundObject* apObject, ExtraDataList* apExtraData, int32_t aCount, NiPoint3* apLocation, NiPoint3* apRotation)
+ {
++    auto* pDrops = DroppedItemService::Get();
++    if (!ScopedInventoryOverride::IsOverriden() && apThis == PlayerCharacter::Get() && pDrops && pDrops->DefersPlayerDrops())
++    {
++        // Wait for the initial authoritative snapshot/actor grant. No native
++        // removal occurs, so a fast drop during connection cannot go untracked.
++        if (apResult)
++            static_cast<BSPointerHandle<TESObjectREFR>*>(apResult)->handle.iBits = 0;
++        return apResult;
++    }
+     auto& modSystem = World::Get().GetModSystem();
+ 
+     Inventory::Entry item{};
+@@ -1118,11 +1131,29 @@ void* TP_MAKE_THISCALL(HookDropObject, Actor, void* apResult, TESBoundObject* ap
+     if (apExtraData)
+         apThis->GetItemFromExtraData(item, apExtraData);
+ 
+-    QueueActorInventoryChange(apThis, InventoryChangeEvent(apThis->formID, std::move(item), true));
++    const bool cTrackPlayerDrop = !ScopedInventoryOverride::IsOverriden() && apThis == PlayerCharacter::Get()
++        && pDrops && pDrops->HandlesDrops() && aCount > 0;
++    if (!cTrackPlayerDrop)
++        QueueActorInventoryChange(apThis, InventoryChangeEvent(apThis->formID, item, true));
+ 
+     ScopedInventoryOverride _;
+ 
+-    return TiltedPhoques::ThisCall(RealDropObject, apThis, apResult, apObject, apExtraData, aCount, apLocation, apRotation);
++    void* pResult = TiltedPhoques::ThisCall(RealDropObject, apThis, apResult, apObject, apExtraData, aCount, apLocation, apRotation);
++    if (cTrackPlayerDrop && apResult)
++    {
++        const uint32_t handle = static_cast<BSPointerHandle<TESObjectREFR>*>(apResult)->handle.iBits;
++        auto reference = TESObjectREFR::GetByHandle(handle);
++        if (reference)
++        {
++            item.Count = aCount;
++            if (!pDrops->TrackDrop(reference, item))
++            {
++                item.Count = -aCount;
++                QueueActorInventoryChange(apThis, InventoryChangeEvent(apThis->formID, std::move(item), true));
++            }
++        }
++    }
++    return pResult;
+ }
+ 
+ void Actor::DropOrPickUpObject(const Inventory::Entry& arEntry, NiPoint3* apLocation, NiPoint3* apRotation) noexcept
+diff --git a/Code/client/Games/Skyrim/PlayerCharacter.cpp b/Code/client/Games/Skyrim/PlayerCharacter.cpp
+index efe4f697..d80f5d88 100644
+--- a/Code/client/Games/Skyrim/PlayerCharacter.cpp
++++ b/Code/client/Games/Skyrim/PlayerCharacter.cpp
+@@ -13,6 +13,7 @@
+ #include <Events/RemoveWaypointEvent.h>
+ 
+ #include <World.h>
++#include <Services/DroppedItemService.h>
+ 
+ #include <Games/Skyrim/Forms/ActorValueInfo.h>
+ #include <Games/ActorExtension.h>
+@@ -164,6 +165,9 @@ void PlayerCharacter::RemoveWaypoint() noexcept
+ 
+ char TP_MAKE_THISCALL(HookPickUpObject, PlayerCharacter, TESObjectREFR* apObject, int32_t aCount, bool aUnk1, bool aUnk2)
+ {
++    if (auto* pDrops = DroppedItemService::Get(); pDrops && pDrops->InterceptPickup(apThis, apObject))
++        return 0;
++
+     auto& modSystem = World::Get().GetModSystem();
+ 
+     Inventory::Entry item{};
+diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+index e5852696..a5937977 100644
+--- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
++++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+@@ -1,4 +1,5 @@
+ #include <TiltedOnlinePCH.h>
++#include <Services/DroppedItemService.h>
+ 
+ #include <Games/References.h>
+ #include <Games/Overrides.h>
+@@ -1032,6 +1033,10 @@ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, u
+ {
+     Actor* pActivator = Cast<Actor>(apActivator);
+ 
++    if (!ScopedInventoryOverride::IsOverriden() && pActivator && apThis->baseForm->formType != FormType::Book)
++        if (auto* pDrops = DroppedItemService::Get(); pDrops && pDrops->InterceptPickup(pActivator, apThis))
++            return true;
++
+     // Exclude books from activation since only reading them removes them from the cell
+     // Note: Books are now unsynced 
+     if (pActivator && apThis->baseForm->formType != FormType::Book)
+diff --git a/Code/client/Services/DroppedItemService.h b/Code/client/Services/DroppedItemService.h
+new file mode 100644
+index 00000000..281127f1
+--- /dev/null
++++ b/Code/client/Services/DroppedItemService.h
+@@ -0,0 +1,97 @@
++#pragma once
++
++#include <Structs/DroppedItemData.h>
++#include <atomic>
++#include <map>
++#include <set>
++#include <mutex>
++#include <chrono>
++
++struct Actor;
++struct TESObjectREFR;
++struct World;
++struct TransportService;
++struct UpdateEvent;
++struct ConnectedEvent;
++struct DisconnectedEvent;
++struct NotifyDroppedItem;
++
++class DroppedItemService
++{
++public:
++    DroppedItemService(World& aWorld, entt::dispatcher& aDispatcher, TransportService& aTransport) noexcept;
++    static DroppedItemService* Get() noexcept;
++    bool HandlesDrops() const noexcept;
++    bool DefersPlayerDrops() const noexcept;
++    bool TrackDrop(TESObjectREFR* apReference, Inventory::Entry aItem) noexcept;
++    bool InterceptPickup(Actor* apActor, TESObjectREFR* apReference) noexcept;
++    bool IsTracked(TESObjectREFR* apReference) const noexcept;
++
++private:
++    struct Binding
++    {
++        uint32_t Handle{};
++        uint64_t Id{};
++        uint64_t Nonce{};
++        bool Busy{};
++    };
++    struct Pending
++    {
++        DroppedItemData Data{};
++        uint32_t Handle{};
++        uint32_t FormId{};
++        uint32_t CellForm{};
++        uint32_t WorldForm{};
++        bool Prepared{};
++        bool Sent{};
++        bool InventoryAlreadyReflected{};
++        bool WantPick{};
++        uint32_t WantActorForm{0x14};
++    };
++    struct LocalDrop
++    {
++        DroppedItemData Data{};
++        uint32_t Handle{};
++        bool Taken{};
++    };
++
++    void OnConnected(const ConnectedEvent&) noexcept;
++    void OnDisconnected(const DisconnectedEvent&) noexcept;
++    void OnUpdate(const UpdateEvent&) noexcept;
++    void OnNotify(const NotifyDroppedItem& acMessage) noexcept;
++    void PrepareDrop(uint64_t aNonce) noexcept;
++    void RequestClaim(uint64_t aId, uint32_t aActorForm = 0x14) noexcept;
++    void ClearReferences(bool aIncludePending) noexcept;
++    void RemoveReference(uint64_t aId) noexcept;
++    void Spawn(LocalDrop& aDrop) noexcept;
++    void ApplyGrant(const NotifyDroppedItem& acMessage) noexcept;
++    static void DeleteReference(uint32_t aHandle) noexcept;
++
++    World& m_world;
++    TransportService& m_transport;
++    uint64_t m_clientSession{};
++    uint64_t m_serverSession{};
++    std::atomic<uint64_t> m_nonce{1};
++    std::atomic<bool> m_online{false};
++    std::atomic<bool> m_ready{false};
++    std::atomic<int> m_enabled{-1};
++    bool m_snapshotReady{};
++    bool m_querySent{};
++    GameId m_lastCell{};
++    GameId m_lastWorld{};
++    std::chrono::steady_clock::time_point m_nextUpdate{};
++    // The engine interception can run off the ECS thread. This small index is
++    // locked; authoritative record handling remains on the main runner thread.
++    mutable std::mutex m_lock;
++    std::map<uint32_t, Binding> m_bindings;
++    std::map<uint64_t, Pending> m_pending;
++    std::map<uint64_t, LocalDrop> m_drops;
++    std::map<uint64_t, uint64_t> m_claims;
++    std::map<uint64_t, uint32_t> m_claimActors;
++    std::set<uint64_t> m_applied;
++    std::map<uint64_t, bool> m_acks;
++    entt::scoped_connection m_connectedConnection;
++    entt::scoped_connection m_disconnectedConnection;
++    entt::scoped_connection m_updateConnection;
++    entt::scoped_connection m_notifyConnection;
++};
+diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
+index 7d3ac21a..be6cfd02 100644
+--- a/Code/client/Services/Generic/CharacterService.cpp
++++ b/Code/client/Services/Generic/CharacterService.cpp
+@@ -465,6 +465,9 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+         localComponent.IsDead = acMessage.IsDead;
+         localComponent.IsWeaponDrawn = acMessage.IsWeaponDrawn;
+         pActor->GetExtension()->SetRemote(false);
++        spdlog::info("STR replay audit v2: assigned owner, actor {:X}, server {:X}, epoch {}, position ({}, {}, {}), state ({:X}, {:X}), latest action {}",
++            pActor->formID, acMessage.ServerId, acMessage.OwnershipEpoch, pActor->position.x, pActor->position.y, pActor->position.z,
++            pActor->actorState.flags1, pActor->actorState.flags2, pActor->GetExtension()->LatestAnimation.EventName.c_str());
+     }
+     else
+     {
+@@ -485,6 +488,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+ 
+         ReconcileActorData(cEntity, pActor, acMessage.OwnershipEpoch, actorData, true, false);
+ 
++        spdlog::info("STR replay audit v2: assigned replica, actor {:X}, server {:X}, epoch {}, before ({}, {}, {}), destination ({}, {}, {}), state ({:X}, {:X}), replay {}, reset {}",
++            pActor->formID, acMessage.ServerId, acMessage.OwnershipEpoch, pActor->position.x, pActor->position.y, pActor->position.z,
++            acMessage.Position.x, acMessage.Position.y, acMessage.Position.z, pActor->actorState.flags1, pActor->actorState.flags2,
++            acMessage.ActionsToReplay.Actions.size(), acMessage.ActionsToReplay.ResetAnimationGraph);
+         MoveActor(pActor, acMessage.WorldSpaceId, acMessage.CellId, acMessage.Position);
+ 
+         // The owner's leveled pick rides the assignment response for actors we discovered ourselves
+@@ -832,6 +839,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+         // LocalComponent is installed only after canonical reconciliation is complete.
+         pActor->GetExtension()->SetRemote(false);
+         spdlog::info("Gained ownership of actor {:X} at epoch {}", acMessage.ServerId, acMessage.OwnershipEpoch);
++        spdlog::info("STR replay audit v2: transferred owner, actor {:X}, server {:X}, position ({}, {}, {}), state ({:X}, {:X})",
++            pActor->formID, acMessage.ServerId, pActor->position.x, pActor->position.y, pActor->position.z,
++            pActor->actorState.flags1, pActor->actorState.flags2);
+         return;
+     }
+ 
+diff --git a/Code/client/Services/Generic/DroppedItemService.cpp b/Code/client/Services/Generic/DroppedItemService.cpp
+new file mode 100644
+index 00000000..b673de9f
+--- /dev/null
++++ b/Code/client/Services/Generic/DroppedItemService.cpp
+@@ -0,0 +1,592 @@
++#include <Services/DroppedItemService.h>
++#include <Services/TransportService.h>
++#include <Services/PapyrusService.h>
++#include <Services/RunnerService.h>
++#include <Messages/RequestDroppedItem.h>
++#include <Messages/NotifyDroppedItem.h>
++#include <Events/UpdateEvent.h>
++#include <Events/InventoryChangeEvent.h>
++#include <World.h>
++#include <Games/Overrides.h>
++#include <Games/References.h>
++#include <Games/ActorExtension.h>
++#include <Actor.h>
++#include <PlayerCharacter.h>
++#include <Forms/TESObjectCELL.h>
++#include <Forms/TESWorldSpace.h>
++#include <bcrypt.h>
++
++DroppedItemService::DroppedItemService(World& aWorld, entt::dispatcher& aDispatcher, TransportService& aTransport) noexcept
++    : m_world(aWorld)
++    , m_transport(aTransport)
++{
++    if (BCryptGenRandom(nullptr, reinterpret_cast<PUCHAR>(&m_clientSession), sizeof(m_clientSession), BCRYPT_USE_SYSTEM_PREFERRED_RNG) != 0 || !m_clientSession)
++        spdlog::error("STR drop sync: could not create a private reconnect identity");
++    m_connectedConnection = aDispatcher.sink<ConnectedEvent>().connect<&DroppedItemService::OnConnected>(this);
++    m_disconnectedConnection = aDispatcher.sink<DisconnectedEvent>().connect<&DroppedItemService::OnDisconnected>(this);
++    m_updateConnection = aDispatcher.sink<UpdateEvent>().connect<&DroppedItemService::OnUpdate>(this);
++    m_notifyConnection = aDispatcher.sink<NotifyDroppedItem>().connect<&DroppedItemService::OnNotify>(this);
++}
++
++DroppedItemService* DroppedItemService::Get() noexcept
++{
++    return World::Get().ctx().find<DroppedItemService>();
++}
++
++bool DroppedItemService::HandlesDrops() const noexcept
++{
++    return m_clientSession && m_online.load() && m_enabled.load() != 0 && m_ready.load();
++}
++
++bool DroppedItemService::DefersPlayerDrops() const noexcept
++{
++    return m_clientSession && m_online.load() && m_enabled.load() != 0 && !m_ready.load();
++}
++
++bool DroppedItemService::TrackDrop(TESObjectREFR* apReference, Inventory::Entry aItem) noexcept
++{
++    if (!HandlesDrops() || !apReference || !apReference->IsTemporary() || aItem.Count <= 0)
++        return false;
++    Pending pending;
++    pending.Handle = apReference->GetHandle().handle.iBits;
++    if (!pending.Handle)
++        return false;
++    pending.FormId = apReference->formID;
++    pending.Data.Item = std::move(aItem);
++    pending.Data.Item.ExtraWorn = pending.Data.Item.ExtraWornLeft = false;
++    pending.Data.Position = apReference->position;
++    pending.Data.Rotation = apReference->rotation;
++    if (const auto* pCell = apReference->GetParentCellEx())
++    {
++        pending.CellForm = pCell->formID;
++        if (!(pCell->cellFlags & 1) && pCell->worldspace)
++            pending.WorldForm = pCell->worldspace->formID;
++    }
++    const uint64_t nonce = m_nonce.fetch_add(1);
++    {
++        std::lock_guard lock(m_lock);
++        m_bindings[pending.FormId] = {pending.Handle, 0, nonce, false};
++        m_pending.emplace(nonce, std::move(pending));
++    }
++    // Do not save a client-generated overlay that could reappear from a save.
++    apReference->SetSkipSaveFlag(true);
++    m_world.GetRunner().Queue([this, nonce]() { PrepareDrop(nonce); });
++    return true;
++}
++
++bool DroppedItemService::IsTracked(TESObjectREFR* apReference) const noexcept
++{
++    if (!apReference)
++        return false;
++    std::lock_guard lock(m_lock);
++    const auto it = m_bindings.find(apReference->formID);
++    return it != m_bindings.end() && it->second.Handle == apReference->GetHandle().handle.iBits;
++}
++
++bool DroppedItemService::InterceptPickup(Actor* apActor, TESObjectREFR* apReference) noexcept
++{
++    if (!apReference)
++        return false;
++    uint64_t id = 0;
++    uint64_t nonce = 0;
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_bindings.find(apReference->formID);
++        if (it == m_bindings.end() || it->second.Handle != apReference->GetHandle().handle.iBits)
++            return false;
++        // Only the authoritative actor may request consumption. Its inventory
++        // still waits for the server, including an NPC taking a dropped weapon.
++        if (!apActor || apActor->GetExtension()->IsRemote() || !m_online.load() || it->second.Busy)
++            return true;
++        it->second.Busy = true;
++        id = it->second.Id;
++        nonce = it->second.Nonce;
++    }
++    // Never take the runner's queue lock while holding the hook index lock.
++    const uint32_t actorForm = apActor->formID;
++    m_world.GetRunner().Queue([this, id, nonce, actorForm]()
++    {
++        if (id)
++            RequestClaim(id, actorForm);
++        else
++        {
++            std::lock_guard pendingLock(m_lock);
++            if (const auto pending = m_pending.find(nonce); pending != m_pending.end())
++            {
++                pending->second.WantPick = true;
++                pending->second.WantActorForm = actorForm;
++            }
++        }
++    });
++    return true;
++}
++
++void DroppedItemService::PrepareDrop(uint64_t aNonce) noexcept
++{
++    std::optional<Pending> failed;
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_pending.find(aNonce);
++        if (it == m_pending.end())
++            return;
++        auto& pending = it->second;
++        pending.Prepared = pending.CellForm && m_world.GetModSystem().GetServerModId(pending.CellForm, pending.Data.Cell);
++        if (pending.WorldForm)
++            pending.Prepared = pending.Prepared && m_world.GetModSystem().GetServerModId(pending.WorldForm, pending.Data.WorldSpace);
++        if (!pending.Prepared)
++        {
++            failed = pending;
++            if (auto binding = m_bindings.find(pending.FormId); binding != m_bindings.end())
++                binding->second.Busy = true;
++            m_pending.erase(it);
++        }
++    }
++    if (failed)
++    {
++        ScopedInventoryOverride inventoryOverride;
++        PlayerCharacter::Get()->AddOrRemoveItem(failed->Data.Item);
++        DeleteReference(failed->Handle);
++        spdlog::warn("STR drop registration rolled back: cell could not be mapped");
++    }
++}
++
++void DroppedItemService::OnConnected(const ConnectedEvent&) noexcept
++{
++    m_online = m_clientSession != 0;
++    m_ready = false;
++    m_enabled = -1;
++    m_snapshotReady = false;
++    m_querySent = false;
++    m_lastCell = {};
++    m_lastWorld = {};
++    m_nextUpdate = {};
++}
++
++void DroppedItemService::DeleteReference(uint32_t aHandle) noexcept
++{
++    if (!aHandle)
++        return;
++    auto reference = TESObjectREFR::GetByHandle(aHandle);
++    if (reference && reference->IsTemporary() && !reference->IsDeleted())
++    {
++        const void* pDisable = World::Get().ctx().at<PapyrusService>().Get("ObjectReference", "Disable");
++        if (pDisable)
++        {
++            const PapyrusFunction<void, TESObjectREFR, bool> disable(pDisable);
++            disable(reference, false); // No fade: retire the physical pickup now.
++        }
++        else
++            reference->Disable();
++        reference->Delete();
++    }
++}
++
++void DroppedItemService::ClearReferences(bool aIncludePending) noexcept
++{
++    Vector<uint32_t> handles;
++    {
++        std::lock_guard lock(m_lock);
++        for (auto& [form, binding] : m_bindings)
++        {
++            if (aIncludePending || binding.Id)
++            {
++                binding.Busy = true;
++                handles.push_back(binding.Handle);
++            }
++        }
++        if (aIncludePending)
++            for (auto& [nonce, pending] : m_pending)
++            {
++                pending.Handle = 0;
++                pending.Sent = false;
++                pending.InventoryAlreadyReflected = true;
++            }
++    }
++    m_drops.clear();
++    for (uint32_t handle : handles)
++        DeleteReference(handle);
++}
++
++void DroppedItemService::OnDisconnected(const DisconnectedEvent&) noexcept
++{
++    m_online = false;
++    m_ready = false;
++    m_snapshotReady = false;
++    m_querySent = false;
++    ClearReferences(true);
++    m_claims.clear();
++    m_claimActors.clear();
++    // The next actor snapshot includes everything already granted locally.
++    // Any recovered grant must acknowledge its new application state afresh.
++    m_acks.clear();
++    // Retain process identity and applied grants. An unacknowledged grant can
++    // then be replayed by the same server without awarding another copy.
++}
++
++void DroppedItemService::OnUpdate(const UpdateEvent&) noexcept
++{
++    if (!m_online.load() || std::chrono::steady_clock::now() < m_nextUpdate)
++        return;
++    m_nextUpdate = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
++    auto* pPlayer = PlayerCharacter::Get();
++    auto* pCell = pPlayer ? pPlayer->GetParentCellEx() : nullptr;
++    const auto token = pPlayer ? Utils::GetLocalOwnershipToken(pPlayer->formID) : std::nullopt;
++    if (!pPlayer || !pCell || !pCell->IsAttached() || !token)
++    {
++        m_ready = false;
++        return;
++    }
++    GameId cell{};
++    GameId world{};
++    if (!m_world.GetModSystem().GetServerModId(pCell->formID, cell))
++        return;
++    if (auto* pWorld = pPlayer->GetWorldSpace())
++        if (!m_world.GetModSystem().GetServerModId(pWorld->formID, world))
++            return;
++
++    if (!m_querySent || cell != m_lastCell || world != m_lastWorld)
++    {
++        RequestDroppedItem request;
++        request.Action = RequestDroppedItem::Operation::Snapshot;
++        request.ClientSession = m_clientSession;
++        request.Nonce = m_nonce.fetch_add(1);
++        if (m_transport.Send(request))
++        {
++            m_ready = false;
++            m_snapshotReady = false;
++            m_querySent = true;
++            m_lastCell = cell;
++            m_lastWorld = world;
++        }
++    }
++    if (!m_snapshotReady)
++        return;
++    m_ready = true;
++
++    {
++        std::lock_guard lock(m_lock);
++        for (auto& [nonce, pending] : m_pending)
++        {
++            if (!pending.Prepared || pending.Sent)
++                continue;
++            RequestDroppedItem request;
++            request.Action = RequestDroppedItem::Operation::Create;
++            request.ClientSession = m_clientSession;
++            request.ServerSession = m_serverSession;
++            request.Nonce = nonce;
++            request.ActorId = token->ServerId;
++            request.OwnershipEpoch = token->OwnershipEpoch;
++            request.Data = pending.Data;
++            request.InventoryAlreadyReflected = pending.InventoryAlreadyReflected;
++            pending.Sent = m_transport.Send(request);
++        }
++    }
++    for (auto& [id, drop] : m_drops)
++    {
++        if (!drop.Taken)
++            Spawn(drop);
++    }
++    for (auto it = m_acks.begin(); it != m_acks.end();)
++    {
++        RequestDroppedItem request;
++        request.Action = RequestDroppedItem::Operation::Acknowledge;
++        request.ClientSession = m_clientSession;
++        request.ServerSession = m_serverSession;
++        request.Nonce = m_nonce.fetch_add(1);
++        request.ActorId = token->ServerId;
++        request.OwnershipEpoch = token->OwnershipEpoch;
++        request.Data.Id = it->first;
++        request.AppliedFresh = it->second;
++        if (m_transport.Send(request))
++            it = m_acks.erase(it);
++        else
++            ++it;
++    }
++}
++
++void DroppedItemService::RequestClaim(uint64_t aId, uint32_t aActorForm) noexcept
++{
++    const auto it = m_drops.find(aId);
++    const auto token = Utils::GetLocalOwnershipToken(aActorForm);
++    if (m_claims.count(aId))
++        return;
++    if (!m_online.load() || !m_serverSession || !token || it == m_drops.end() || it->second.Taken)
++    {
++        std::lock_guard lock(m_lock);
++        for (auto& [ref, binding] : m_bindings)
++            if (binding.Id == aId && (it == m_drops.end() || !it->second.Taken))
++                binding.Busy = false;
++        return;
++    }
++    RequestDroppedItem request;
++    request.Action = RequestDroppedItem::Operation::Claim;
++    request.ClientSession = m_clientSession;
++    request.ServerSession = m_serverSession;
++    request.Nonce = m_nonce.fetch_add(1);
++    request.ActorId = token->ServerId;
++    request.OwnershipEpoch = token->OwnershipEpoch;
++    request.Data.Id = aId;
++    if (m_transport.Send(request))
++    {
++        m_claims[aId] = request.Nonce;
++        m_claimActors[aId] = aActorForm;
++    }
++    else
++    {
++        std::lock_guard lock(m_lock);
++        for (auto& [ref, binding] : m_bindings)
++            if (binding.Id == aId)
++                binding.Busy = false;
++    }
++}
++
++void DroppedItemService::Spawn(LocalDrop& aDrop) noexcept
++{
++    if (aDrop.Handle)
++    {
++        auto current = TESObjectREFR::GetByHandle(aDrop.Handle);
++        if (current && !current->IsDeleted())
++            return;
++        aDrop.Handle = 0;
++    }
++    auto* pPlayer = PlayerCharacter::Get();
++    auto* pCell = Cast<TESObjectCELL>(TESForm::GetById(m_world.GetModSystem().GetGameId(aDrop.Data.Cell)));
++    if (!pPlayer || !pCell || !pCell->IsAttached())
++        return;
++    if (aDrop.Data.WorldSpace)
++    {
++        GameId world{};
++        auto* pWorld = pPlayer->GetWorldSpace();
++        if (!pWorld || !m_world.GetModSystem().GetServerModId(pWorld->formID, world) || world != aDrop.Data.WorldSpace
++            || glm::distance(pPlayer->position, static_cast<const glm::vec3&>(aDrop.Data.Position)) > 8192.f)
++            return;
++    }
++    else if (pPlayer->GetParentCellEx() != pCell)
++        return;
++    auto* pBase = TESForm::GetById(m_world.GetModSystem().GetGameId(aDrop.Data.Item.BaseId));
++    const void* pFunction = m_world.ctx().at<PapyrusService>().Get("ObjectReference", "PlaceAtMe");
++    if (!pBase || !pFunction)
++        return;
++    // One physical reference represents the authoritative stack. Pickup uses
++    // Data.Item.Count and extra data, never this visual proxy's local count.
++    const PapyrusFunction<TESObjectREFR*, TESObjectREFR, TESForm*, int32_t, bool, bool> place(pFunction);
++    auto* pRef = place(pPlayer, pBase, 1, false, true);
++    if (!pRef || !pRef->IsTemporary())
++        return;
++    const uint32_t handle = pRef->GetHandle().handle.iBits;
++    auto reference = TESObjectREFR::GetByHandle(handle);
++    if (!reference)
++        return;
++    reference->SetSkipSaveFlag(true);
++    const NiPoint3 position(aDrop.Data.Position);
++    reference->MoveTo(pCell, position);
++    if (reference->IsDeleted())
++        return;
++    reference->SetRotation(aDrop.Data.Rotation.x, aDrop.Data.Rotation.y, aDrop.Data.Rotation.z);
++    {
++        std::lock_guard lock(m_lock);
++        m_bindings[reference->formID] = {handle, aDrop.Data.Id, 0, false};
++    }
++    aDrop.Handle = handle;
++    reference->EnableImpl();
++    spdlog::info("STR drop proxy spawned: id {}, ref {:X}, stack {}", aDrop.Data.Id, reference->formID, aDrop.Data.Item.Count);
++}
++
++void DroppedItemService::RemoveReference(uint64_t aId) noexcept
++{
++    const auto it = m_drops.find(aId);
++    if (it != m_drops.end())
++    {
++        it->second.Taken = true;
++        const uint32_t handle = it->second.Handle;
++        it->second.Handle = 0;
++        {
++            std::lock_guard lock(m_lock);
++            for (auto& [form, binding] : m_bindings)
++                if (binding.Id == aId)
++                    binding.Busy = true;
++        }
++        // Keep the handle-qualified tombstone while the engine retires the
++        // reference. It must not become a vanilla pickup during that interval.
++        DeleteReference(handle);
++    }
++}
++
++void DroppedItemService::ApplyGrant(const NotifyDroppedItem& acMessage) noexcept
++{
++    const uint64_t id = acMessage.Data.Id;
++    const auto claim = m_claims.find(id);
++    if (!id || acMessage.Data.Item.Count <= 0 || (!acMessage.Recovery && !m_applied.count(id)
++        && (claim == m_claims.end() || claim->second != acMessage.Nonce)))
++        return;
++    if (!acMessage.Recovery)
++    {
++        const auto actor = m_claimActors.find(id);
++        if (actor != m_claimActors.end() && actor->second != 0x14)
++        {
++            // NPC inventory was updated via the existing epoch-checked
++            // inventory broadcast, including the owner. Do not credit twice.
++            RemoveReference(id);
++            m_claims.erase(id);
++            m_claimActors.erase(id);
++            return;
++        }
++    }
++    auto* pPlayer = PlayerCharacter::Get();
++    if (!pPlayer || !TESForm::GetById(m_world.GetModSystem().GetGameId(acMessage.Data.Item.BaseId)))
++        return;
++    const bool fresh = m_applied.insert(id).second;
++    if (fresh)
++    {
++        ScopedInventoryOverride inventoryOverride;
++        pPlayer->AddOrRemoveItem(acMessage.Data.Item);
++    }
++    RemoveReference(id);
++    m_claims.erase(id);
++    m_claimActors.erase(id);
++    m_acks[id] = m_acks[id] || fresh;
++    spdlog::info("STR drop grant applied: id {}, count {}, fresh {}", id, acMessage.Data.Item.Count, fresh);
++}
++
++void DroppedItemService::OnNotify(const NotifyDroppedItem& acMessage) noexcept
++{
++    if (!m_online.load() || !acMessage.ServerSession)
++        return;
++    if (acMessage.Action == NotifyDroppedItem::Operation::SnapshotBegin)
++    {
++        if (m_serverSession && m_serverSession != acMessage.ServerSession)
++        {
++            m_applied.clear();
++            m_acks.clear();
++            m_claims.clear();
++            m_claimActors.clear();
++            std::lock_guard lock(m_lock);
++            for (auto& [nonce, pending] : m_pending)
++            {
++                pending.Sent = false;
++                pending.InventoryAlreadyReflected = true;
++            }
++        }
++        m_serverSession = acMessage.ServerSession;
++        m_enabled = acMessage.Enabled ? 1 : 0;
++        m_snapshotReady = false;
++        m_ready = false;
++        ClearReferences(false);
++        return;
++    }
++    if (!m_serverSession)
++        m_serverSession = acMessage.ServerSession;
++    if (m_serverSession != acMessage.ServerSession)
++        return;
++    if (acMessage.Action == NotifyDroppedItem::Operation::SnapshotEnd)
++    {
++        m_snapshotReady = true;
++        return;
++    }
++    if (acMessage.Action == NotifyDroppedItem::Operation::Grant)
++    {
++        ApplyGrant(acMessage);
++        return;
++    }
++
++    std::optional<Pending> origin;
++    if (acMessage.Nonce)
++    {
++        std::lock_guard lock(m_lock);
++        if (const auto pending = m_pending.find(acMessage.Nonce); pending != m_pending.end())
++        {
++            origin = pending->second;
++            if (auto binding = m_bindings.find(pending->second.FormId); binding != m_bindings.end()
++                && binding->second.Handle == pending->second.Handle)
++                binding->second.Busy = true;
++            m_pending.erase(pending);
++        }
++    }
++    if (acMessage.Action == NotifyDroppedItem::Operation::Spawn)
++    {
++        if (!acMessage.Data.Id || m_applied.count(acMessage.Data.Id))
++        {
++            if (origin)
++                DeleteReference(origin->Handle);
++            return;
++        }
++        auto& drop = m_drops[acMessage.Data.Id];
++        drop.Data = acMessage.Data;
++        if (origin && origin->Handle)
++        {
++            auto reference = TESObjectREFR::GetByHandle(origin->Handle);
++            if (reference && !reference->IsDeleted())
++            {
++                drop.Handle = origin->Handle;
++                std::lock_guard lock(m_lock);
++                m_bindings[reference->formID] = {origin->Handle, drop.Data.Id, 0, origin->WantPick};
++            }
++        }
++        if (origin && origin->WantPick)
++            RequestClaim(drop.Data.Id, origin->WantActorForm);
++        return;
++    }
++    if (origin)
++    {
++        if (acMessage.Action == NotifyDroppedItem::Operation::Rejected)
++        {
++            // Registration failed: restore precisely the local stack that was
++            // removed, and remove its world ref. Server did not debit it.
++            ScopedInventoryOverride inventoryOverride;
++            PlayerCharacter::Get()->AddOrRemoveItem(origin->Data.Item);
++            DeleteReference(origin->Handle);
++            if (origin->InventoryAlreadyReflected)
++            {
++                if (const auto token = Utils::GetLocalOwnershipToken(0x14))
++                {
++                    InventoryChangeEvent event(0x14, origin->Data.Item);
++                    event.ServerId = token->ServerId;
++                    event.OwnershipEpoch = token->OwnershipEpoch;
++                    m_world.GetRunner().Trigger(std::move(event));
++                }
++            }
++        }
++        else if (acMessage.Action == NotifyDroppedItem::Operation::Disabled)
++        {
++            auto reference = TESObjectREFR::GetByHandle(origin->Handle);
++            if (reference)
++                reference->SetSkipSaveFlag(false);
++            if (!origin->WantPick || origin->WantActorForm != 0x14)
++            {
++                std::lock_guard lock(m_lock);
++                const auto binding = m_bindings.find(origin->FormId);
++                if (binding != m_bindings.end() && binding->second.Handle == origin->Handle)
++                    m_bindings.erase(binding);
++            }
++            if (origin->WantPick && origin->WantActorForm == 0x14)
++            {
++                {
++                    ScopedInventoryOverride inventoryOverride;
++                    PlayerCharacter::Get()->AddOrRemoveItem(origin->Data.Item);
++                }
++                DeleteReference(origin->Handle);
++                if (const auto token = Utils::GetLocalOwnershipToken(0x14))
++                {
++                    InventoryChangeEvent event(0x14, origin->Data.Item);
++                    event.ServerId = token->ServerId;
++                    event.OwnershipEpoch = token->OwnershipEpoch;
++                    m_world.GetRunner().Trigger(std::move(event));
++                }
++            }
++        }
++        else if (acMessage.Action == NotifyDroppedItem::Operation::Taken)
++            DeleteReference(origin->Handle);
++    }
++    if (acMessage.Action == NotifyDroppedItem::Operation::Taken
++        || (acMessage.Action == NotifyDroppedItem::Operation::Rejected && !acMessage.Active))
++        RemoveReference(acMessage.Data.Id);
++    if (acMessage.Action == NotifyDroppedItem::Operation::Rejected)
++    {
++        m_claims.erase(acMessage.Data.Id);
++        m_claimActors.erase(acMessage.Data.Id);
++        std::lock_guard lock(m_lock);
++        for (auto& [ref, binding] : m_bindings)
++            if (binding.Id == acMessage.Data.Id && acMessage.Active)
++                binding.Busy = false;
++    }
++}
+diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
+index 5d2a12b1..c587ca53 100644
+--- a/Code/client/Systems/AnimationSystem.cpp
++++ b/Code/client/Systems/AnimationSystem.cpp
+@@ -24,6 +24,21 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+ {
+     auto& actions = aAnimationComponent.TimePoints;
+ 
++    // The server deliberately removes the exit action from the replay chain.
++    // An exit-only chain therefore still requires a reset with no actions to
++    // play. Process that instruction independently of queue size/ReplayCount.
++    if (aAnimationComponent.ResetAnimationGraphForReplay)
++    {
++        if (!apActor->animationGraphHolder.IsReady())
++            return;
++
++        const bool cResetResult = apActor->animationGraphHolder.RevertAnimationGraphManager();
++        aAnimationComponent.ResetAnimationGraphForReplay = false;
++        spdlog::info("STR replay reset: actor {:X}, empty {}, replay {}, queued {}, result {}, position ({}, {}, {}), state ({:X}, {:X})",
++            apActor->formID, actions.empty(), aAnimationComponent.ReplayCount, actions.size(), cResetResult,
++            apActor->position.x, apActor->position.y, apActor->position.z, apActor->actorState.flags1, apActor->actorState.flags2);
++    }
++
+     const auto it = std::begin(actions);
+     if (it != std::end(actions) && it->Tick <= aTick)
+     {
+@@ -33,12 +48,6 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+             // Animation graph not ready, keep the action in queue and try again later
+             return;
+         }
+-        if (aAnimationComponent.ReplayCount > 0 && aAnimationComponent.ResetAnimationGraphForReplay)
+-        {
+-            apActor->animationGraphHolder.RevertAnimationGraphManager();
+-            aAnimationComponent.ResetAnimationGraphForReplay = false;
+-        }
+-
+         const auto& first = *it;
+ 
+         const auto actionId = first.ActionId;
+diff --git a/Code/client/World.cpp b/Code/client/World.cpp
+index b0596604..342e3d58 100644
+--- a/Code/client/World.cpp
++++ b/Code/client/World.cpp
+@@ -13,6 +13,7 @@
+ #include <Services/QuestService.h>
+ #include <Services/ActorValueService.h>
+ #include <Services/InventoryService.h>
++#include <Services/DroppedItemService.h>
+ #include <Services/MagicService.h>
+ #include <Services/CommandService.h>
+ #include <Services/CalendarService.h>
+@@ -47,6 +48,7 @@ World::World()
+     ctx().emplace<PartyService>(*this, m_dispatcher, m_transport);
+     ctx().emplace<ActorValueService>(*this, m_dispatcher, m_transport);
+     ctx().emplace<InventoryService>(*this, m_dispatcher, m_transport);
++    ctx().emplace<DroppedItemService>(*this, m_dispatcher, m_transport);
+     ctx().emplace<MagicService>(*this, m_dispatcher, m_transport);
+     ctx().emplace<CommandService>(*this, m_transport, m_dispatcher);
+     ctx().emplace<PlayerService>(*this, m_dispatcher, m_transport);
+diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
+index 5db8d876..2881e9ed 100644
+--- a/Code/common/BuildInfo.h.in
++++ b/Code/common/BuildInfo.h.in
+@@ -1,4 +1,4 @@
+ #pragma once
+ // This file was autogenerated by xmake
+ #define BUILD_BRANCH "${GIT_BRANCH}"
+-#define BUILD_COMMIT "${GIT_TAG}"
++#define BUILD_COMMIT "${GIT_TAG}-dropfix1"
+diff --git a/Code/encoding/Messages/ClientMessageFactory.h b/Code/encoding/Messages/ClientMessageFactory.h
+index 4f94d6d1..ad6b601c 100644
+--- a/Code/encoding/Messages/ClientMessageFactory.h
++++ b/Code/encoding/Messages/ClientMessageFactory.h
+@@ -8,6 +8,7 @@
+ #include <Messages/ClientReferencesMoveRequest.h>
+ #include <Messages/EnterInteriorCellRequest.h>
+ #include <Messages/RequestInventoryChanges.h>
++#include <Messages/RequestDroppedItem.h>
+ #include <Messages/RequestFactionsChanges.h>
+ #include <Messages/RequestQuestUpdate.h>
+ #include <Messages/PartyInviteRequest.h>
+@@ -70,7 +71,7 @@ struct ClientMessageFactory
+             PartyChangeLeaderRequest, PartyKickRequest, RequestActorValueChanges, RequestActorMaxValueChanges, EnterExteriorCellRequest, RequestHealthChangeBroadcast, ActivateRequest, LockChangeRequest, AssignObjectsRequest, RequestDeathStateChange, ShiftGridCellRequest,
+             RequestOwnershipTransfer, RequestOwnershipClaim, RequestObjectInventoryChanges, SpellCastRequest, ProjectileLaunchRequest, InterruptCastRequest, AddTargetRequest, ScriptAnimationRequest, DrawWeaponRequest, MountRequest, NewPackageRequest, RequestRespawn, SyncExperienceRequest,
+             RequestEquipmentChanges, SendChatMessageRequest, TeleportCommandRequest, PlayerRespawnRequest, DialogueRequest, SubtitleRequest, PlayerDialogueRequest, PlayerLevelRequest, TeleportRequest, RequestPlayerHealthUpdate, RequestWeatherChange, RequestCurrentWeather, RequestSetWaypoint,
+-            RequestRemoveWaypoint, RemoveSpellRequest, SetTimeCommandRequest, RequestActionEvents>;
++            RequestRemoveWaypoint, RemoveSpellRequest, SetTimeCommandRequest, RequestActionEvents, RequestDroppedItem>;
+ 
+         return s_visitor(std::forward<T>(func));
+     }
+diff --git a/Code/encoding/Messages/NotifyDroppedItem.cpp b/Code/encoding/Messages/NotifyDroppedItem.cpp
+new file mode 100644
+index 00000000..7c5c3df4
+--- /dev/null
++++ b/Code/encoding/Messages/NotifyDroppedItem.cpp
+@@ -0,0 +1,26 @@
++#include <Messages/NotifyDroppedItem.h>
++
++void NotifyDroppedItem::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
++{
++    Serialization::WriteVarInt(aWriter, static_cast<uint8_t>(Action));
++    Serialization::WriteVarInt(aWriter, ServerSession);
++    Serialization::WriteVarInt(aWriter, Nonce);
++    Serialization::WriteVarInt(aWriter, ActorId);
++    Serialization::WriteBool(aWriter, Enabled);
++    Serialization::WriteBool(aWriter, Active);
++    Serialization::WriteBool(aWriter, Recovery);
++    Data.Serialize(aWriter);
++}
++
++void NotifyDroppedItem::DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept
++{
++    ServerMessage::DeserializeRaw(aReader);
++    Action = static_cast<Operation>(Serialization::ReadVarInt(aReader));
++    ServerSession = Serialization::ReadVarInt(aReader);
++    Nonce = Serialization::ReadVarInt(aReader);
++    ActorId = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++    Enabled = Serialization::ReadBool(aReader);
++    Active = Serialization::ReadBool(aReader);
++    Recovery = Serialization::ReadBool(aReader);
++    Data.Deserialize(aReader);
++}
+diff --git a/Code/encoding/Messages/NotifyDroppedItem.h b/Code/encoding/Messages/NotifyDroppedItem.h
+new file mode 100644
+index 00000000..17760032
+--- /dev/null
++++ b/Code/encoding/Messages/NotifyDroppedItem.h
+@@ -0,0 +1,22 @@
++#pragma once
++
++#include "Message.h"
++#include <Structs/DroppedItemData.h>
++
++struct NotifyDroppedItem final : ServerMessage
++{
++    static constexpr ServerOpcode Opcode = kNotifyDroppedItem;
++    enum class Operation : uint8_t { SnapshotBegin, Spawn, Taken, Grant, Rejected, Disabled, SnapshotEnd };
++    NotifyDroppedItem() : ServerMessage(Opcode) {}
++    void SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept override;
++    void DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept override;
++
++    Operation Action{Operation::SnapshotBegin};
++    uint64_t ServerSession{};
++    uint64_t Nonce{};
++    uint32_t ActorId{};
++    bool Enabled{};
++    bool Active{};
++    bool Recovery{};
++    DroppedItemData Data{};
++};
+diff --git a/Code/encoding/Messages/RequestDroppedItem.cpp b/Code/encoding/Messages/RequestDroppedItem.cpp
+new file mode 100644
+index 00000000..ff2462d0
+--- /dev/null
++++ b/Code/encoding/Messages/RequestDroppedItem.cpp
+@@ -0,0 +1,28 @@
++#include <Messages/RequestDroppedItem.h>
++
++void RequestDroppedItem::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
++{
++    Serialization::WriteVarInt(aWriter, static_cast<uint8_t>(Action));
++    Serialization::WriteVarInt(aWriter, ClientSession);
++    Serialization::WriteVarInt(aWriter, ServerSession);
++    Serialization::WriteVarInt(aWriter, Nonce);
++    Serialization::WriteVarInt(aWriter, ActorId);
++    Serialization::WriteVarInt(aWriter, OwnershipEpoch);
++    Serialization::WriteBool(aWriter, AppliedFresh);
++    Serialization::WriteBool(aWriter, InventoryAlreadyReflected);
++    Data.Serialize(aWriter);
++}
++
++void RequestDroppedItem::DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept
++{
++    ClientMessage::DeserializeRaw(aReader);
++    Action = static_cast<Operation>(Serialization::ReadVarInt(aReader));
++    ClientSession = Serialization::ReadVarInt(aReader);
++    ServerSession = Serialization::ReadVarInt(aReader);
++    Nonce = Serialization::ReadVarInt(aReader);
++    ActorId = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++    OwnershipEpoch = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++    AppliedFresh = Serialization::ReadBool(aReader);
++    InventoryAlreadyReflected = Serialization::ReadBool(aReader);
++    Data.Deserialize(aReader);
++}
+diff --git a/Code/encoding/Messages/RequestDroppedItem.h b/Code/encoding/Messages/RequestDroppedItem.h
+new file mode 100644
+index 00000000..54c4c2d7
+--- /dev/null
++++ b/Code/encoding/Messages/RequestDroppedItem.h
+@@ -0,0 +1,27 @@
++#pragma once
++
++#include "Message.h"
++#include <Structs/DroppedItemData.h>
++
++struct RequestDroppedItem final : ClientMessage
++{
++    static constexpr ClientOpcode Opcode = kRequestDroppedItem;
++    enum class Operation : uint8_t { Create, Claim, Snapshot, Acknowledge };
++    RequestDroppedItem() : ClientMessage(Opcode) {}
++    void SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept override;
++    void DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept override;
++
++    Operation Action{Operation::Snapshot};
++    // Private process identity, sent only to the server; never broadcast/logged.
++    // Keeps grants idempotent when the same game process reconnects.
++    uint64_t ClientSession{};
++    uint64_t ServerSession{};
++    uint64_t Nonce{};
++    uint32_t ActorId{};
++    uint32_t OwnershipEpoch{};
++    bool AppliedFresh{};
++    // A reconnect's initial inventory already includes this pending drop's
++    // local removal; the new actor must not be debited a second time.
++    bool InventoryAlreadyReflected{};
++    DroppedItemData Data{};
++};
+diff --git a/Code/encoding/Messages/ServerMessageFactory.h b/Code/encoding/Messages/ServerMessageFactory.h
+index 516878b1..445715b2 100644
+--- a/Code/encoding/Messages/ServerMessageFactory.h
++++ b/Code/encoding/Messages/ServerMessageFactory.h
+@@ -10,6 +10,7 @@
+ #include <Messages/ServerTimeSettings.h>
+ #include <Messages/CharacterSpawnRequest.h>
+ #include <Messages/NotifyInventoryChanges.h>
++#include <Messages/NotifyDroppedItem.h>
+ #include <Messages/NotifyFactionsChanges.h>
+ #include <Messages/NotifyRemoveCharacter.h>
+ #include <Messages/NotifyQuestUpdate.h>
+@@ -73,7 +74,7 @@ struct ServerMessageFactory
+             NotifyActorValueChanges, NotifyPartyJoined, NotifyPartyLeft, NotifyActorMaxValueChanges, NotifyHealthChangeBroadcast, NotifyActivate, NotifyLockChange, AssignObjectsResponse, NotifyDeathStateChange, NotifyOwnershipTransfer, NotifyObjectInventoryChanges, NotifySpellCast,
+             NotifyProjectileLaunch, NotifyInterruptCast, NotifyAddTarget, NotifyScriptAnimation, NotifyDrawWeapon, NotifyMount, NotifyNewPackage, NotifyRespawn, NotifySyncExperience, NotifyEquipmentChanges, NotifyChatMessageBroadcast, TeleportCommandResponse, NotifyPlayerRespawn, NotifyDialogue,
+             NotifySubtitle, NotifyPlayerDialogue, NotifyActorTeleport, NotifyPlayerLeft, NotifyPlayerJoined, NotifyDialogue, NotifySubtitle, NotifyPlayerDialogue, NotifyPlayerLevel, NotifyPlayerCellChanged, NotifyTeleport, NotifyPlayerHealthUpdate, NotifySettingsChange,
+-            NotifyWeatherChange, NotifySetWaypoint, NotifyRemoveWaypoint, NotifySetTimeResult, NotifyRemoveSpell, NotifyActionEvents>;
++            NotifyWeatherChange, NotifySetWaypoint, NotifyRemoveWaypoint, NotifySetTimeResult, NotifyRemoveSpell, NotifyActionEvents, NotifyDroppedItem>;
+ 
+         return s_visitor(std::forward<T>(func));
+     }
+diff --git a/Code/encoding/Opcodes.h b/Code/encoding/Opcodes.h
+index baab493c..c351b68c 100644
+--- a/Code/encoding/Opcodes.h
++++ b/Code/encoding/Opcodes.h
+@@ -54,6 +54,7 @@ enum ClientOpcode : unsigned char
+     kRequestRemoveWaypoint,
+     kSetTimeCommandRequest,
+     kRequestActionEvents,
++    kRequestDroppedItem,
+     kClientOpcodeMax
+ };
+ 
+@@ -114,5 +115,6 @@ enum ServerOpcode : unsigned char
+     kNotifyRemoveWaypoint,
+     kNotifySetTimeResult,
+     kNotifyActionEvents,
++    kNotifyDroppedItem,
+     kServerOpcodeMax
+ };
+diff --git a/Code/encoding/Structs/DroppedItemData.cpp b/Code/encoding/Structs/DroppedItemData.cpp
+new file mode 100644
+index 00000000..adeb3cad
+--- /dev/null
++++ b/Code/encoding/Structs/DroppedItemData.cpp
+@@ -0,0 +1,22 @@
++#include <Structs/DroppedItemData.h>
++#include <TiltedCore/Serialization.hpp>
++
++void DroppedItemData::Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
++{
++    TiltedPhoques::Serialization::WriteVarInt(aWriter, Id);
++    Item.Serialize(aWriter);
++    Cell.Serialize(aWriter);
++    WorldSpace.Serialize(aWriter);
++    Position.Serialize(aWriter);
++    Rotation.Serialize(aWriter);
++}
++
++void DroppedItemData::Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept
++{
++    Id = TiltedPhoques::Serialization::ReadVarInt(aReader);
++    Item.Deserialize(aReader);
++    Cell.Deserialize(aReader);
++    WorldSpace.Deserialize(aReader);
++    Position.Deserialize(aReader);
++    Rotation.Deserialize(aReader);
++}
+diff --git a/Code/encoding/Structs/DroppedItemData.h b/Code/encoding/Structs/DroppedItemData.h
+new file mode 100644
+index 00000000..2eea49aa
+--- /dev/null
++++ b/Code/encoding/Structs/DroppedItemData.h
+@@ -0,0 +1,24 @@
++#pragma once
++
++#include <Structs/Inventory.h>
++#include <Structs/Vector3_NetQuantize.h>
++
++// Id identifies a dropped instance, not its base form or a client runtime ref.
++struct DroppedItemData
++{
++    DroppedItemData() noexcept
++    {
++        Position = glm::vec3(0.f);
++        Rotation = glm::vec3(0.f);
++    }
++
++    uint64_t Id{};
++    Inventory::Entry Item{};
++    GameId Cell{};
++    GameId WorldSpace{};
++    Vector3_NetQuantize Position{};
++    Vector3_NetQuantize Rotation{};
++
++    void Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept;
++    void Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept;
++};
+diff --git a/Code/server/Game/Inventory/DroppedItemLedger.h b/Code/server/Game/Inventory/DroppedItemLedger.h
+new file mode 100644
+index 00000000..c2e1ec8a
+--- /dev/null
++++ b/Code/server/Game/Inventory/DroppedItemLedger.h
+@@ -0,0 +1,118 @@
++#pragma once
++
++#include <Structs/DroppedItemData.h>
++#include <map>
++#include <mutex>
++#include <optional>
++#include <vector>
++#include <limits>
++
++// Independent of actor lifetime: tombstones must survive cell unloads and player
++// disconnects. The lock makes first-winner selection indivisible even if packet
++// dispatch is moved to multiple threads later.
++class DroppedItemLedger
++{
++public:
++    struct Record
++    {
++        DroppedItemData Data{};
++        uint64_t Creator{};
++        uint64_t Nonce{};
++        uint64_t Winner{};
++        uint32_t CreditedActor{};
++        uint32_t WinnerActor{};
++        bool PlayerWinner{true};
++        bool Acknowledged{};
++        bool Active{true};
++        bool Networked{true};
++    };
++    enum class ClaimResult { Granted, AlreadyGranted, Lost, Unknown };
++
++    std::optional<Record> FindCreated(uint64_t aClient, uint64_t aNonce) const
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_origins.find({aClient, aNonce});
++        if (it == m_origins.end())
++            return std::nullopt;
++        return m_records.find(it->second)->second;
++    }
++
++    std::optional<Record> Create(uint64_t aClient, uint64_t aNonce, DroppedItemData aData, bool aNetworked = true)
++    {
++        std::lock_guard lock(m_lock);
++        if (!aClient || !aNonce || !aData.Item.BaseId || aData.Item.Count <= 0)
++            return std::nullopt;
++        if (const auto it = m_origins.find({aClient, aNonce}); it != m_origins.end())
++            return m_records.find(it->second)->second;
++        if (m_nextId == std::numeric_limits<uint64_t>::max())
++            return std::nullopt;
++        aData.Id = m_nextId++;
++        Record record;
++        record.Data = std::move(aData);
++        record.Creator = aClient;
++        record.Nonce = aNonce;
++        record.Networked = aNetworked;
++        record.Active = aNetworked;
++        m_origins.emplace(std::make_pair(aClient, aNonce), record.Data.Id);
++        m_records.emplace(record.Data.Id, record);
++        return record;
++    }
++
++    ClaimResult Claim(uint64_t aId, uint64_t aClient, uint32_t aActor, bool aPlayer = true)
++    {
++        std::lock_guard lock(m_lock);
++        if (!aClient || !aActor)
++            return ClaimResult::Lost;
++        const auto it = m_records.find(aId);
++        if (it == m_records.end())
++            return ClaimResult::Unknown;
++        auto& record = it->second;
++        if (!record.Active)
++            return record.Winner == aClient && record.WinnerActor == aActor ? ClaimResult::AlreadyGranted : ClaimResult::Lost;
++        record.Active = false;
++        record.Winner = aClient;
++        record.CreditedActor = aActor;
++        record.WinnerActor = aActor;
++        record.PlayerWinner = aPlayer;
++        record.Acknowledged = !aPlayer;
++        return ClaimResult::Granted;
++    }
++
++    // Freshly applied recovered grants need one server inventory correction if
++    // reconnecting created a different player actor. Duplicate ACKs cannot add.
++    bool Acknowledge(uint64_t aId, uint64_t aClient, uint32_t aActor, bool aAppliedFresh)
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_records.find(aId);
++        if (it == m_records.end() || it->second.Active || !it->second.PlayerWinner || it->second.Winner != aClient || !aActor)
++            return false;
++        auto& record = it->second;
++        const bool credit = record.CreditedActor != aActor && aAppliedFresh;
++        record.CreditedActor = aActor;
++        record.Acknowledged = true;
++        return credit;
++    }
++
++    std::optional<Record> Get(uint64_t aId) const
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_records.find(aId);
++        return it == m_records.end() ? std::nullopt : std::optional<Record>(it->second);
++    }
++
++    std::vector<Record> Snapshot(uint64_t aClient) const
++    {
++        std::lock_guard lock(m_lock);
++        std::vector<Record> records;
++        for (const auto& [id, record] : m_records)
++            if (record.Networked && (record.Active || (record.PlayerWinner && record.Winner == aClient && !record.Acknowledged)))
++                records.push_back(record);
++        return records;
++    }
++
++private:
++    mutable std::mutex m_lock;
++    uint64_t m_nextId{1};
++    std::map<uint64_t, Record> m_records;
++    std::map<std::pair<uint64_t, uint64_t>, uint64_t> m_origins;
++};
+diff --git a/Code/server/Services/DroppedItemService.cpp b/Code/server/Services/DroppedItemService.cpp
+new file mode 100644
+index 00000000..e9f6a1c7
+--- /dev/null
++++ b/Code/server/Services/DroppedItemService.cpp
+@@ -0,0 +1,248 @@
++#include <Services/DroppedItemService.h>
++#include <Services/InventoryService.h>
++#include <Events/PlayerLeaveEvent.h>
++#include <Messages/RequestDroppedItem.h>
++#include <Messages/NotifyDroppedItem.h>
++#include <Messages/NotifyInventoryChanges.h>
++#include <World.h>
++#include <GameServer.h>
++#include <Game/Player.h>
++#include <Components.h>
++#include <cmath>
++
++DroppedItemService::DroppedItemService(World& aWorld, entt::dispatcher& aDispatcher)
++    : m_world(aWorld)
++    , m_session(static_cast<uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) | 1ULL)
++{
++    m_requestConnection = aDispatcher.sink<PacketEvent<RequestDroppedItem>>().connect<&DroppedItemService::OnRequest>(this);
++    m_leaveConnection = aDispatcher.sink<PlayerLeaveEvent>().connect<&DroppedItemService::OnPlayerLeave>(this);
++}
++
++void DroppedItemService::OnPlayerLeave(const PlayerLeaveEvent& acEvent) noexcept
++{
++    std::lock_guard lock(m_lock);
++    const auto it = m_playerSessions.find(acEvent.pPlayer->GetId());
++    if (it != m_playerSessions.end())
++    {
++        m_activeSessions.erase(it->second);
++        m_playerSessions.erase(it);
++    }
++    // Keep active drops, consumed tombstones and unacknowledged grants.
++}
++
++void DroppedItemService::BroadcastInventory(uint32_t aActor, const Inventory::Entry& acItem, Player* apExclude) noexcept
++{
++    const auto entity = static_cast<entt::entity>(aActor);
++    if (const auto* pOwner = m_world.try_get<OwnerComponent>(entity))
++    {
++        NotifyInventoryChanges notify;
++        notify.ServerId = aActor;
++        notify.OwnershipEpoch = pOwner->OwnershipEpoch;
++        notify.Item = acItem;
++        notify.Drop = false; // World instances use the dedicated protocol only.
++        GameServer::Get()->SendToPlayersInRange(notify, entity, apExclude);
++    }
++}
++
++void DroppedItemService::OnRequest(const PacketEvent<RequestDroppedItem>& acEvent) noexcept
++{
++    std::lock_guard lock(m_lock);
++    const auto& request = acEvent.Packet;
++    Player* pPlayer = acEvent.pPlayer;
++    if (!request.ClientSession || !request.Nonce)
++        return;
++
++    const auto binding = m_activeSessions.find(request.ClientSession);
++    if (binding != m_activeSessions.end() && binding->second != pPlayer->GetId())
++        return;
++    const auto playerBinding = m_playerSessions.find(pPlayer->GetId());
++    if (playerBinding != m_playerSessions.end() && playerBinding->second != request.ClientSession)
++        return;
++    m_activeSessions[request.ClientSession] = pPlayer->GetId();
++    m_playerSessions[pPlayer->GetId()] = request.ClientSession;
++
++    NotifyDroppedItem reply;
++    reply.ServerSession = m_session;
++    reply.Nonce = request.Nonce;
++    reply.Enabled = InventoryService::IsPlayerDropSyncEnabled();
++    reply.Data.Id = request.Data.Id;
++
++    const auto reject = [&](bool aActive)
++    {
++        reply.Action = NotifyDroppedItem::Operation::Rejected;
++        reply.Active = aActive;
++        pPlayer->Send(reply);
++    };
++
++    if (request.Action == RequestDroppedItem::Operation::Snapshot)
++    {
++        reply.Action = NotifyDroppedItem::Operation::SnapshotBegin;
++        pPlayer->Send(reply);
++        for (const auto& record : m_ledger.Snapshot(request.ClientSession))
++        {
++            reply.Data = record.Data;
++            reply.Active = record.Active;
++            reply.Nonce = record.Creator == request.ClientSession ? record.Nonce : 0;
++            reply.Recovery = !record.Active;
++            reply.ActorId = record.WinnerActor;
++            reply.Action = record.Active ? NotifyDroppedItem::Operation::Spawn : NotifyDroppedItem::Operation::Grant;
++            pPlayer->Send(reply);
++        }
++        reply.Action = NotifyDroppedItem::Operation::SnapshotEnd;
++        reply.Nonce = request.Nonce;
++        reply.Data = {};
++        reply.Recovery = false;
++        pPlayer->Send(reply);
++        return;
++    }
++
++    if (request.ServerSession != m_session)
++    {
++        reject(true);
++        return;
++    }
++
++    const auto character = pPlayer->GetCharacter();
++    const auto entity = static_cast<entt::entity>(request.ActorId);
++    if (!character || !m_world.valid(entity))
++    {
++        reject(true);
++        return;
++    }
++    const auto* pOwner = m_world.try_get<OwnerComponent>(entity);
++    auto* pInventory = m_world.try_get<InventoryComponent>(entity);
++    const auto* pCharacter = m_world.try_get<CharacterComponent>(entity);
++    if (!pOwner || !pInventory || !pCharacter
++        || pOwner->GetOwner() != pPlayer || pOwner->OwnershipEpoch != request.OwnershipEpoch)
++    {
++        reject(true);
++        return;
++    }
++    const bool cPlayerActor = pCharacter->IsPlayer() && *character == entity;
++    if ((request.Action == RequestDroppedItem::Operation::Create || request.Action == RequestDroppedItem::Operation::Acknowledge) && !cPlayerActor)
++    {
++        reject(true);
++        return;
++    }
++    if (pCharacter->IsPlayer() && !cPlayerActor)
++    {
++        reject(true);
++        return;
++    }
++
++    if (request.Action == RequestDroppedItem::Operation::Create)
++    {
++        auto existing = m_ledger.FindCreated(request.ClientSession, request.Nonce);
++        if (existing)
++        {
++            reply.Data = existing->Data;
++            reply.Active = existing->Active;
++            reply.Action = !existing->Networked ? NotifyDroppedItem::Operation::Disabled
++                : (existing->Active ? NotifyDroppedItem::Operation::Spawn : NotifyDroppedItem::Operation::Taken);
++            pPlayer->Send(reply);
++            return;
++        }
++
++        auto data = request.Data;
++        data.Id = 0;
++        data.Item.ExtraWorn = data.Item.ExtraWornLeft = false;
++        if (!data.Item.BaseId || data.Item.BaseId.ModId == 0xFFFFFFFF || !data.Cell || data.Item.Count <= 0 || data.Item.IsQuestItem
++            || !std::isfinite(data.Position.x) || !std::isfinite(data.Position.y) || !std::isfinite(data.Position.z))
++        {
++            reject(false);
++            return;
++        }
++
++        // Match the actual server stack, allowing the unequip that accompanies
++        // dropping a worn item; other extra data must still match.
++        auto entry = std::find_if(pInventory->Content.Entries.begin(), pInventory->Content.Entries.end(), [&](const Inventory::Entry& acEntry)
++        {
++            auto candidate = acEntry;
++            candidate.ExtraWorn = candidate.ExtraWornLeft = false;
++            return candidate.CanBeMerged(data.Item) && acEntry.Count >= data.Item.Count;
++        });
++        if (!request.InventoryAlreadyReflected && entry == pInventory->Content.Entries.end())
++        {
++            spdlog::warn("STR drop rejected: source inventory not available, actor {:X}, item {:X}:{:X}, count {}",
++                request.ActorId, data.Item.BaseId.ModId, data.Item.BaseId.BaseId, data.Item.Count);
++            reject(false);
++            return;
++        }
++        Inventory::Entry removal = request.InventoryAlreadyReflected ? data.Item : *entry;
++        removal.Count = -data.Item.Count;
++        const auto created = m_ledger.Create(request.ClientSession, request.Nonce, data, reply.Enabled);
++        if (!created)
++        {
++            reject(false);
++            return;
++        }
++        // Like the original actor assignment, reconnect inventory is supplied
++        // by its owning client. It already reflects the local native removal.
++        if (!request.InventoryAlreadyReflected)
++        {
++            pInventory->Content.AddOrRemoveEntry(removal);
++            BroadcastInventory(request.ActorId, removal, pPlayer);
++        }
++        reply.Data = created->Data;
++        reply.Active = created->Active;
++        reply.Action = reply.Enabled ? NotifyDroppedItem::Operation::Spawn : NotifyDroppedItem::Operation::Disabled;
++        if (reply.Enabled)
++        {
++            auto broadcast = reply;
++            broadcast.Nonce = 0; // Origin correlation is private to its sender.
++            GameServer::Get()->SendToPlayers(broadcast, pPlayer);
++        }
++        pPlayer->Send(reply);
++        spdlog::info("STR drop registered: id {}, actor {:X}, count {}, networked {}", reply.Data.Id, request.ActorId, data.Item.Count, reply.Enabled);
++        return;
++    }
++
++    const auto record = m_ledger.Get(request.Data.Id);
++    if (!record)
++    {
++        reject(false);
++        return;
++    }
++    reply.Data = record->Data;
++    reply.Active = record->Active;
++    if (request.Action == RequestDroppedItem::Operation::Acknowledge)
++    {
++        if (m_ledger.Acknowledge(request.Data.Id, request.ClientSession, request.ActorId, request.AppliedFresh))
++        {
++            pInventory->Content.AddOrRemoveEntry(record->Data.Item);
++            BroadcastInventory(request.ActorId, record->Data.Item, pPlayer);
++        }
++        return;
++    }
++    if (request.Action != RequestDroppedItem::Operation::Claim)
++        return;
++
++    CellIdComponent cell(record->Data.Cell, record->Data.WorldSpace, GridCellCoords::CalculateGridCellCoords(record->Data.Position));
++    const auto* pActorCell = m_world.try_get<CellIdComponent>(entity);
++    if (!pActorCell || !pActorCell->IsInRange(cell, false))
++    {
++        reject(record->Active);
++        return;
++    }
++    const auto result = m_ledger.Claim(request.Data.Id, request.ClientSession, request.ActorId, cPlayerActor);
++    if (result == DroppedItemLedger::ClaimResult::Lost || result == DroppedItemLedger::ClaimResult::Unknown)
++    {
++        reject(false);
++        return;
++    }
++    if (result == DroppedItemLedger::ClaimResult::Granted)
++    {
++        pInventory->Content.AddOrRemoveEntry(record->Data.Item);
++        BroadcastInventory(request.ActorId, record->Data.Item, cPlayerActor ? pPlayer : nullptr);
++        NotifyDroppedItem taken;
++        taken.Action = NotifyDroppedItem::Operation::Taken;
++        taken.ServerSession = m_session;
++        taken.Data.Id = request.Data.Id;
++        GameServer::Get()->SendToPlayers(taken);
++    }
++    reply.Action = NotifyDroppedItem::Operation::Grant;
++    reply.ActorId = request.ActorId;
++    reply.Active = false;
++    pPlayer->Send(reply);
++    spdlog::info("STR drop claim granted: id {}, actor {:X}, first {}", request.Data.Id, request.ActorId, result == DroppedItemLedger::ClaimResult::Granted);
++}
+diff --git a/Code/server/Services/DroppedItemService.h b/Code/server/Services/DroppedItemService.h
+new file mode 100644
+index 00000000..e6d299d5
+--- /dev/null
++++ b/Code/server/Services/DroppedItemService.h
+@@ -0,0 +1,28 @@
++#pragma once
++
++#include <Events/PacketEvent.h>
++#include <Game/Inventory/DroppedItemLedger.h>
++
++struct World;
++struct RequestDroppedItem;
++struct PlayerLeaveEvent;
++
++class DroppedItemService
++{
++public:
++    DroppedItemService(World& aWorld, entt::dispatcher& aDispatcher);
++
++private:
++    void OnRequest(const PacketEvent<RequestDroppedItem>& acEvent) noexcept;
++    void OnPlayerLeave(const PlayerLeaveEvent& acEvent) noexcept;
++    void BroadcastInventory(uint32_t aActor, const Inventory::Entry& acItem, Player* apExclude) noexcept;
++
++    World& m_world;
++    uint64_t m_session;
++    DroppedItemLedger m_ledger;
++    std::mutex m_lock;
++    std::map<uint64_t, uint32_t> m_activeSessions;
++    std::map<uint32_t, uint64_t> m_playerSessions;
++    entt::scoped_connection m_requestConnection;
++    entt::scoped_connection m_leaveConnection;
++};
+diff --git a/Code/server/Services/InventoryService.cpp b/Code/server/Services/InventoryService.cpp
+index 2d7d0f07..daa35566 100644
+--- a/Code/server/Services/InventoryService.cpp
++++ b/Code/server/Services/InventoryService.cpp
+@@ -25,6 +25,11 @@ InventoryService::InventoryService(World& aWorld, entt::dispatcher& aDispatcher)
+     m_drawWeaponConnection = aDispatcher.sink<PacketEvent<DrawWeaponRequest>>().connect<&InventoryService::OnWeaponDrawnRequest>(this);
+ }
+ 
++bool InventoryService::IsPlayerDropSyncEnabled() noexcept
++{
++    return static_cast<bool>(bEnableItemDrops);
++}
++
+ void InventoryService::OnInventoryChanges(const PacketEvent<RequestInventoryChanges>& acMessage) noexcept
+ {
+     auto& message = acMessage.Packet;
+diff --git a/Code/server/Services/InventoryService.h b/Code/server/Services/InventoryService.h
+index 3e9a26f5..71f03609 100644
+--- a/Code/server/Services/InventoryService.h
++++ b/Code/server/Services/InventoryService.h
+@@ -17,6 +17,7 @@ class InventoryService
+ {
+ public:
+     InventoryService(World& aWorld, entt::dispatcher& aDispatcher);
++    static bool IsPlayerDropSyncEnabled() noexcept;
+ 
+     /**
+      * @brief Relays inventory changes to other clients and updates server side inventories.
+diff --git a/Code/server/World.cpp b/Code/server/World.cpp
+index 8bfd5104..503505bb 100644
+--- a/Code/server/World.cpp
++++ b/Code/server/World.cpp
+@@ -7,6 +7,7 @@
+ #include <Services/ServerListService.h>
+ #include <Services/ActorValueService.h>
+ #include <Services/InventoryService.h>
++#include <Services/DroppedItemService.h>
+ #include <Services/MagicService.h>
+ #include <Services/OverlayService.h>
+ #include <Services/CommandService.h>
+@@ -30,6 +31,7 @@ World::World()
+     ctx().emplace<PartyService>(*this, m_dispatcher);
+     ctx().emplace<ActorValueService>(*this, m_dispatcher);
+     ctx().emplace<InventoryService>(*this, m_dispatcher);
++    ctx().emplace<DroppedItemService>(*this, m_dispatcher);
+     ctx().emplace<MagicService>(*this, m_dispatcher);
+     ctx().emplace<OverlayService>(*this, m_dispatcher);
+     ctx().emplace<CommandService>(*this, m_dispatcher);
+diff --git a/Code/tests/animation_replay_cache.cpp b/Code/tests/animation_replay_cache.cpp
+new file mode 100644
+index 00000000..e03110cc
+--- /dev/null
++++ b/Code/tests/animation_replay_cache.cpp
+@@ -0,0 +1,104 @@
++#include <TiltedCore/Stl.hpp>
++#include <TiltedCore/Buffer.hpp>
++#include <TiltedCore/Serialization.hpp>
++
++#include <algorithm>
++#include <cctype>
++#include <istream>
++#include <ostream>
++#include <optional>
++
++#include <catch2/catch.hpp>
++#include <entt/entt.hpp>
++
++using TiltedPhoques::List;
++using TiltedPhoques::Map;
++using TiltedPhoques::Set;
++using TiltedPhoques::String;
++using TiltedPhoques::Vector;
++
++// Exercise the production server cache without linking the game or server
++// runtime. These implementations normally obtain the common includes from Pch.
++#include "../server/Game/Animation/ActionReplayCache.cpp"
++#include "../server/Game/Animation/AnimationEventLists.cpp"
++
++#define TP_INTERNAL_COMPONENTS_GUARD
++#include "../client/Components/RemoteAnimationComponent.h"
++#undef TP_INTERNAL_COMPONENTS_GUARD
++
++namespace
++{
++ActionEvent MakeReplayAction(const char* apName)
++{
++    ActionEvent action;
++    action.EventName = String(apName);
++    action.TargetEventName = String(apName);
++    return action;
++}
++}
++
++TEST_CASE("Exit-only replay requires a reset even when its action list is empty", "[animation.replay]")
++{
++    ActionReplayCache cache;
++    cache.AppendAll({MakeReplayAction("IdleChairFrontEnter"), MakeReplayAction("IdleChairExitToStand")});
++
++    const auto replay = cache.FormRefinedReplayChain();
++    REQUIRE(replay.ResetAnimationGraph);
++    REQUIRE(replay.Actions.empty());
++
++    // Subsequent joining clients must receive the same exit/reset instruction.
++    const auto repeated = cache.FormRefinedReplayChain();
++    REQUIRE(repeated.ResetAnimationGraph);
++    REQUIRE(repeated.Actions.empty());
++
++    // The instruction must survive the real network payload round trip.
++    TiltedPhoques::Buffer buffer(4096);
++    TiltedPhoques::Buffer::Writer writer(&buffer);
++    replay.Serialize(writer);
++    TiltedPhoques::Buffer::Reader reader(&buffer);
++    ActionReplayChain decoded;
++    decoded.Deserialize(reader);
++    REQUIRE(decoded == replay);
++}
++
++TEST_CASE("A seated NPC replay preserves its enter state", "[animation.replay]")
++{
++    ActionReplayCache cache;
++    cache.AppendAll({MakeReplayAction("IdleChairFrontEnter")});
++    const auto replay = cache.FormRefinedReplayChain();
++    REQUIRE_FALSE(replay.ResetAnimationGraph);
++    REQUIRE(replay.Actions.size() == 1);
++    REQUIRE(replay.Actions.front().EventName == "IdleChairEnterInstant");
++}
++
++TEST_CASE("Exit followed by a different furniture enter retains the new action", "[animation.replay]")
++{
++    ActionReplayCache cache;
++    cache.AppendAll({MakeReplayAction("IdleChairFrontEnter"), MakeReplayAction("IdleChairExitToStand"), MakeReplayAction("IdleBedLeftEnterStart")});
++    const auto replay = cache.FormRefinedReplayChain();
++    REQUIRE(replay.ResetAnimationGraph);
++    REQUIRE(replay.Actions.size() == 1);
++    REQUIRE(replay.Actions.front().EventName == "IdleBedLeftEnterInstant");
++}
++
++TEST_CASE("A cache with no observed animations does not invent a reset or a pose", "[animation.replay]")
++{
++    ActionReplayCache cache;
++    const auto replay = cache.FormRefinedReplayChain();
++    REQUIRE_FALSE(replay.ResetAnimationGraph);
++    REQUIRE(replay.Actions.empty());
++}
++
++TEST_CASE("EnTT initializes the original replay counter on creation and replacement", "[animation.replay]")
++{
++    entt::registry registry;
++    const auto entity = registry.create();
++    auto& created = registry.emplace_or_replace<RemoteAnimationComponent>(entity);
++    REQUIRE(created.ReplayCount == 0);
++    REQUIRE_FALSE(created.ResetAnimationGraphForReplay);
++    created.ReplayCount = 7;
++    created.ResetAnimationGraphForReplay = true;
++    auto& replaced = registry.emplace_or_replace<RemoteAnimationComponent>(entity);
++    REQUIRE(replaced.ReplayCount == 0);
++    REQUIRE_FALSE(replaced.ResetAnimationGraphForReplay);
++}
+diff --git a/Code/tests/dropped_items.cpp b/Code/tests/dropped_items.cpp
+new file mode 100644
+index 00000000..4e4ddbc4
+--- /dev/null
++++ b/Code/tests/dropped_items.cpp
+@@ -0,0 +1,220 @@
++#include <TiltedCore/Stl.hpp>
++#include <TiltedCore/Buffer.hpp>
++#include <TiltedCore/Serialization.hpp>
++#include <glm/glm.hpp>
++#include <optional>
++#include <catch2/catch.hpp>
++#include <Messages/ClientMessageFactory.h>
++#include <Messages/ServerMessageFactory.h>
++#include <Messages/RequestDroppedItem.h>
++#include <Messages/NotifyDroppedItem.h>
++#include <Game/Inventory/DroppedItemLedger.h>
++#include <atomic>
++#include <thread>
++
++namespace
++{
++DroppedItemData Drop(int32_t aCount = 1)
++{
++    DroppedItemData data;
++    data.Item.BaseId = GameId(1, 0x123);
++    data.Item.Count = aCount;
++    data.Item.ExtraHealth = 1.25f;
++    data.Item.ExtraCharge = 7.5f;
++    data.Item.ExtraEnchantId = GameId(1, 0x456);
++    data.Item.ExtraEnchantCharge = 90;
++    data.Cell = GameId(0, 0x200);
++    data.Position = glm::vec3(128.f, 64.f, 16.f);
++    data.Rotation = glm::vec3(0.f);
++    return data;
++}
++}
++
++TEST_CASE("Dropped instances retain distinct IDs and duplicate creation is idempotent", "[drops]")
++{
++    DroppedItemLedger ledger;
++    const auto first = ledger.Create(100, 1, Drop(10));
++    const auto duplicate = ledger.Create(100, 1, Drop(10));
++    const auto second = ledger.Create(100, 2, Drop(10));
++    const auto otherClient = ledger.Create(200, 1, Drop(10));
++    REQUIRE(first);
++    REQUIRE(duplicate);
++    REQUIRE(second);
++    REQUIRE(otherClient);
++    REQUIRE(first->Data.Id == duplicate->Data.Id);
++    REQUIRE(first->Data.Id != second->Data.Id);
++    REQUIRE(first->Data.Id != otherClient->Data.Id);
++    REQUIRE(ledger.Snapshot(300).size() == 3);
++}
++
++TEST_CASE("Concurrent drop claims produce exactly one first winner", "[drops]")
++{
++    DroppedItemLedger ledger;
++    const auto created = ledger.Create(100, 1, Drop(10));
++    REQUIRE(created);
++    std::atomic<bool> start{false};
++    std::atomic<int> firstWinners{0};
++    std::vector<std::thread> claimants;
++    for (uint32_t i = 0; i < 32; ++i)
++        claimants.emplace_back([&, i]()
++        {
++            while (!start.load())
++                std::this_thread::yield();
++            if (ledger.Claim(created->Data.Id, 1000 + i, 100 + i) == DroppedItemLedger::ClaimResult::Granted)
++                ++firstWinners;
++        });
++    start = true;
++    for (auto& claimant : claimants)
++        claimant.join();
++    REQUIRE(firstWinners == 1);
++    const auto consumed = ledger.Get(created->Data.Id);
++    REQUIRE(consumed);
++    REQUIRE_FALSE(consumed->Active);
++    REQUIRE(consumed->Data.Item.Count == 10);
++    REQUIRE(consumed->Data.Item.ExtraHealth == 1.25f);
++    REQUIRE(ledger.Claim(created->Data.Id, consumed->Winner, consumed->CreditedActor) == DroppedItemLedger::ClaimResult::AlreadyGranted);
++    REQUIRE(ledger.Claim(created->Data.Id, 9999, 9999) == DroppedItemLedger::ClaimResult::Lost);
++}
++
++TEST_CASE("Consumed drops stay absent from snapshots and creation retries", "[drops]")
++{
++    DroppedItemLedger ledger;
++    const auto created = ledger.Create(100, 1, Drop());
++    REQUIRE(created);
++    REQUIRE(ledger.Claim(created->Data.Id, 200, 5) == DroppedItemLedger::ClaimResult::Granted);
++    REQUIRE(ledger.Snapshot(300).empty());
++    const auto retried = ledger.Create(100, 1, Drop());
++    REQUIRE(retried);
++    REQUIRE_FALSE(retried->Active);
++    REQUIRE(retried->Data.Id == created->Data.Id);
++    REQUIRE(ledger.Claim(created->Data.Id, 100, 1) == DroppedItemLedger::ClaimResult::Lost);
++}
++
++TEST_CASE("Unacknowledged grants recover on reconnect without a second credit", "[drops]")
++{
++    DroppedItemLedger ledger;
++    const auto created = ledger.Create(100, 1, Drop(5));
++    REQUIRE(created);
++    REQUIRE(ledger.Claim(created->Data.Id, 200, 5) == DroppedItemLedger::ClaimResult::Granted);
++    REQUIRE(ledger.Snapshot(200).size() == 1);
++    REQUIRE(ledger.Snapshot(300).empty());
++    REQUIRE(ledger.Acknowledge(created->Data.Id, 200, 9, true));
++    REQUIRE_FALSE(ledger.Acknowledge(created->Data.Id, 200, 9, true));
++    REQUIRE(ledger.Snapshot(200).empty());
++    REQUIRE_FALSE(ledger.Acknowledge(created->Data.Id, 999, 9, true));
++    REQUIRE(ledger.Claim(created->Data.Id, 300, 12) == DroppedItemLedger::ClaimResult::Lost);
++}
++
++TEST_CASE("An already applied recovered grant does not add to the new actor again", "[drops]")
++{
++    DroppedItemLedger ledger;
++    const auto created = ledger.Create(100, 1, Drop());
++    REQUIRE(created);
++    REQUIRE(ledger.Claim(created->Data.Id, 200, 5) == DroppedItemLedger::ClaimResult::Granted);
++    REQUIRE_FALSE(ledger.Acknowledge(created->Data.Id, 200, 9, false));
++    REQUIRE_FALSE(ledger.Acknowledge(created->Data.Id, 200, 9, true));
++}
++
++TEST_CASE("Disabled drops are recorded for deduplication but are never public or claimable", "[drops]")
++{
++    DroppedItemLedger ledger;
++    const auto created = ledger.Create(100, 1, Drop(), false);
++    REQUIRE(created);
++    REQUIRE_FALSE(created->Networked);
++    REQUIRE_FALSE(created->Active);
++    REQUIRE(ledger.Snapshot(100).empty());
++    REQUIRE(ledger.Claim(created->Data.Id, 200, 9) == DroppedItemLedger::ClaimResult::Lost);
++    REQUIRE(ledger.Create(100, 1, Drop(), false)->Data.Id == created->Data.Id);
++}
++
++TEST_CASE("Invalid drop counts and unknown IDs cannot produce grants", "[drops]")
++{
++    DroppedItemLedger ledger;
++    REQUIRE_FALSE(ledger.Create(100, 1, Drop(0)));
++    REQUIRE_FALSE(ledger.Create(100, 2, Drop(-1)));
++    REQUIRE_FALSE(ledger.Create(0, 3, Drop()));
++    REQUIRE_FALSE(ledger.Create(100, 0, Drop()));
++    REQUIRE(ledger.Claim(1234, 200, 5) == DroppedItemLedger::ClaimResult::Unknown);
++    REQUIRE_FALSE(ledger.Acknowledge(1234, 200, 5, true));
++}
++
++TEST_CASE("An owned NPC can consume a drop without granting the same client's player a copy", "[drops]")
++{
++    DroppedItemLedger ledger;
++    const auto created = ledger.Create(100, 1, Drop());
++    REQUIRE(created);
++    REQUIRE(ledger.Claim(created->Data.Id, 200, 50, false) == DroppedItemLedger::ClaimResult::Granted);
++    REQUIRE(ledger.Claim(created->Data.Id, 200, 50, false) == DroppedItemLedger::ClaimResult::AlreadyGranted);
++    REQUIRE(ledger.Claim(created->Data.Id, 200, 5, true) == DroppedItemLedger::ClaimResult::Lost);
++    REQUIRE(ledger.Snapshot(200).empty());
++    REQUIRE_FALSE(ledger.Acknowledge(created->Data.Id, 200, 5, true));
++}
++
++TEST_CASE("Dropped-item request and notification factories preserve IDs and stack metadata", "[drops.encoding]")
++{
++    for (const auto operation : {RequestDroppedItem::Operation::Create, RequestDroppedItem::Operation::Claim,
++        RequestDroppedItem::Operation::Snapshot, RequestDroppedItem::Operation::Acknowledge})
++    {
++        RequestDroppedItem request;
++        request.Action = operation;
++        request.ClientSession = 0xABCDE01234567890ULL;
++        request.ServerSession = 0xBCDEF01234567890ULL;
++        request.Nonce = 0xFEDCBA0987654321ULL;
++        request.ActorId = 8;
++        request.OwnershipEpoch = 7;
++        request.AppliedFresh = true;
++        request.InventoryAlreadyReflected = operation == RequestDroppedItem::Operation::Create;
++        request.Data = Drop(10);
++        request.Data.Id = 0xCDEF0123456789ABULL;
++        TiltedPhoques::Buffer buffer(16384);
++        TiltedPhoques::Buffer::Writer writer(&buffer);
++        request.Serialize(writer);
++        TiltedPhoques::Buffer::Reader reader(&buffer);
++        auto decoded = ClientMessageFactory{}.Extract(reader);
++        REQUIRE(decoded);
++        REQUIRE(decoded->GetOpcode() == kRequestDroppedItem);
++        const auto* result = static_cast<RequestDroppedItem*>(decoded.get());
++        REQUIRE(result->Action == request.Action);
++        REQUIRE(result->ClientSession == request.ClientSession);
++        REQUIRE(result->ServerSession == request.ServerSession);
++        REQUIRE(result->Nonce == request.Nonce);
++        REQUIRE(result->ActorId == request.ActorId);
++        REQUIRE(result->OwnershipEpoch == request.OwnershipEpoch);
++        REQUIRE(result->AppliedFresh);
++        REQUIRE(result->InventoryAlreadyReflected == request.InventoryAlreadyReflected);
++        REQUIRE(result->Data.Id == request.Data.Id);
++        REQUIRE(result->Data.Item == request.Data.Item);
++        REQUIRE(result->Data.Cell == request.Data.Cell);
++        REQUIRE(result->Data.Position == request.Data.Position);
++    }
++    for (const auto operation : {NotifyDroppedItem::Operation::SnapshotBegin, NotifyDroppedItem::Operation::Spawn,
++        NotifyDroppedItem::Operation::Taken, NotifyDroppedItem::Operation::Grant, NotifyDroppedItem::Operation::Rejected,
++        NotifyDroppedItem::Operation::Disabled, NotifyDroppedItem::Operation::SnapshotEnd})
++    {
++        NotifyDroppedItem notify;
++        notify.Action = operation;
++        notify.ServerSession = 0xBCDEF01234567890ULL;
++        notify.Nonce = 0xFEDCBA0987654321ULL;
++        notify.ActorId = 23;
++        notify.Enabled = notify.Active = notify.Recovery = true;
++        notify.Data = Drop(10);
++        notify.Data.Id = 0xCDEF0123456789ABULL;
++        TiltedPhoques::Buffer buffer(16384);
++        TiltedPhoques::Buffer::Writer writer(&buffer);
++        notify.Serialize(writer);
++        TiltedPhoques::Buffer::Reader reader(&buffer);
++        auto decoded = ServerMessageFactory{}.Extract(reader);
++        REQUIRE(decoded);
++        REQUIRE(decoded->GetOpcode() == kNotifyDroppedItem);
++        const auto* result = static_cast<NotifyDroppedItem*>(decoded.get());
++        REQUIRE(result->Action == notify.Action);
++        REQUIRE(result->ServerSession == notify.ServerSession);
++        REQUIRE(result->Nonce == notify.Nonce);
++        REQUIRE(result->ActorId == notify.ActorId);
++        REQUIRE(result->Enabled);
++        REQUIRE(result->Active);
++        REQUIRE(result->Recovery);
++        REQUIRE(result->Data.Id == notify.Data.Id);
++        REQUIRE(result->Data.Item == notify.Data.Item);
++    }
++}
+diff --git a/Code/tests/xmake.lua b/Code/tests/xmake.lua
+index 19abce57..b9ae56c0 100644
+--- a/Code/tests/xmake.lua
++++ b/Code/tests/xmake.lua
+@@ -3,7 +3,7 @@ target("TPTests")
+     set_kind("binary")
+     set_group("Tests")
+     add_includedirs(
+-        ".", "../encoding")
++        ".", "../encoding", "../server")
+     add_headerfiles("**.h")
+     add_files("*.cpp")
+     -- Has no game dependencies, so the client's remote playback timing can be tested here
+@@ -14,4 +14,5 @@ target("TPTests")
+         "hopscotch-map",
+         "catch2",
+         "mimalloc",
++        "entt",
+         "glm")

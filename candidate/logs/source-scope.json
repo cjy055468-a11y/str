@@ -1,0 +1,12 @@
+{
+  "unchanged_files": [
+    "Code/client/Games/Skyrim/Actor.h",
+    "Code/client/Services/Generic/CombatService.cpp",
+    "Code/client/Services/Generic/InventoryService.cpp",
+    "Code/client/Services/Generic/ObjectService.cpp",
+    "Code/client/Components/RemoteAnimationComponent.h",
+    "Code/server/Services/ObjectService.cpp"
+  ],
+  "original_combat_regions": 5,
+  "original_server_inventory_handler": "unchanged"
+}
