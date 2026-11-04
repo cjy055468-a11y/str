@@ -84,7 +84,7 @@ jobs:
       - name: Check 2 - architecture, version, fix marker and imports
         run: |
           $out = 'source/build/windows/x64/release'
-          python tools/check-pe.py --require-fix "$out/SkyrimTogether.exe" "$out/EarlyLoad.dll" "$out/STServer.dll" "$out/SkyrimTogetherServer.exe" | Tee-Object logs/check2.json
+          python tools/check-pe.py --require-fix "$out/SkyrimTogether.exe" "$out/EarlyLoad.dll" "$out/STServer.dll" "$out/SkyrimTogetherServer.exe" 2>&1 | Tee-Object logs/check2.json
           if ($LASTEXITCODE -ne 0) { throw 'PE/version/fix validation failed' }
           Get-ChildItem source/.xmake -Recurse -Filter xmake.conf | ForEach-Object { Get-Content $_.FullName } | Out-File logs/xmake-config.txt
           if (-not (Select-String logs/xmake-config.txt -Pattern '1.6.1170')) { throw 'Target config is not 1.6.1170' }

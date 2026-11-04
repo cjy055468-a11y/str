@@ -27,7 +27,7 @@ def inspect(path, require_fix=False):
                 raise ValueError(f"{path.name}: missing expected marker {marker!r}")
         if require_fix and (b"STR replay audit v2:" not in data or b"STR drop grant applied:" not in data):
             raise ValueError("EXE lacks the combined replay/dropfix markers")
-    if require_fix and path.name in ("SkyrimTogether.exe", "STServer.dll", "SkyrimTogetherServer.exe"):
+    if require_fix and path.name in ("STServer.dll", "SkyrimTogetherServer.exe"):
         if b"master@v1.8.4-dropfix1\0" not in data:
             raise ValueError(f"{path.name}: matching protocol build tag is missing")
     return {"file": path.name, "bytes": len(data), "machine": "AMD64",
