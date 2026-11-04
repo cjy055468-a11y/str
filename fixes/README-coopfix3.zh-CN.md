@@ -4,7 +4,7 @@
 
 ## 本次新增
 
-- 家具战斗恢复：每 500ms 只检查拥有 LocalComponent、且引擎未标记 remote 的 NPC。必须存活、模型/动画图/区域就绪、没有场景、正在战斗、有活着的战斗目标、GetSitState==3，且 occupiedFurniture 解析到真正的 FURN 家具引用。持续满足 2 秒后调用原生 EvaluatePackage，再等 2 秒若仍满足则只发送一次 ForceFurnExit。家具、引用 handle 或控制权 epoch 改变会重新计时；退出战斗或失去资格会取消；加载期间不处理。不会给 NPC 强加仇恨，不开启远端 AI，不删除椅子、不清坐姿位、不复活 NPC。
+- 家具战斗恢复：每 500ms 只检查拥有 LocalComponent、且引擎未标记 remote 的 NPC。必须存活、模型/动画图/区域就绪、没有场景、正在战斗、有活着的战斗目标、GetSitState==3，且 occupiedFurniture 解析到真正的 FURN 家具引用。持续满足 2 秒后调用原生 EvaluatePackage，再等 2 秒若仍满足则只发送一次 ForceFurnExit。家具、引用 handle 或控制权 epoch 改变会重新计时；退出战斗或失去资格会取消；加载或游戏暂停期间不处理，暂停会取消本轮恢复计时。不会给 NPC 强加仇恨，不开启远端 AI，不删除椅子、不清坐姿位、不复活 NPC。
 - 恢复的退出事件使用现有 ActionEvent 上行、所有权验证和广播；原有服务器回放缓存已把 ForceFurnExit 识别为退出事件，后来进入区域的玩家不会从这条缓存重放旧坐姿。接收端补上已传输的 targetEventName。
 - 新日志 STR furniture hit audit / observed / reevaluate / exit，用于区分坐姿、真实家具占用、AI 控制端、战斗目标和任务场景。accepted=true 仅表示动画事件被接受，不能当成起身成功。
 - 掉落物代理持有引擎引用，等待模型出现后只进行一次位置/旋转对齐；最多三次启用动态物理并小幅向下唤醒，保留地面碰撞。原持有者真实掉落引用不做这些物理操作。销毁顺序先 Disable/Delete，再释放持有引用。

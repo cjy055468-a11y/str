@@ -1223,7 +1223,7 @@ index 00000000..67ef88c3
 +}
 diff --git a/Code/client/Services/Generic/FurnitureService.cpp b/Code/client/Services/Generic/FurnitureService.cpp
 new file mode 100644
-index 00000000..4ccc2ce3
+index 00000000..62002783
 --- /dev/null
 +++ b/Code/client/Services/Generic/FurnitureService.cpp
 @@ -0,0 +1,162 @@
@@ -1301,7 +1301,7 @@ index 00000000..4ccc2ce3
 +        return;
 +    m_nextUpdate = cNow + std::chrono::milliseconds(500);
 +    UI* pUI = UI::Get();
-+    if (pUI && pUI->GetMenuOpen(BSFixedString("Loading Menu")))
++    if (pUI && (pUI->numPausesGame != 0 || pUI->GetMenuOpen(BSFixedString("Loading Menu"))))
 +    {
 +        m_world.clear<RecoveryState>();
 +        return;
