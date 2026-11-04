@@ -21,10 +21,11 @@
  Code/encoding/Messages/RequestEquipmentChanges.h   |  3 +-
  Code/encoding/Messages/ServerMessageFactory.h      |  3 +-
  Code/encoding/Opcodes.h                            |  2 +
+ Code/server/GameServer.cpp                         |  4 +-
  Code/server/Services/CharacterService.cpp          | 22 ++++++
  Code/server/Services/InventoryService.cpp          | 13 +++-
  Code/server/Services/InventoryService.h            |  1 +
  Code/server/World.cpp                              |  2 +
  Code/tests/xmake.lua                               |  3 +-
- 28 files changed, 304 insertions(+), 44 deletions(-)
+ 29 files changed, 306 insertions(+), 46 deletions(-)
 
