@@ -1,15 +1,15 @@
-name: Furniture recovery and drop proxy coopfix3 Windows 1.6.1170
+name: Furniture recovery and drop proxy coopfix3r1 Windows 1.6.1170
 
 on:
   push:
-    branches: [codex/furniture-drop-coopfix3-v184]
+    branches: [codex/furniture-drop-coopfix3r1-v184]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: str-furniture-drop-coopfix3-v184-windows
+  group: str-furniture-drop-coopfix3r1-v184-windows
   cancel-in-progress: true
 
 jobs:
@@ -44,9 +44,9 @@ jobs:
           git -C source submodule status --recursive | Tee-Object logs/submodules.txt
           if ($LASTEXITCODE -ne 0) { throw 'Submodule status failed' }
           if (Select-String -Path logs/submodules.txt -Pattern '^[+\-U]') { throw 'Submodule mismatch' }
-          git -C source apply --check ../fixes/coopfix3-v184.patch
+          git -C source apply --check ../fixes/coopfix3r1-v184.patch
           if ($LASTEXITCODE -ne 0) { throw 'Patch does not match official release' }
-          git -C source apply ../fixes/coopfix3-v184.patch
+          git -C source apply ../fixes/coopfix3r1-v184.patch
           if ($LASTEXITCODE -ne 0) { throw 'Patch apply failed' }
           git -C source diff --check
           if ($LASTEXITCODE -ne 0) { throw 'Invalid patch whitespace' }
@@ -107,16 +107,17 @@ jobs:
           New-Item -ItemType Directory -Force candidate/SkyrimTogetherReborn | Out-Null
           $out = 'source/build/windows/x64/release'
           Copy-Item "$out/SkyrimTogether.exe", "$out/EarlyLoad.dll", "$out/STServer.dll", "$out/SkyrimTogetherServer.exe" candidate/SkyrimTogetherReborn/
-          Copy-Item fixes/coopfix3-v184.patch candidate/
-          Copy-Item fixes/README-coopfix3.zh-CN.md candidate/README.zh-CN.md
+          Copy-Item fixes/coopfix3r1-v184.patch candidate/
+          Copy-Item fixes/README-coopfix3r1.zh-CN.md candidate/README.zh-CN.md
+          Copy-Item fixes/REVIEW-coopfix3r1.zh-CN.md candidate/REVIEW.zh-CN.md
           Copy-Item source/LICENSE candidate/LICENSE
-          Copy-Item fixes/UPSTREAM-AUDIT-coopfix3.zh-CN.md candidate/UPSTREAM-AUDIT.zh-CN.md
+          Copy-Item fixes/UPSTREAM-AUDIT-coopfix3r1.zh-CN.md candidate/UPSTREAM-AUDIT.zh-CN.md
           Copy-Item logs candidate/logs -Recurse
           Get-ChildItem candidate/SkyrimTogetherReborn/* | Get-FileHash -Algorithm SHA256 | Format-List | Out-File candidate/SHA256.txt
       - name: Upload candidate after all three checks pass
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-SSE-161170-coopfix3
+          name: STR-v184-SSE-161170-coopfix3r1
           path: candidate/
           if-no-files-found: error
           retention-days: 14
@@ -124,7 +125,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-coopfix3-diagnostics
+          name: STR-v184-coopfix3r1-diagnostics
           path: logs/
           if-no-files-found: warn
           retention-days: 14
@@ -133,11 +134,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: build-results
-          ref: codex/furniture-drop-coopfix3-v184
+          ref: codex/furniture-drop-coopfix3r1-v184
       - name: Save inspectable results on a separate branch
         if: always()
         run: |
-          $results = 'codex/furniture-drop-coopfix3-v184-results'
+          $results = 'codex/furniture-drop-coopfix3r1-v184-results'
           Push-Location build-results
           $existing = git ls-remote --heads origin "refs/heads/$results"
           if ($LASTEXITCODE -ne 0) { throw 'Cannot check results branch' }

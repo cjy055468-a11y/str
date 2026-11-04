@@ -32,6 +32,7 @@ expected = {
     'Furniture recovery cancels when combat furniture or ownership eligibility ends',
     'A delayed furniture poll preserves the grace period after reevaluation',
     'Furniture recovery exit replaces a stale chair replay',
+    'Drop setup waits for cell attachment even while the old geometry is present',
 }
 root = ET.parse(Path(sys.argv[1])).getroot()
 cases = root.findall('.//testcase')
@@ -41,5 +42,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3_cases': 7,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r1_cases': 8,
                   'failures': 0, 'errors': 0}, indent=2))
