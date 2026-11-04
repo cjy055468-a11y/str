@@ -7,7 +7,6 @@ root = Path(sys.argv[1])
 unchanged = [
     'Code/client/Games/Skyrim/Actor.h',
     'Code/client/Services/Generic/CombatService.cpp',
-    'Code/client/Services/Generic/InventoryService.cpp',
     'Code/client/Services/Generic/ObjectService.cpp',
     'Code/client/Components/RemoteAnimationComponent.h',
     'Code/server/Services/ObjectService.cpp',
@@ -29,6 +28,18 @@ for start, end in regions:
     original = before[before.index(start):before.index(end, before.index(start))]
     current = after[after.index(start):after.index(end, after.index(start))]
     assert original.replace('\r\n', '\n') == current.replace('\r\n', '\n'), start
+# The only new container/death changes defer epoch-matched updates into the
+# existing pending spawn snapshot; require the rest of both handlers unchanged.
+for file, function, original_start in [
+    ('Code/client/Services/Generic/InventoryService.cpp', 'void InventoryService::OnNotifyInventoryChanges', '    if (acMessage.OwnershipEpoch != 0)'),
+    ('Code/client/Services/Generic/ActorValueService.cpp', 'void ActorValueService::OnDeathStateChange', '    auto view = m_world.view<FormIdComponent, RemoteComponent>();'),
+]:
+    before = subprocess.check_output(['git', '-C', str(root), 'show', 'HEAD:' + file]).decode().replace('\r\n', '\n')
+    after = (root / file).read_text().replace('#include <Systems/PendingActorUpdates.h>\n', '')
+    begin = after.index('    if (const auto entity = ', after.index(function))
+    end = after.index(original_start, begin)
+    after = after[:begin] + after[end:]
+    assert before == after, file + ': change outside pending update prefix'
 file = 'Code/server/Services/InventoryService.cpp'
 before = subprocess.check_output(['git', '-C', str(root), 'show', 'HEAD:' + file]).decode()
 after = (root / file).read_text()

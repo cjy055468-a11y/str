@@ -18,6 +18,12 @@ expected = {
     'Invalid drop counts and unknown IDs cannot produce grants',
     "An owned NPC can consume a drop without granting the same client's player a copy",
     'Dropped-item request and notification factories preserve IDs and stack metadata',
+    'Temporary actor identity survives discovery unload and ownership changes',
+    'Recycled temporary form IDs and new connections cannot inherit actor identity',
+    'Known temporary actor identity survives real assignment factory round trips',
+    'Death received before 3D updates the pending spawn snapshot',
+    'Loot received before 3D changes the pending corpse inventory',
+    'Pending inventory guard leaves legacy drop events on their existing path',
 }
 root = ET.parse(Path(sys.argv[1])).getroot()
 cases = root.findall('.//testcase')
@@ -27,5 +33,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': len(expected) - 5,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': len(expected) - 14,
                   'failures': 0, 'errors': 0}, indent=2))
