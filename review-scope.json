@@ -1,0 +1,9 @@
+{
+  "changed_since_compiled_coopfix3": [
+    "Code/client/Services/Generic/DroppedItemService.cpp",
+    "Code/client/Systems/DropProxySetup.h",
+    "Code/common/BuildInfo.h.in",
+    "Code/tests/proxy_furniture_timing.cpp"
+  ],
+  "unchanged_sections": 40
+}
