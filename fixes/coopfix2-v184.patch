@@ -109,7 +109,7 @@ index efe4f697..d80f5d88 100644
  
      Inventory::Entry item{};
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-index e5852696..5c1872a8 100644
+index e5852696..2c6197dd 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
 @@ -1,4 +1,5 @@
@@ -124,7 +124,7 @@ index e5852696..5c1872a8 100644
  
 +    // Block the native sneak-activation path before it opens a teammate's
 +    // inventory or emits an activation event. NPC interaction is unchanged.
-+    if (!ScopedInventoryOverride::IsOverriden() && pActivator == PlayerCharacter::Get())
++    if (!ScopedInventoryOverride::IsOverriden() && pActivator && pActivator == PlayerCharacter::Get())
 +    {
 +        Actor* pTarget = Cast<Actor>(apThis);
 +        if (pTarget && pTarget->GetExtension()->IsRemotePlayer())
