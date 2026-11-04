@@ -1,0 +1,11 @@
+{
+  "test_cases": 69,
+  "executed_cases": 69,
+  "required_replay_cases": 5,
+  "required_drop_cases": 9,
+  "required_actor_cases": 7,
+  "required_coopfix3r2_cases": 12,
+  "required_regression_cases": 9,
+  "failures": 0,
+  "errors": 0
+}
