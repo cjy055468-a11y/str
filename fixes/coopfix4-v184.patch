@@ -590,10 +590,10 @@ index 7d3ac21a..a1a21438 100644
      pActor->rotation.z = acMessage.Rotation.y;
 diff --git a/Code/client/Services/Generic/DroppedItemService.cpp b/Code/client/Services/Generic/DroppedItemService.cpp
 new file mode 100644
-index 00000000..5faf7743
+index 00000000..46ed5f3b
 --- /dev/null
 +++ b/Code/client/Services/Generic/DroppedItemService.cpp
-@@ -0,0 +1,723 @@
+@@ -0,0 +1,721 @@
 +#include <Services/DroppedItemService.h>
 +#include <NetImmerse/NiNode.h>
 +#include <Services/TransportService.h>
@@ -738,9 +738,7 @@ index 00000000..5faf7743
 +void DroppedItemService::PrepareDrop(uint64_t aNonce) noexcept
 +{
 +    auto* pPlayer = PlayerCharacter::Get();
-+    if (!pPlayer)
-+        return;
-+    const auto equipment = pPlayer->GetEquipment();
++    const auto equipment = pPlayer ? pPlayer->GetEquipment() : Inventory{};
 +    std::optional<Pending> failed;
 +    {
 +        std::lock_guard lock(m_lock);
@@ -749,7 +747,7 @@ index 00000000..5faf7743
 +            return;
 +        auto& pending = it->second;
 +        pending.AfterDropEquipment = equipment;
-+        pending.EquipmentCaptured = true;
++        pending.EquipmentCaptured = pPlayer != nullptr;
 +        pending.Prepared = pending.CellForm && m_world.GetModSystem().GetServerModId(pending.CellForm, pending.Data.Cell);
 +        if (pending.WorldForm)
 +            pending.Prepared = pending.Prepared && m_world.GetModSystem().GetServerModId(pending.WorldForm, pending.Data.WorldSpace);
