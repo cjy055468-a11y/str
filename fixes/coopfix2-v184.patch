@@ -1979,10 +1979,10 @@ index 8bfd5104..503505bb 100644
      ctx().emplace<CommandService>(*this, m_dispatcher);
 diff --git a/Code/tests/actor_identity_pending.cpp b/Code/tests/actor_identity_pending.cpp
 new file mode 100644
-index 00000000..5e91674c
+index 00000000..1133fb6f
 --- /dev/null
 +++ b/Code/tests/actor_identity_pending.cpp
-@@ -0,0 +1,171 @@
+@@ -0,0 +1,172 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
@@ -2028,7 +2028,8 @@ index 00000000..5e91674c
 +        request.KnownServerId = id;
 +        request.ReferenceId = GameId(0xFFFFFFFF, 0x90C);
 +        request.Position = glm::vec3(1.f, 2.f, 3.f);
-+        request.Rotation = glm::vec2(0.f);
++        request.Rotation.x = 0.f;
++        request.Rotation.y = 0.f;
 +        TiltedPhoques::Buffer buffer(16384);
 +        TiltedPhoques::Buffer::Writer writer(&buffer);
 +        request.Serialize(writer);
