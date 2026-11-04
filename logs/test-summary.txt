@@ -1,0 +1,9 @@
+{
+  "test_cases": 41,
+  "executed_cases": 41,
+  "required_replay_cases": 5,
+  "required_drop_cases": 9,
+  "failures": 0,
+  "errors": 0
+}
+
