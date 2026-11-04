@@ -46,6 +46,12 @@ expected = {
     'Equipment notifications preserve the authoritative worn snapshot through the real factory',
     'Visible drop geometry without collision does not consume physics setup attempts',
     'A drop outfit refresh round trips without requesting another native equip action',
+    'Only a drop creator can update placement without changing stack identity',
+    'Placement updates cannot revive consumed drops or accept nonfinite coordinates',
+    'Drop placement messages and snapshots retain placement through real factories',
+    'Drop placement waits for stable samples and rate limits later movement',
+    'An unsent placement remains pending until publication is confirmed',
+    'Unattached native drops cannot invent an authoritative placement',
 }
 root = ET.parse(Path(sys.argv[1])).getroot()
 cases = root.findall('.//testcase')
@@ -55,5 +61,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 9,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 9, 'required_placement_cases': 6,
                   'failures': 0, 'errors': 0}, indent=2))
