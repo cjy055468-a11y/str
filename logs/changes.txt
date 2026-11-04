@@ -4,7 +4,7 @@
  Code/client/Games/Skyrim/Misc/MiddleProcess.h      |  6 +-
  Code/client/Games/Skyrim/NetImmerse/NiAVObject.h   |  3 +
  Code/client/Games/Skyrim/PlayerCharacter.cpp       |  4 ++
- Code/client/Games/Skyrim/TESObjectREFR.cpp         | 21 ++++++
+ Code/client/Games/Skyrim/TESObjectREFR.cpp         | 40 +++++++++++
  Code/client/Services/CharacterService.h            |  2 +
  Code/client/Services/Generic/ActorValueService.cpp |  9 +++
  Code/client/Services/Generic/CharacterService.cpp  | 61 ++++++++++++++++-
@@ -24,5 +24,5 @@
  Code/server/Services/InventoryService.h            |  1 +
  Code/server/World.cpp                              |  2 +
  Code/tests/xmake.lua                               |  3 +-
- 26 files changed, 276 insertions(+), 42 deletions(-)
+ 26 files changed, 295 insertions(+), 42 deletions(-)
 
