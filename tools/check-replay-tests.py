@@ -25,6 +25,13 @@ expected = {
     'Loot received before 3D changes the pending corpse inventory',
     'Pending inventory guard leaves legacy drop events on their existing path',
     'Ownership handoff advances the pending snapshot before subsequent death and loot',
+    'Drop rotation keeps fractional and negative radians through both message factories',
+    'Drop proxies wait for attached geometry and make bounded wake attempts',
+    'Reloaded drop geometry receives a new setup without repeated teleports',
+    'Furniture recovery waits then exits only once per eligible episode',
+    'Furniture recovery cancels when combat furniture or ownership eligibility ends',
+    'A delayed furniture poll preserves the grace period after reevaluation',
+    'Furniture recovery exit replaces a stale chair replay',
 }
 root = ET.parse(Path(sys.argv[1])).getroot()
 cases = root.findall('.//testcase')
@@ -34,5 +41,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': len(expected) - 14,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3_cases': 7,
                   'failures': 0, 'errors': 0}, indent=2))
