@@ -109,7 +109,7 @@ index efe4f697..d80f5d88 100644
  
      Inventory::Entry item{};
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-index e5852696..a5937977 100644
+index e5852696..5c1872a8 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
 @@ -1,4 +1,5 @@
@@ -118,10 +118,26 @@ index e5852696..a5937977 100644
  
  #include <Games/References.h>
  #include <Games/Overrides.h>
-@@ -1032,6 +1033,10 @@ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, u
+@@ -1032,6 +1033,26 @@ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, u
  {
      Actor* pActivator = Cast<Actor>(apActivator);
  
++    // Block the native sneak-activation path before it opens a teammate's
++    // inventory or emits an activation event. NPC interaction is unchanged.
++    if (!ScopedInventoryOverride::IsOverriden() && pActivator == PlayerCharacter::Get())
++    {
++        Actor* pTarget = Cast<Actor>(apThis);
++        if (pTarget && pTarget->GetExtension()->IsRemotePlayer())
++        {
++            const void* pQuery = World::Get().ctx().at<PapyrusService>().Get("Actor", "IsSneaking");
++            if (!pQuery || PapyrusFunction<bool, Actor>(pQuery)(pActivator))
++            {
++                spdlog::info("STR player pickpocket blocked: target {:X}, query available {}", pTarget->formID, pQuery != nullptr);
++                return false;
++            }
++        }
++    }
++
 +    if (!ScopedInventoryOverride::IsOverriden() && pActivator && apThis->baseForm->formType != FormType::Book)
 +        if (auto* pDrops = DroppedItemService::Get(); pDrops && pDrops->InterceptPickup(pActivator, apThis))
 +            return true;

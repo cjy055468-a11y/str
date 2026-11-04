@@ -25,7 +25,7 @@ def inspect(path, require_fix=False):
         for marker in (b"v1.8.4-coopfix2", b"1.6.1170.0", b"EarlyLoad.dll", b"libcef.dll"):
             if marker not in data:
                 raise ValueError(f"{path.name}: missing expected marker {marker!r}")
-        if require_fix and (b"STR replay audit v2:" not in data or b"STR drop grant applied:" not in data or b"STR NPC reattach request:" not in data or b"STR corpse pending death:" not in data):
+        if require_fix and (b"STR replay audit v2:" not in data or b"STR drop grant applied:" not in data or b"STR NPC reattach request:" not in data or b"STR corpse pending death:" not in data or b"STR player pickpocket blocked:" not in data):
             raise ValueError("EXE lacks the combined replay/dropfix markers")
     if require_fix and path.name in ("STServer.dll", "SkyrimTogetherServer.exe"):
         if b"master@v1.8.4-coopfix2\0" not in data:
