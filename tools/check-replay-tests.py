@@ -37,6 +37,14 @@ expected = {
     'Pickup-before-ACK and ACK-before-pickup retain the same registered identity',
     'A delayed pickup cannot retarget a recycled reference or a different drop nonce',
     'An unreserved drop remains pickable after its registration ACK',
+    'Owner drop debit tolerates stale metadata and fragmented cached stacks',
+    'Owner drop debit never invents a negative delta from an unavailable cache',
+    'Equipment snapshots replace stale worn metadata without duplicating a cached item',
+    'Equipment snapshots supply missing outfit entries and retain both worn hands',
+    'An empty equipment snapshot clears worn flags without deleting owned inventory',
+    'Pending equipment respects ownership epochs and never restores looted corpse armor',
+    'Equipment notifications preserve the authoritative worn snapshot through the real factory',
+    'Visible drop geometry without collision does not consume physics setup attempts',
 }
 root = ET.parse(Path(sys.argv[1])).getroot()
 cases = root.findall('.//testcase')
@@ -46,5 +54,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 8,
                   'failures': 0, 'errors': 0}, indent=2))

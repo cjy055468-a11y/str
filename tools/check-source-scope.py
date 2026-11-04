@@ -39,7 +39,13 @@ for file, function, original_start in [
     begin = after.index('    if (const auto entity = ', after.index(function))
     end = after.index(original_start, begin)
     after = after[:begin] + after[end:]
-    assert before == after, file + ': change outside pending update prefix'
+    if file.endswith('InventoryService.cpp'):
+        start = 'void InventoryService::OnNotifyEquipmentChanges'
+        end = 'void InventoryService::RunWeaponStateUpdates'
+        # This actor-only handler is intentionally revised for owner armor
+        # snapshots. Still require all other legacy inventory code unchanged.
+        after = after[:after.index(start)] + before[before.index(start):before.index(end)] + after[after.index(end):]
+    assert before == after, file + ': change outside authorized actor equipment/pending prefixes'
 file = 'Code/server/Services/InventoryService.cpp'
 before = subprocess.check_output(['git', '-C', str(root), 'show', 'HEAD:' + file]).decode()
 after = (root / file).read_text()

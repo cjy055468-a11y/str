@@ -1,0 +1,4 @@
+Checked 2026-11-04 UTC via official origin git ls-remote:
+master 54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
+dev    711ca1b832790e9035fd05c88a728e88f69c9b4b
+Baseline: tag v1.8.4 = master above; submodule pins unchanged.
