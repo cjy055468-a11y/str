@@ -274,3 +274,4 @@ configure
     ndk_stdcxx = true
 }
 [0m[1;33;1mwarning: [33;1mplease use add_configs("runtimes") instead of add_configs("vs_runtime").[0m
+

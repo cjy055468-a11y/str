@@ -1,0 +1,18 @@
+{
+  "source_revision": "489d583ef074acdda055faf539efaf00fc0cdfec",
+  "check": "first source/protocol/boundary review",
+  "official_source": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "patch_sha256": "339aecf7bb09c3bbd093a4ee1af9f4305a49520b88942266c741c991b1a0b571",
+  "preserved_patch_sections": 32,
+  "changed_patch_sections": 25,
+  "required_cases_present_in_source": 48,
+  "expected_executed_cases": 75,
+  "execution": "pending Windows",
+  "npc_furniture_source": "unchanged from game-tested r1",
+  "tick_true": 70,
+  "tick_false": 60,
+  "engine_ida_ghidra_verification": false,
+  "game_test": "not run",
+  "remote_armor_quest_forwarding": "suppressed using existing inventory-restoration argument",
+  "placement_cache_guard": "observed native movement required before first canonical placement; dynamic fallback otherwise"
+}

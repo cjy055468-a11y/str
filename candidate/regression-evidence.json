@@ -1,0 +1,27 @@
+{
+  "tested_version": "coopfix3r1",
+  "rejected_drop_count": 45,
+  "rejections_by_actor_and_item": [
+    {
+      "actor": "48",
+      "item": "0:330BC",
+      "count": 39
+    },
+    {
+      "actor": "49",
+      "item": "0:3CA00",
+      "count": 3
+    },
+    {
+      "actor": "49",
+      "item": "0:3C9FE",
+      "count": 3
+    }
+  ],
+  "accepted_registrations": 17,
+  "grants": 8,
+  "confirmed_path": "server cache rejection -> client Rejected -> local refund",
+  "unproven": "old logs do not show cached stack counts or extra data; exact mismatch field unknown",
+  "user_confirmed": "NPC combat furniture exit succeeded",
+  "game_test_current": "not run"
+}

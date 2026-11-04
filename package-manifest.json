@@ -1,0 +1,10 @@
+{
+  "source_revision": "489d583ef074acdda055faf539efaf00fc0cdfec",
+  "run_id": "41915732896",
+  "artifact": "STR-coopfix4g-test.zip",
+  "bytes": 6303056,
+  "sha256": "47f741f36e7a02c0621389c12e2cfa092bcdd217f5fbd46568c4890cfab0ff02",
+  "tests": 75,
+  "required_tests": 48,
+  "game_test": "not run; two-player testing required"
+}
