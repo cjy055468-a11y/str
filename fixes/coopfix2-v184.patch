@@ -273,7 +273,7 @@ index b3f309a7..69e04d62 100644
  
      const auto it = std::find_if(std::begin(view), std::end(view), [&acMessage, view](entt::entity entity)
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 7d3ac21a..0aa34483 100644
+index 7d3ac21a..f2ce9be7 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
 @@ -331,6 +331,7 @@ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const
@@ -295,7 +295,7 @@ index 7d3ac21a..0aa34483 100644
  
      m_world.remove<WaitingForAssignmentComponent>(cEntity);
  #if (!IS_MASTER)
-@@ -428,6 +432,22 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -428,6 +432,23 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
      // TODO: how could this possibly trigger?
      // it's kinda interfering with my WaitingFor3D code
@@ -309,16 +309,17 @@ index 7d3ac21a..0aa34483 100644
 +        if (pPreviousActor && pPreviousActor != pActor && pPreviousActor->IsTemporary() && !pPreviousActor->GetExtension()->IsPlayer())
 +        {
 +            pPreviousActor->GetExtension()->SetRemote(true);
-+            pPreviousActor->Delete();
 +            spdlog::info("STR NPC duplicate proxy retired: server {:X}, old ref {:X}, kept ref {:X}", acMessage.ServerId, pPreviousActor->formID, pActor->formID);
++            pPreviousActor->Delete();
 +        }
-+        m_world.destroy(*previous);
++        if (m_world.valid(*previous))
++            m_world.destroy(*previous);
 +    }
 +
      if (acMessage.PlayerId != 0)
          m_world.emplace_or_replace<PlayerComponent>(cEntity, acMessage.PlayerId);
  
-@@ -465,6 +485,9 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -465,12 +486,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
          localComponent.IsDead = acMessage.IsDead;
          localComponent.IsWeaponDrawn = acMessage.IsWeaponDrawn;
          pActor->GetExtension()->SetRemote(false);
@@ -328,7 +329,14 @@ index 7d3ac21a..0aa34483 100644
      }
      else
      {
-@@ -485,6 +508,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+         spdlog::info("Received remote actor, form id: {:X}, isweapondrawn: {}", pActor->formID, acMessage.IsWeaponDrawn);
+ 
+-        m_world.emplace_or_replace<RemoteComponent>(cEntity, acMessage.ServerId, formIdComponent->Id, acMessage.OwnershipEpoch);
++        m_world.emplace_or_replace<RemoteComponent>(cEntity, acMessage.ServerId, pActor->formID, acMessage.OwnershipEpoch);
+ 
+         pActor->GetExtension()->SetRemote(true);
+ 
+@@ -485,6 +509,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
          ReconcileActorData(cEntity, pActor, acMessage.OwnershipEpoch, actorData, true, false);
  
@@ -339,7 +347,7 @@ index 7d3ac21a..0aa34483 100644
          MoveActor(pActor, acMessage.WorldSpaceId, acMessage.CellId, acMessage.Position);
  
          // The owner's leveled pick rides the assignment response for actors we discovered ourselves
-@@ -631,6 +658,7 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+@@ -631,6 +659,7 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
          ApplyLeveledNpcPick(pActor, acMessage.LeveledNpcPickId);
  
      m_world.emplace_or_replace<RemoteComponent>(*entity, acMessage.ServerId, pActor->formID, acMessage.OwnershipEpoch);
@@ -347,7 +355,7 @@ index 7d3ac21a..0aa34483 100644
  
      auto& interpolationComponent = InterpolationSystem::Setup(m_world, *entity);
      interpolationComponent.Position = acMessage.Position;
-@@ -787,6 +815,8 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -787,6 +816,8 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
      const entt::entity cEntity = *entity;
      const auto* pFormIdComponent = m_world.try_get<FormIdComponent>(cEntity);
      Actor* pActor = pFormIdComponent ? Cast<Actor>(TESForm::GetById(pFormIdComponent->Id)) : nullptr;
@@ -356,7 +364,7 @@ index 7d3ac21a..0aa34483 100644
  
      // Preserve the accepted epoch's pick for actors that still need to be created.
      if (auto* pWaitingFor3D = m_world.try_get<WaitingFor3D>(cEntity))
-@@ -832,6 +862,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -832,6 +863,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
          // LocalComponent is installed only after canonical reconciliation is complete.
          pActor->GetExtension()->SetRemote(false);
          spdlog::info("Gained ownership of actor {:X} at epoch {}", acMessage.ServerId, acMessage.OwnershipEpoch);
@@ -366,7 +374,7 @@ index 7d3ac21a..0aa34483 100644
          return;
      }
  
-@@ -1360,6 +1393,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1360,6 +1394,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
      AssignCharacterRequest message{};
  
      message.Cookie = sCookieSeed;
@@ -377,7 +385,7 @@ index 7d3ac21a..0aa34483 100644
  
      if (!m_world.GetModSystem().GetServerModId(formIdComponent.Id, message.ReferenceId))
      {
-@@ -1490,7 +1527,9 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1490,7 +1528,9 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
  
      if (m_transport.Send(message))
      {
@@ -388,7 +396,7 @@ index 7d3ac21a..0aa34483 100644
  
          sCookieSeed++;
      }
-@@ -1624,6 +1663,7 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
+@@ -1624,6 +1664,7 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
          return nullptr;
      }
  
