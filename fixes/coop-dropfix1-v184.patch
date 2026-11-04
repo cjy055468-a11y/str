@@ -1734,14 +1734,14 @@ index 00000000..e03110cc
 +}
 diff --git a/Code/tests/dropped_items.cpp b/Code/tests/dropped_items.cpp
 new file mode 100644
-index 00000000..44b51208
+index 00000000..4e4ddbc4
 --- /dev/null
 +++ b/Code/tests/dropped_items.cpp
 @@ -0,0 +1,220 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
-+#include <glm/vec3.hpp>
++#include <glm/glm.hpp>
 +#include <optional>
 +#include <catch2/catch.hpp>
 +#include <Messages/ClientMessageFactory.h>

@@ -1,5 +1,7 @@
 # NPC AI 修复候选 — 官方 v1.8.4 / Skyrim SE 1.6.1170
 
+> 此历史候选已撤回，不再建议安装。下文保留原方案记录，不能作为当前修复结论。当前合并版说明见 [README-coop-dropfix1.zh-CN.md](README-coop-dropfix1.zh-CN.md)，官方依据见 [UPSTREAM-AUDIT.zh-CN.md](UPSTREAM-AUDIT.zh-CN.md)。
+
 本目录包含候选源码补丁，不代表已经编译通过或游戏测试通过。
 只有 Actions 的三个检查全部成功后，流程才会生成候选二进制包。
 

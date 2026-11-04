@@ -1,5 +1,7 @@
 # NPC 动画回放审计候选 v2 — 官方 STR 1.8.4 / Skyrim SE 1.6.1170
 
+> 本文件描述 b084df6 的单独审计候选，作为历史证据保留。包含掉落物的当前版本及四文件安装说明见 [README-coop-dropfix1.zh-CN.md](README-coop-dropfix1.zh-CN.md)。下文“拾取仍暂停”仅描述该历史版本。
+
 这不是“所有 NPC 卡住问题已经解决”的成品结论。游戏内坐姿／悬空问题仍需验证。
 本分支撤掉上一版改变 NPC 战斗启动、增加敌意查询、补写 TargetEventName、显式初始化 ReplayCount 的改动。
 Actor.cpp、Actor.h、CombatService.cpp、RemoteAnimationComponent.h 与官方 v1.8.4 保持一致。
