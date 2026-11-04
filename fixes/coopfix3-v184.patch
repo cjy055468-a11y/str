@@ -1223,10 +1223,10 @@ index 00000000..67ef88c3
 +}
 diff --git a/Code/client/Services/Generic/FurnitureService.cpp b/Code/client/Services/Generic/FurnitureService.cpp
 new file mode 100644
-index 00000000..cc9146dd
+index 00000000..4ccc2ce3
 --- /dev/null
 +++ b/Code/client/Services/Generic/FurnitureService.cpp
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,162 @@
 +#include <Services/FurnitureService.h>
 +#include <Services/TransportService.h>
 +#include <Services/PapyrusService.h>
@@ -1272,18 +1272,21 @@ index 00000000..cc9146dd
 +        return;
 +    const PapyrusFunction<int32_t, Actor> getSitState(pGetSitState);
 +    const int32_t cSit = getSitState(pActor);
-+    if (cSit == 0)
-+        return;
 +    m_nextHitAudit = cNow + std::chrono::milliseconds(500);
 +    uint32_t furniture = 0;
++    NiPoint3 furniturePosition{};
 +    if (pActor->currentProcess && pActor->currentProcess->middleProcess)
 +        if (auto* pRef = TESObjectREFR::GetByHandle(pActor->currentProcess->middleProcess->occupiedFurniture.handle.iBits))
++        {
 +            furniture = pRef->formID;
++            furniturePosition = pRef->position;
++        }
 +    Actor* pTarget = pActor->GetCombatTarget();
-+    spdlog::info("STR furniture hit audit: actor {:X}, hitter {:X}, remote {}, combat {}, sit {}, furniture {:X}, target {:X}, scene {}, position ({}, {}, {}), state ({:X}, {:X})",
++    spdlog::info("STR furniture hit audit: actor {:X}, hitter {:X}, remote {}, combat {}, sit {}, furniture {:X}, target {:X}, scene {}, position ({}, {}, {}), state ({:X}, {:X}), furniture position ({}, {}, {}), latest {}",
 +        pActor->formID, acEvent.HitterId, pActor->GetExtension()->IsRemote(), pActor->IsInCombat(), cSit,
 +        furniture, pTarget ? pTarget->formID : 0, pActor->GetCurrentScene() != nullptr,
-+        pActor->position.x, pActor->position.y, pActor->position.z, pActor->actorState.flags1, pActor->actorState.flags2);
++        pActor->position.x, pActor->position.y, pActor->position.z, pActor->actorState.flags1, pActor->actorState.flags2,
++        furniturePosition.x, furniturePosition.y, furniturePosition.z, pActor->GetExtension()->LatestAnimation.EventName.c_str());
 +}
 +
 +void FurnitureService::OnLocalRemoved(entt::registry&, entt::entity aEntity) noexcept
