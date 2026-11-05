@@ -1,0 +1,15 @@
+# Missives 2.03 兼容研究版 missives1
+
+本版不是“完全兼容”补丁，也没有实现新的共享告示列表协议。它是继续制作共享告示板所需的已编译修复与运行时采样版本：阻止Missives告示被自动补给队友背包；隔离各端随机任务阶段，避免把别人的任务阶段套给本地不同任务；记录实际告示板库存与任务别名实例，以便下一步安全实现同一份告示的识别和删除。
+
+用户目标仍为：相同告示板列表，一人取走后其他列表删除，不给其他人发乱码信。当前只针对额外发信和不正确的任务阶段传播加入修改；完整列表、刷新、同时接取、重新进入和重连的共享状态尚未完成，不以本次编译通过声称已实现。
+
+依据用户提供的原版2.03 RAR和CHS ZIP核对：同名Missives.esp记录ID和EditorID一致；26种告示BOOK模板、264个带Missive/MissiveBoard别名的任务。告示板容器基准ID0x12CB，实际加载顺序通过ModManager解析。普通ESP版本支持，ESL压缩或重新编号版本不在本次识别范围。原版_M_ActivatorScript通过玩家进入触发器独立随机启动/重置任务，告示文本依赖Alias数据；取信的OnContainerChanged会在本地把任务设到20。普通库存消息没有携带这些任务实例上下文。
+
+实际修改：TESObjectREFR::AddOrRemoveItem仅对26种Missives告示停止“远端玩家得到任务物品时，再补一份给本地玩家”的操作；远端玩家物品表示和普通任务物品复制原样保留。QuestService不发送/应用Missives.esp的通用任务阶段同步，任务暂归各自本地，其他MOD和原版任务原路径。ObjectService/InventoryService仅加Missives板子的采样日志，不改原有容器更新方式。没有改ESP、PEX或汉化；无需另装脚本补丁。不能据此保证已经修复乱码的所有来源。
+
+本版累计包含先前corpse1、4g修复和服务器netdiag1。网络编码/BUILD_COMMIT仍为coopfix4g，双方都更新客户端SkyrimTogether.exe和EarlyLoad.dll；服务器可继续使用4g/netdiag1或更新包中STServer.dll/SkyrimTogetherServer.exe。保持STServer.ini、完整STR资源、原版Missives以及汉化覆盖顺序。先退出游戏和服务器并备份文件，再替换实际加载目录的同名文件；不要覆盖SkyrimSE.exe。
+
+采样测试：双方加载同一份Missives 2.03和汉化、组队，在同一座城分别打开同一块告示板；记录当时游戏日期和两端列表截图；只取走一张告示，确认另一人背包是否还会收到信，记录另一端告示板是否移除，再各自关闭并重新打开。随后提供两端完整tp_client.log及服务器日志。关键前缀STR Missives board audit/board entry/local posting/board inventory event/posting copy suppressed/remote quest stage ignored。这次日志需要把同一容器、任务ID、实例ID、别名参考与库存事件串起来；不重复索取已上传的MOD安装包。不建议用删除任务、强制SetStage、清空板子或重置存档等手段掩盖问题。
+
+编译不等于游戏验证。没有在云环境运行Skyrim，原生别名行为未通过IDA/Ghidra核实；本版采样使用项目已有GetAliasedRef及已声明的ExtraTextDisplayData字段，只读，不写未知结构。断线根因仍未解决，保留SDK诊断。完整共享告示板还需要后续代码和联机验证。

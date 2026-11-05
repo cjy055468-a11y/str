@@ -1,0 +1,514 @@
+diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+--- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
++++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+@@ -27,6 +27,7 @@
+ #include <DefaultObjectManager.h>
+ #include <BSAnimationGraphManager.h>
+ #include <Havok/BShkbAnimationGraph.h>
++#include <ModCompat/MissivesCompat.h>
+ #include <Havok/hkbBehaviorGraph.h>
+ #include <Havok/hkbVariableValueSet.h>
+ #include <Havok/hkbStateMachine.h>
+@@ -931,7 +932,12 @@
+         {
+             Actor* pActor = Cast<Actor>(this);
+             if (pActor && pActor->GetExtension()->IsRemotePlayer())
+-                pPlayer->AddOrRemoveItem(arEntry);
++            {
++                if (MissivesCompat::IsPosting(pObject))
++                    spdlog::info("STR Missives posting copy suppressed: source {:X}, posting {:X}, count {}", formID, objectId, arEntry.Count);
++                else
++                    pPlayer->AddOrRemoveItem(arEntry);
++            }
+         }
+     }
+ 
+diff --git a/Code/client/Services/Generic/InventoryService.cpp b/Code/client/Services/Generic/InventoryService.cpp
+--- a/Code/client/Services/Generic/InventoryService.cpp
++++ b/Code/client/Services/Generic/InventoryService.cpp
+@@ -1,4 +1,5 @@
+ #include <Services/InventoryService.h>
++#include <ModCompat/MissivesCompat.h>
+ #include <Systems/PendingActorUpdates.h>
+ 
+ #include <Messages/RequestObjectInventoryChanges.h>
+@@ -50,6 +51,11 @@
+     if (!m_transport.IsConnected())
+         return;
+ 
++    const auto* pReference = Cast<TESObjectREFR>(TESForm::GetById(acEvent.FormId));
++    if (MissivesCompat::IsBoard(pReference))
++        spdlog::info("STR Missives board inventory event: board {:X}, posting {:X}:{:X}, delta {}, quest {}, update_clients {}",
++            acEvent.FormId, acEvent.Item.BaseId.ModId, acEvent.Item.BaseId.BaseId, acEvent.Item.Count, acEvent.Item.IsQuestItem, acEvent.UpdateClients);
++
+     auto view = m_world.view<FormIdComponent>();
+ 
+     const auto iter = std::find_if(std::begin(view), std::end(view), [view, formId = acEvent.FormId](auto entity) { return view.get<FormIdComponent>(entity).Id == formId; });
+diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
+--- a/Code/client/Services/Generic/ObjectService.cpp
++++ b/Code/client/Services/Generic/ObjectService.cpp
+@@ -1,4 +1,5 @@
+ #include <Services/ObjectService.h>
++#include <ModCompat/MissivesCompat.h>
+ 
+ #include <World.h>
+ #include <Events/DisconnectedEvent.h>
+@@ -199,6 +200,9 @@
+ 
+         CreateObjectEntity(pObject->formID, objectData.ServerId);
+ 
++        if (MissivesCompat::IsBoard(pObject))
++            MissivesCompat::AuditBoard(pObject, objectData.IsSenderFirst ? "first_assignment" : "before_snapshot");
++
+         if (objectData.IsSenderFirst)
+             continue;
+ 
+@@ -227,6 +231,9 @@
+             else
+                 pObject->SetInventory(objectData.CurrentInventory);
+         }
++
++        if (MissivesCompat::IsBoard(pObject))
++            MissivesCompat::AuditBoard(pObject, "after_snapshot");
+     }
+ }
+ 
+@@ -250,6 +257,9 @@
+ 
+ void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
+ {
++    if (m_transport.IsConnected() && MissivesCompat::IsBoard(acEvent.pObject))
++        MissivesCompat::AuditBoard(acEvent.pObject, "activate");
++
+     if (acEvent.ActivateFlag)
+     {
+         acEvent.pObject->Activate(acEvent.pActivator, acEvent.Unk1, acEvent.pObjectToGet, acEvent.Count, acEvent.DefaultProcessing);
+diff --git a/Code/client/Services/Generic/QuestService.cpp b/Code/client/Services/Generic/QuestService.cpp
+--- a/Code/client/Services/Generic/QuestService.cpp
++++ b/Code/client/Services/Generic/QuestService.cpp
+@@ -6,6 +6,7 @@
+ #include <Events/UpdateEvent.h>
+ 
+ #include <Services/QuestService.h>
++#include <ModCompat/MissivesCompat.h>
+ #include <Services/ImguiService.h>
+ #include <Services/OverlayService.h>
+ #include <Services/TransportService.h>
+@@ -513,6 +514,14 @@
+         return;
+     }
+ 
++    // Missives uses local randomized aliases, and taking a posting does not
++    // authorize other players to start/complete its unrelated local instance.
++    if (MissivesCompat::IsPluginForm(pQuest))
++    {
++        spdlog::info("STR Missives remote quest stage ignored: quest {:X}, stage {}, status {}", formId, aUpdate.Stage, aUpdate.Status);
++        return;
++    }
++
+     if (aUpdate.Status == NotifyQuestUpdate::StageUpdate && pQuest->IsStageReached(aUpdate.Stage))
+     {
+         spdlog::info("Remote quest {:X} already reached stage {}, current stage: {}", formId, aUpdate.Stage, pQuest->currentStage);
+@@ -620,7 +629,8 @@
+     // Quests with no quest stages are never synced. Most TESQues::Type:: quests should
+     // be synced, including Type::None and Type::Miscellaneous, but there are a few
+     // known exceptions that should be excluded that are in the table.
+-    return    apQuest->stages.Empty() 
++    return    MissivesCompat::IsPluginForm(apQuest)
++           || apQuest->stages.Empty()
+            || std::find(kNonSyncableQuestIds.begin(), kNonSyncableQuestIds.end(), apQuest->formID) != kNonSyncableQuestIds.end();
+ }
+ 
+diff --git a/Code/client/ModCompat/MissivesCompat.h b/Code/client/ModCompat/MissivesCompat.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesCompat.h
+@@ -0,0 +1,65 @@
++#pragma once
++
++#include <Games/TES.h>
++#include <Forms/TESForm.h>
++#include <TESObjectREFR.h>
++#include <algorithm>
++#include <array>
++
++// Records verified against the supplied original and CHS Missives 2.03 ESPs.
++// These helpers do not alter ordinary books, containers or quest loot.
++namespace MissivesCompat
++{
++void AuditBoard(TESObjectREFR* apBoard, const char* apReason) noexcept;
++
++inline bool IsPluginForm(const TESForm* apForm) noexcept
++{
++    if (!apForm)
++        return false;
++    ModManager* pManager = ModManager::Get();
++    const Mod* pMod = pManager ? pManager->GetByName("Missives.esp") : nullptr;
++    return pMod && pMod->IsLoaded() && !pMod->IsLite()
++        && pMod->GetFormId(apForm->formID & 0xFFFFFFu) == apForm->formID;
++}
++
++inline bool IsPosting(const TESForm* apForm) noexcept
++{
++    if (!apForm || apForm->formType != FormType::Book)
++        return false;
++    static constexpr std::array<uint32_t, 26> cPostingIds = {
++        0x001D98u, // _M_MissiveKillAnimal
++        0x00332Fu, // _M_MissiveGatherIngrLow
++        0x003330u, // _M_MissiveGatherIngrMed
++        0x003331u, // _M_MissiveGatherIngrHigh
++        0x006E74u, // _M_MissiveRetrieveWilderness
++        0x008ED4u, // _M_MissiveGatherOreLow
++        0x008ED5u, // _M_MissiveGatherOreMed
++        0x008ED6u, // _M_MissiveGatherOreHigh
++        0x009A16u, // _M_MissiveGatherInn
++        0x009F90u, // _M_MissiveGatherSoulGemLow
++        0x009F91u, // _M_MissiveGatherSoulGemMed
++        0x009F92u, // _M_MissiveGatherSoulGemHigh
++        0x00B533u, // _M_MissiveRetrieveHideout
++        0x00B534u, // _M_MissiveRetrieveRuins
++        0x00B537u, // _M_MissiveGatherOreVeryHigh
++        0x00BA9Cu, // _M_MissiveCourierLetter
++        0x00BA9Du, // _M_MissiveCourierWeapon
++        0x00F0C5u, // _M_MissiveKillBandit
++        0x00F0C6u, // _M_MissiveKillGiant
++        0x00F0C7u, // _M_MissiveKillDragon
++        0x00F0D0u, // _M_MissiveKillForsworn
++        0x0331A6u, // _M_MissiveTrackThief
++        0x0331A7u, // _M_MissiveTrackVampire
++        0x0331A8u, // _M_MissiveTrackFugitive
++        0x0331A9u, // _M_MissiveKillWerewolves
++        0x0398A4u, // _M_MissiveCourierPotion
++    };
++    return std::find(cPostingIds.begin(), cPostingIds.end(), apForm->formID & 0xFFFFFFu) != cPostingIds.end() && IsPluginForm(apForm);
++}
++
++inline bool IsBoard(const TESObjectREFR* apReference) noexcept
++{
++    return apReference && apReference->baseForm && apReference->baseForm->formType == FormType::Container
++        && (apReference->baseForm->formID & 0xFFFFFFu) == 0x12CBu && IsPluginForm(apReference->baseForm);
++}
++}
+diff --git a/Code/client/ModCompat/MissivesCompat.cpp b/Code/client/ModCompat/MissivesCompat.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesCompat.cpp
+@@ -0,0 +1,38 @@
++#include <TiltedOnlinePCH.h>
++#include <ModCompat/MissivesCompat.h>
++#include <ModCompat/MissivesPostingAliases.h>
++#include <Forms/TESQuest.h>
++#include <ExtraData/ExtraTextDisplayData.h>
++
++void MissivesCompat::AuditBoard(TESObjectREFR* apBoard, const char* apReason) noexcept
++{
++    if (!IsBoard(apBoard))
++        return;
++
++    const auto inventory = apBoard->GetInventory();
++    spdlog::info("STR Missives board audit: reason {}, board {:X}, entries {}", apReason, apBoard->formID, inventory.Entries.size());
++    for (const auto& item : inventory.Entries)
++        spdlog::info("STR Missives board entry: board {:X}, base {:X}:{:X}, count {}, quest {}",
++            apBoard->formID, item.BaseId.ModId, item.BaseId.BaseId, item.Count, item.IsQuestItem);
++
++    const Mod* pMod = ModManager::Get()->GetByName("Missives.esp");
++    if (!pMod)
++        return;
++
++    for (const auto& entry : cPostingAliases)
++    {
++        auto* pQuest = Cast<TESQuest>(TESForm::GetById(pMod->GetFormId(entry.QuestId)));
++        if (!pQuest || pQuest->IsStopped())
++            continue;
++        const auto* pQuestBoard = pQuest->GetAliasedRef(entry.BoardAlias);
++        if (!pQuestBoard || pQuestBoard->formID != apBoard->formID)
++            continue;
++
++        auto* pPosting = pQuest->GetAliasedRef(entry.PostingAlias);
++        const auto* pText = pPosting ? Cast<ExtraTextDisplayData>(pPosting->extraData.GetByType(ExtraDataType::TextDisplayData)) : nullptr;
++        spdlog::info("STR Missives local posting: board {:X}, quest {:X}, instance {}, stage {}, alias {}, reference {:X}, base {:X}, text_context {}, text_quest_matches {}, text_instance {}",
++            apBoard->formID, pQuest->formID, pQuest->currentInstanceID, pQuest->currentStage, entry.PostingAlias,
++            pPosting ? pPosting->formID : 0, pPosting && pPosting->baseForm ? pPosting->baseForm->formID : 0,
++            pText != nullptr, pText && pText->pOwnerQuest == pQuest, pText ? pText->iOwnerInstance : -1);
++    }
++}
+diff --git a/Code/client/ModCompat/MissivesPostingAliases.h b/Code/client/ModCompat/MissivesPostingAliases.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesPostingAliases.h
+@@ -0,0 +1,275 @@
++#pragma once
++#include <array>
++#include <cstdint>
++
++namespace MissivesCompat
++{
++struct PostingAliases { uint32_t QuestId; uint32_t PostingAlias; uint32_t BoardAlias; };
++// Metadata extracted from both matching Missives 2.03 ESPs; no script code.
++inline constexpr std::array<PostingAliases, 264> cPostingAliases = {{
++    {0x0058E4u, 6u, 5u},
++    {0x0063ABu, 7u, 6u},
++    {0x006E72u, 7u, 6u},
++    {0x008408u, 7u, 6u},
++    {0x008EEAu, 7u, 6u},
++    {0x009A1Cu, 7u, 6u},
++    {0x009F99u, 7u, 6u},
++    {0x00AA67u, 7u, 6u},
++    {0x00AA6Bu, 7u, 6u},
++    {0x00BA9Eu, 8u, 7u},
++    {0x00D59Du, 8u, 7u},
++    {0x00DB0Au, 7u, 6u},
++    {0x00DB0Eu, 7u, 6u},
++    {0x00DB12u, 7u, 6u},
++    {0x00DB16u, 7u, 6u},
++    {0x00E080u, 8u, 7u},
++    {0x00E5EBu, 8u, 7u},
++    {0x00EB55u, 8u, 7u},
++    {0x00EB5Cu, 8u, 7u},
++    {0x00F0C8u, 6u, 5u},
++    {0x00F0CCu, 6u, 5u},
++    {0x00F0D1u, 6u, 5u},
++    {0x00F0D7u, 7u, 6u},
++    {0x00F0DBu, 7u, 6u},
++    {0x00F64Eu, 8u, 7u},
++    {0x00F655u, 8u, 7u},
++    {0x00F65Cu, 8u, 7u},
++    {0x00FBC4u, 8u, 7u},
++    {0x00FBCBu, 8u, 7u},
++    {0x00FBD2u, 8u, 7u},
++    {0x010140u, 7u, 6u},
++    {0x010145u, 7u, 6u},
++    {0x010149u, 7u, 6u},
++    {0x0106B1u, 7u, 6u},
++    {0x0106BDu, 7u, 6u},
++    {0x0106C1u, 7u, 6u},
++    {0x0106C5u, 7u, 6u},
++    {0x0106C9u, 7u, 6u},
++    {0x010C35u, 7u, 6u},
++    {0x010C39u, 7u, 6u},
++    {0x010C3Du, 7u, 6u},
++    {0x0111A3u, 6u, 5u},
++    {0x0111A7u, 6u, 5u},
++    {0x0111ABu, 6u, 5u},
++    {0x0111AFu, 6u, 5u},
++    {0x011715u, 7u, 6u},
++    {0x011719u, 7u, 6u},
++    {0x01171Du, 7u, 6u},
++    {0x011C86u, 8u, 7u},
++    {0x011C8Du, 8u, 7u},
++    {0x011C96u, 8u, 7u},
++    {0x011C9Eu, 8u, 7u},
++    {0x011CA8u, 8u, 7u},
++    {0x011CAFu, 8u, 7u},
++    {0x011CB6u, 8u, 7u},
++    {0x011CBEu, 8u, 7u},
++    {0x011CC5u, 8u, 7u},
++    {0x011CCDu, 8u, 7u},
++    {0x011CD5u, 8u, 7u},
++    {0x011CDDu, 8u, 7u},
++    {0x011CE5u, 8u, 7u},
++    {0x011CEEu, 8u, 7u},
++    {0x011CF5u, 8u, 7u},
++    {0x011CFDu, 8u, 7u},
++    {0x011D04u, 8u, 7u},
++    {0x011D0Cu, 8u, 7u},
++    {0x011D14u, 8u, 7u},
++    {0x011D1Du, 8u, 7u},
++    {0x011D24u, 8u, 7u},
++    {0x01228Fu, 8u, 7u},
++    {0x012297u, 8u, 7u},
++    {0x01229Fu, 8u, 7u},
++    {0x0122A6u, 8u, 7u},
++    {0x0122AEu, 8u, 7u},
++    {0x0122B6u, 8u, 7u},
++    {0x0122BFu, 8u, 7u},
++    {0x012828u, 8u, 7u},
++    {0x012830u, 8u, 7u},
++    {0x012838u, 8u, 7u},
++    {0x012840u, 8u, 7u},
++    {0x012848u, 8u, 7u},
++    {0x012851u, 8u, 7u},
++    {0x012859u, 8u, 7u},
++    {0x012DC3u, 8u, 7u},
++    {0x012DCAu, 8u, 7u},
++    {0x012DD2u, 8u, 7u},
++    {0x012DDAu, 8u, 7u},
++    {0x012DE2u, 8u, 7u},
++    {0x012DEAu, 8u, 7u},
++    {0x012DF2u, 8u, 7u},
++    {0x01335Du, 7u, 6u},
++    {0x013362u, 7u, 6u},
++    {0x013372u, 7u, 6u},
++    {0x013376u, 7u, 6u},
++    {0x01337Au, 7u, 6u},
++    {0x01337Eu, 7u, 6u},
++    {0x013382u, 7u, 6u},
++    {0x0133A2u, 7u, 6u},
++    {0x0133A6u, 7u, 6u},
++    {0x0133AAu, 7u, 6u},
++    {0x0133AEu, 7u, 6u},
++    {0x0133B2u, 7u, 6u},
++    {0x0133B6u, 7u, 6u},
++    {0x0133BAu, 7u, 6u},
++    {0x0133BEu, 7u, 6u},
++    {0x0133C2u, 7u, 6u},
++    {0x0133C6u, 7u, 6u},
++    {0x0133CAu, 7u, 6u},
++    {0x0133CEu, 7u, 6u},
++    {0x013935u, 7u, 6u},
++    {0x013939u, 7u, 6u},
++    {0x013EADu, 7u, 6u},
++    {0x013EB1u, 7u, 6u},
++    {0x013EB5u, 7u, 6u},
++    {0x013EB9u, 7u, 6u},
++    {0x013EBDu, 7u, 6u},
++    {0x013EC1u, 7u, 6u},
++    {0x013EC5u, 7u, 6u},
++    {0x014439u, 7u, 6u},
++    {0x01443Du, 7u, 6u},
++    {0x014441u, 7u, 6u},
++    {0x014445u, 7u, 6u},
++    {0x014449u, 7u, 6u},
++    {0x01444Du, 7u, 6u},
++    {0x014451u, 7u, 6u},
++    {0x0149B7u, 7u, 6u},
++    {0x0149C9u, 7u, 6u},
++    {0x0149CDu, 7u, 6u},
++    {0x0149D1u, 7u, 6u},
++    {0x0149D5u, 7u, 6u},
++    {0x0149D9u, 7u, 6u},
++    {0x0149DDu, 7u, 6u},
++    {0x014F51u, 7u, 6u},
++    {0x014F55u, 7u, 6u},
++    {0x014F59u, 7u, 6u},
++    {0x014F5Du, 7u, 6u},
++    {0x014F61u, 7u, 6u},
++    {0x014F65u, 7u, 6u},
++    {0x014F69u, 7u, 6u},
++    {0x0154DDu, 7u, 6u},
++    {0x0154E1u, 7u, 6u},
++    {0x0154E5u, 7u, 6u},
++    {0x0154E9u, 7u, 6u},
++    {0x0154EDu, 7u, 6u},
++    {0x0154F1u, 7u, 6u},
++    {0x0154F5u, 7u, 6u},
++    {0x015A63u, 7u, 6u},
++    {0x015A6Eu, 7u, 6u},
++    {0x015A72u, 7u, 6u},
++    {0x015A76u, 7u, 6u},
++    {0x015A7Au, 7u, 6u},
++    {0x015A7Eu, 7u, 6u},
++    {0x015A82u, 7u, 6u},
++    {0x015FF7u, 7u, 6u},
++    {0x015FFBu, 7u, 6u},
++    {0x015FFFu, 7u, 6u},
++    {0x016003u, 7u, 6u},
++    {0x016007u, 7u, 6u},
++    {0x01600Bu, 7u, 6u},
++    {0x01600Fu, 7u, 6u},
++    {0x016582u, 7u, 6u},
++    {0x016586u, 7u, 6u},
++    {0x01658Au, 7u, 6u},
++    {0x01658Eu, 7u, 6u},
++    {0x016592u, 7u, 6u},
++    {0x016596u, 7u, 6u},
++    {0x01659Au, 7u, 6u},
++    {0x016B00u, 6u, 5u},
++    {0x016B04u, 6u, 5u},
++    {0x016B08u, 6u, 5u},
++    {0x016B0Cu, 6u, 5u},
++    {0x016B10u, 6u, 5u},
++    {0x016B14u, 6u, 5u},
++    {0x016B18u, 6u, 5u},
++    {0x01707Eu, 6u, 5u},
++    {0x017082u, 6u, 5u},
++    {0x017086u, 6u, 5u},
++    {0x01708Au, 6u, 5u},
++    {0x01708Eu, 6u, 5u},
++    {0x017092u, 6u, 5u},
++    {0x017096u, 6u, 5u},
++    {0x01709Au, 6u, 5u},
++    {0x01709Eu, 6u, 5u},
++    {0x0170A2u, 6u, 5u},
++    {0x0170A6u, 6u, 5u},
++    {0x0170AAu, 6u, 5u},
++    {0x0170AEu, 6u, 5u},
++    {0x0170B2u, 6u, 5u},
++    {0x0170B6u, 6u, 5u},
++    {0x01761Cu, 7u, 6u},
++    {0x017620u, 7u, 6u},
++    {0x017624u, 7u, 6u},
++    {0x017628u, 7u, 6u},
++    {0x01762Cu, 7u, 6u},
++    {0x017630u, 7u, 6u},
++    {0x017634u, 7u, 6u},
++    {0x017638u, 7u, 6u},
++    {0x01763Cu, 7u, 6u},
++    {0x017640u, 7u, 6u},
++    {0x017644u, 7u, 6u},
++    {0x017648u, 7u, 6u},
++    {0x01764Cu, 7u, 6u},
++    {0x017650u, 7u, 6u},
++    {0x017654u, 7u, 6u},
++    {0x017658u, 7u, 6u},
++    {0x01765Cu, 7u, 6u},
++    {0x017660u, 7u, 6u},
++    {0x017664u, 7u, 6u},
++    {0x017668u, 7u, 6u},
++    {0x01766Cu, 7u, 6u},
++    {0x032C3Du, 11u, 10u},
++    {0x034737u, 11u, 10u},
++    {0x035764u, 8u, 7u},
++    {0x036CF8u, 11u, 10u},
++    {0x036CFCu, 11u, 10u},
++    {0x036D02u, 11u, 10u},
++    {0x036D07u, 11u, 10u},
++    {0x036D0Cu, 11u, 10u},
++    {0x037273u, 11u, 10u},
++    {0x037278u, 11u, 10u},
++    {0x03727Du, 11u, 10u},
++    {0x0377E4u, 11u, 10u},
++    {0x0377E9u, 11u, 10u},
++    {0x0377EEu, 11u, 10u},
++    {0x0377F3u, 11u, 10u},
++    {0x0377F8u, 11u, 10u},
++    {0x0377FDu, 11u, 10u},
++    {0x037D64u, 11u, 10u},
++    {0x037D69u, 11u, 10u},
++    {0x0382D0u, 8u, 7u},
++    {0x0382D5u, 8u, 7u},
++    {0x0382DAu, 8u, 7u},
++    {0x0382DFu, 8u, 7u},
++    {0x0382E4u, 8u, 7u},
++    {0x0382E9u, 8u, 7u},
++    {0x0382EBu, 8u, 7u},
++    {0x0382F0u, 8u, 7u},
++    {0x038DBCu, 8u, 7u},
++    {0x03A372u, 8u, 7u},
++    {0x03A37Cu, 8u, 7u},
++    {0x03A386u, 8u, 7u},
++    {0x03A8F2u, 8u, 7u},
++    {0x03A8F3u, 8u, 7u},
++    {0x03A8F4u, 8u, 7u},
++    {0x03AE58u, 8u, 7u},
++    {0x03AE59u, 8u, 7u},
++    {0x03C40Fu, 8u, 7u},
++    {0x03C973u, 8u, 7u},
++    {0x03C974u, 8u, 7u},
++    {0x03C975u, 8u, 7u},
++    {0x03C976u, 8u, 7u},
++    {0x03C977u, 8u, 7u},
++    {0x03CEDBu, 8u, 7u},
++    {0x03CEDCu, 8u, 7u},
++    {0x03CEDDu, 8u, 7u},
++    {0x03CEDEu, 8u, 7u},
++    {0x03CEDFu, 8u, 7u},
++    {0x03CEE0u, 8u, 7u},
++    {0x03CEE1u, 8u, 7u},
++    {0x03CEE2u, 8u, 7u},
++    {0x03D448u, 8u, 7u},
++    {0x03D44Au, 8u, 7u},
++    {0x03D44Bu, 8u, 7u},
++    {0x03D44Cu, 8u, 7u},
++}};
++}
