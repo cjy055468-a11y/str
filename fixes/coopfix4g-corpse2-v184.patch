@@ -29,7 +29,7 @@ index 1dfe4aff..20c63e27 100644
 +    std::optional<uint32_t> KnownServerId{};
  };
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
-index 9e1933e8..d7a15327 100644
+index 9e1933e8..276c39e4 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
 @@ -24,6 +24,7 @@
@@ -64,7 +64,7 @@ index 9e1933e8..d7a15327 100644
 +        // Dead NPCs use native ragdoll/reference positioning. Blocking that
 +        // update leaves their activation position behind the visible body.
 +        // Remote players retain their existing custom death/respawn handling.
-+        if (apThis->formType == Actor::Type && !pExtension->IsPlayer() && apThis->VirtIsDead(false) && apThis->IsInRagdollState())
++        if (apThis->formType == Actor::Type && !pExtension->IsPlayer() && apThis->VirtIsDead(false))
 +            return TiltedPhoques::ThisCall(RealSetPosition, apThis, aPosition);
 +
          return 1;

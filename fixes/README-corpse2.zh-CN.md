@@ -4,9 +4,9 @@
 
 corpse1在判定IsDead后清空整个动作队列，并且在插值里提前返回，停止动画变量更新；还对死亡远端NPC放行原生ActorProcess。这些处理过宽，可能丢弃倒地/死亡动作或打断过渡。本版撤回上述三处：恢复完整动作队列、图变量和正常死亡过渡，ActorProcess回到已实测4g的远端处理方式。不强制重播固定死亡动画，也不反复Kill/复活尸体。
 
-搜索位置修正改为两个条件同时满足：远端非玩家NPC确实死亡，并且引擎IsInRagdollState返回真。只有进入物理布娃娃后，才不再由活人插值强写参考位置和旋转，同时放行原生SetPosition更新。动画变量和动作回放一直保留；仅有死亡标记而尚未倒地时仍走正常过渡。没有用固定延时猜测倒地完成，也没有改箱子、战利品或删除碰撞。
+搜索位置修正改为两个条件同时满足：远端非玩家NPC确实死亡，并且引擎IsInRagdollState返回真。只有进入物理布娃娃后，才不再由活人插值强写参考位置和旋转，死亡NPC的原生SetPosition更新保持放行。动画变量和动作回放一直保留；仅有死亡标记而尚未倒地时仍走正常过渡。没有用固定延时猜测倒地完成，也没有改箱子、战利品或删除碰撞。
 
-IsInRagdollState读取接口来自CommonLibSSE-NG的AE Address Library ID37491，使用项目原有地址库调用方式；Actor.h仅增加非虚成员函数声明，不改变引擎布局/虚表。该接口及引擎副作用有源码参考，未经IDA/Ghidra或实际游戏核实。不能用编译通过宣称站尸或搜索错位已完全解决。仍没有同步完整布娃娃骨骼，两端姿态/滑落可能不同。
+IsInRagdollState读取接口来自CommonLibSSE-NG的AE Address Library ID37491，使用项目原有地址库调用方式；Actor.h仅增加非虚成员函数声明，不改变引擎布局/虚表。新状态查询只在主线程插值更新中调用，不在原生位置钩子中查询，以减少线程风险。该接口及引擎副作用有源码参考，未经IDA/Ghidra或实际游戏核实。不能用编译通过宣称站尸或搜索错位已完全解决。仍没有同步完整布娃娃骨骼，两端姿态/滑落可能不同。
 
 退出游戏后，两名玩家都备份并覆盖MO2实际加载的STR目录中的SkyrimTogether.exe、EarlyLoad.dll。服务器可继续使用4g/netdiag1，也可停服后覆盖本包STServer.dll、SkyrimTogetherServer.exe；保留STServer.ini与所有资源和依赖。BUILD_COMMIT及网络编码保持coopfix4g，tick true目标70/false60。不要再用有站尸回归的corpse1客户端验证本次修复，也不要覆盖SkyrimSE.exe。
 
