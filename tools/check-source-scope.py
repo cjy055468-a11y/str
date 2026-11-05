@@ -28,6 +28,13 @@ regions = [
 for start, end in regions:
     original = before[before.index(start):before.index(end, before.index(start))]
     current = after[after.index(start):after.index(end, after.index(start))]
+    if start.startswith('char TP_MAKE_THISCALL(HookSetPosition') and '--native-corpses' in sys.argv:
+        prefix = '    if (bIsRemote && !ScopedReferencesOverride::IsOverriden())\n'
+        begin = current.index(prefix) + len(prefix)
+        end_block = current.index('    // Don\'t interfere', begin)
+        expected = (Path(__file__).resolve().parent.parent / 'fixes/corpse1-native-position-block.txt').read_text()
+        assert current[begin:end_block] == expected, 'Unexpected corpse hook change'
+        current = current[:begin] + '        return 1;\n\n' + current[end_block:]
     assert original.replace('\r\n', '\n') == current.replace('\r\n', '\n'), start
 # The only new container/death changes defer epoch-matched updates into the
 # existing pending spawn snapshot; require the rest of both handlers unchanged.

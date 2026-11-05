@@ -1,0 +1,10 @@
+    {
+        // Dead NPCs use native ragdoll/reference positioning. Blocking that
+        // update leaves their activation position behind the visible body.
+        // Remote players retain their existing custom death/respawn handling.
+        if (apThis->formType == Actor::Type && !pExtension->IsPlayer() && apThis->VirtIsDead(false))
+            return TiltedPhoques::ThisCall(RealSetPosition, apThis, aPosition);
+
+        return 1;
+    }
+
