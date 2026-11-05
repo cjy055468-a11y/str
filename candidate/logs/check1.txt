@@ -1,1 +1,2 @@
 PASS: MSVC server compile/link and matching server config-generation smoke test completed.
+

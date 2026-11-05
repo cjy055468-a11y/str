@@ -1,0 +1,9 @@
+{
+  "baseline": "489d583ef074acdda055faf539efaf00fc0cdfec",
+  "changed_source_files": [
+    "Code/server/GameServer.cpp",
+    "Code/server/GameServer.h"
+  ],
+  "client_and_protocol_sections_unchanged": true,
+  "diagnostic_only": true
+}

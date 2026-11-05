@@ -1281,7 +1281,7 @@ C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=noti
 [#9b6b0d 0B/0B CN:1 DL:0B]
                                                                                
 [#9b6b0d 0B/0B CN:1 DL:0B]
-11/05 14:39:52 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/01b1fbe2-27a0-4e43-965f-7dc85cc2b355?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-05T15%3A34%3A37Z&rscd=attachment%3B+filename%3Dwindows-x64-vc14.42.34433-2b80cef30074424181b5e19a46ef30fc.7z&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-05T14%3A34%3A02Z&ske=2026-11-05T15%3A34%3A37Z&sks=b&skv=2018-11-09&sig=%2BeLTWCI9mDoSIns1ogoomrfcuea33VKlgN0dcPIBkmk%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5Mzg5MTM5MiwibmJmIjoxNzkzODg5NTkyLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.BUtn3_omqxcZ_rpUME76Q21TPOuNbELpnT4wMcCTezA&response-content-disposition=attachment%3B%20filename%3Dwindows-x64-vc14.42.34433-2b80cef30074424181b5e19a46ef30fc.7z&response-content-type=application%2Foctet-stream
+11/05 14:39:52 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/01b1fbe2-27a0-4e43-965f-7dc85cc2b355?[QUERY-REDACTED]
 11/05 14:39:52 [[1;32mNOTICE[0m] Allocating disk space. Use --file-allocation=none to disable it. See --file-allocation option in man page for more details.
 
 11/05 14:39:52 [[1;32mNOTICE[0m] Download complete: ./cmake-3.30.2.7z
@@ -2274,7 +2274,7 @@ C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=noti
 [#a3eac2 0B/0B CN:1 DL:0B]
                                                                                
 [#a3eac2 0B/0B CN:1 DL:0B]
-11/05 14:43:00 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/c52b4fc2-88ff-4b79-9f03-a46ebdeb587d?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-05T15%3A31%3A38Z&rscd=attachment%3B+filename%3Dwindows-x64-vc14.44.35207-a984d563f9e448bfa7c6d9b92f93e32d.7z&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-05T14%3A31%3A15Z&ske=2026-11-05T15%3A31%3A38Z&sks=b&skv=2018-11-09&sig=22S2gAq71vNTgJ%2FJJgsyDDwIQFw1O3g%2Bk45gbVPrmfA%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5Mzg5MDA4MCwibmJmIjoxNzkzODg5NzgwLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.DYS6mbhYv9cN6DrJRTrCHEO_PU42iP2nTCp2hKD8FTw&response-content-disposition=attachment%3B%20filename%3Dwindows-x64-vc14.44.35207-a984d563f9e448bfa7c6d9b92f93e32d.7z&response-content-type=application%2Foctet-stream
+11/05 14:43:00 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/c52b4fc2-88ff-4b79-9f03-a46ebdeb587d?[QUERY-REDACTED]
 11/05 14:43:01 [[1;32mNOTICE[0m] Download complete: ./tiltedcore-v0.2.9.7z
 
 Download Results:
@@ -2407,7 +2407,7 @@ C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=noti
 [#38f1c0 0B/0B CN:1 DL:0B]
                                                                                
 [#38f1c0 0B/0B CN:1 DL:0B]
-11/05 14:43:12 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/a69dd2ad-644e-4e7a-92c0-b32c21a629a3?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-05T15%3A31%3A34Z&rscd=attachment%3B+filename%3Dwindows-x64-vc14.39.33519-2a26ce639e064564bda0dcfab93e7110.7z&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-05T14%3A31%3A10Z&ske=2026-11-05T15%3A31%3A34Z&sks=b&skv=2018-11-09&sig=jj54OMQZ4X07SHuzuFlQicgZEgdPg6lGeLee2Bbof74%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5Mzg5MDA5MiwibmJmIjoxNzkzODg5NzkyLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.aiNJjtwbu0X117e2QLDePod6pkwebw6bqk13MR1MKEQ&response-content-disposition=attachment%3B%20filename%3Dwindows-x64-vc14.39.33519-2a26ce639e064564bda0dcfab93e7110.7z&response-content-type=application%2Foctet-stream
+11/05 14:43:12 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/a69dd2ad-644e-4e7a-92c0-b32c21a629a3?[QUERY-REDACTED]
 11/05 14:43:12 [[1;32mNOTICE[0m] Download complete: ./snappy-1.1.10.7z
 
 Download Results:
@@ -3718,7 +3718,7 @@ C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=noti
 [#9d91bf 0B/0B CN:1 DL:0B]
                                                                                
 [#9d91bf 0B/0B CN:1 DL:0B]
-11/05 14:44:06 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/23357588/085a121b-afb1-46c5-9fed-ed147b3d5095?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-05T15%3A32%3A03Z&rscd=attachment%3B+filename%3Dprotobuf-26.1.zip&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-05T14%3A31%3A39Z&ske=2026-11-05T15%3A32%3A03Z&sks=b&skv=2018-11-09&sig=kw80WemMR7qphRRlEt8MlHL4Zg0giWPRKIsHxsmQmYM%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5Mzg5MDE0NiwibmJmIjoxNzkzODg5ODQ2LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.24IKBjgEgxSuvVo6SbI8vYbNlSI6tFyG3cxAcJsXtS8&response-content-disposition=attachment%3B%20filename%3Dprotobuf-26.1.zip&response-content-type=application%2Foctet-stream
+11/05 14:44:06 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/23357588/085a121b-afb1-46c5-9fed-ed147b3d5095?[QUERY-REDACTED]
 11/05 14:44:06 [[1;32mNOTICE[0m] Allocating disk space. Use --file-allocation=none to disable it. See --file-allocation option in man page for more details.
 
 11/05 14:44:06 [[1;32mNOTICE[0m] Download complete: ./protobuf-cpp-26.1.zip
@@ -4727,7 +4727,7 @@ C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=noti
 
                                                                                
 [#ac5f77 0B/0B CN:1 DL:0B]
-11/05 14:49:17 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/ff0fd147-8beb-44cc-93ac-94a9fa1e670a?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-05T15%3A31%3A55Z&rscd=attachment%3B+filename%3Dwindows-x64-vc14.40.33807-83f3f0de210f4e5d8f46bd668e3ee167.7z&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-05T14%3A31%3A10Z&ske=2026-11-05T15%3A31%3A55Z&sks=b&skv=2018-11-09&sig=FvSrOlppLF4jWR2WEcEK8fUjRTxSeS4387xI6QHrOTA%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5Mzg5MDQ1NywibmJmIjoxNzkzODkwMTU3LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.05Ku-1SyEQn82ssAIF7JgLGG2rJS631CuMmCWTxzICs&response-content-disposition=attachment%3B%20filename%3Dwindows-x64-vc14.40.33807-83f3f0de210f4e5d8f46bd668e3ee167.7z&response-content-type=application%2Foctet-stream
+11/05 14:49:17 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/ff0fd147-8beb-44cc-93ac-94a9fa1e670a?[QUERY-REDACTED]
 11/05 14:49:17 [[1;32mNOTICE[0m] Download complete: ./libuv-v1.48.0.7z
 
 Download Results:
@@ -6886,7 +6886,7 @@ C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=noti
 
 11/05 14:51:43 [[1;32mNOTICE[0m] Downloading 1 item(s)
 
-11/05 14:51:43 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/3163cc53-8d4e-4793-91f6-3126b127d2a8?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-05T15%3A35%3A21Z&rscd=attachment%3B+filename%3Dwindows-x64-vc14.44.35207-bbcea340cdea492c90b1699a210e1ff3.7z&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-05T14%3A34%3A39Z&ske=2026-11-05T15%3A35%3A21Z&sks=b&skv=2018-11-09&sig=CWY9GEpKvs%2FwK4mpRCFX2s9MoGRgD7OTf4aFRf9lag4%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5Mzg5MDYwMywibmJmIjoxNzkzODkwMzAzLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.5AOovAiP2gm769KIm97fwbEgaxjn8pcCGVy6qzTxnoA&response-content-disposition=attachment%3B%20filename%3Dwindows-x64-vc14.44.35207-bbcea340cdea492c90b1699a210e1ff3.7z&response-content-type=application%2Foctet-stream
+11/05 14:51:43 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/3163cc53-8d4e-4793-91f6-3126b127d2a8?[QUERY-REDACTED]
 
 11/05 14:51:44 [[1;32mNOTICE[0m] Download complete: ./cryptopp-8.9.0.7z
 
@@ -7005,7 +7005,7 @@ C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=noti
 
 11/05 14:51:47 [[1;32mNOTICE[0m] Downloading 1 item(s)
 
-11/05 14:51:47 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/5286ef9f-551d-4c98-a1c8-8d8a2760a53e?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-05T15%3A30%3A58Z&rscd=attachment%3B+filename%3Dwindows-x64-vc14.44.35207-61d86fc2f8cc4e60a5bef5bc478c3a92.7z&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-05T14%3A30%3A57Z&ske=2026-11-05T15%3A30%3A58Z&sks=b&skv=2018-11-09&sig=Pr22DMhMLcrXRG9vgNFekqc87wssPkhvsEYKL8GnNKs%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5Mzg5MDYwNywibmJmIjoxNzkzODkwMzA3LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.GGmXtWb5DByaLXEFFPRBBcQ-enrM17kdunSBg5zDsoU&response-content-disposition=attachment%3B%20filename%3Dwindows-x64-vc14.44.35207-61d86fc2f8cc4e60a5bef5bc478c3a92.7z&response-content-type=application%2Foctet-stream
+11/05 14:51:47 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/5286ef9f-551d-4c98-a1c8-8d8a2760a53e?[QUERY-REDACTED]
 
 11/05 14:51:48 [[1;32mNOTICE[0m] Allocating disk space. Use --file-allocation=none to disable it. See --file-allocation option in man page for more details.
 
@@ -7368,7 +7368,7 @@ C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=noti
 
 11/05 14:52:20 [[1;32mNOTICE[0m] Downloading 1 item(s)
 
-11/05 14:52:21 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/417e416b-fcd9-4af0-9375-9418f60db4fe?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-05T15%3A31%3A49Z&rscd=attachment%3B+filename%3Dwindows-x64-vc14.44.35207-d676b73b676c41cdae37b37fbf6c9cbd.7z&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-05T14%3A31%3A43Z&ske=2026-11-05T15%3A31%3A49Z&sks=b&skv=2018-11-09&sig=eYI8R%2F%2F05LVXdET4YNkWHhjiZHfhiZCZC6gwYlCo8X0%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5Mzg5MDY0MSwibmJmIjoxNzkzODkwMzQxLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.lapY5_itx8bHZtEctAPbVDflqPghjwCDaQNhtRfyr5E&response-content-disposition=attachment%3B%20filename%3Dwindows-x64-vc14.44.35207-d676b73b676c41cdae37b37fbf6c9cbd.7z&response-content-type=application%2Foctet-stream
+11/05 14:52:21 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/417e416b-fcd9-4af0-9375-9418f60db4fe?[QUERY-REDACTED]
 
 11/05 14:52:21 [[1;32mNOTICE[0m] Download complete: ./zlib-v1.3.1.7z
 
@@ -7792,3 +7792,4 @@ configure
     host = windows
 }
 [0m[1;33;1mwarning: [33;1mplease use add_configs("runtimes") instead of add_configs("vs_runtime").[0m
+

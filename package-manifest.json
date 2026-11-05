@@ -1,0 +1,12 @@
+{
+  "source_revision": "37feb3f595f0a8995d6a2c40ee0974f4b8f94543",
+  "run_id": "42046780608",
+  "artifact": "STR-coopfix4g-netdiag1-server.zip",
+  "bytes": 3804976,
+  "sha256": "cbbad62bb026f73b6a587299337a3cbf5e4fbd11d12b078c556ec4db670cf2f8",
+  "tests": 75,
+  "required_tests": 48,
+  "purpose": "server diagnostics only; root cause not yet established",
+  "client_version": "unchanged coopfix4g",
+  "game_test": "not run; one new reproduction required"
+}

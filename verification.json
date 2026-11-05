@@ -1,0 +1,37 @@
+{
+  "source_revision": "37feb3f595f0a8995d6a2c40ee0974f4b8f94543",
+  "run_id": "42046780608",
+  "purpose": "diagnostics only; disconnect root cause not established",
+  "tests": 75,
+  "protocol": "unchanged coopfix4g",
+  "changed_source_files": [
+    "Code/server/GameServer.cpp",
+    "Code/server/GameServer.h"
+  ],
+  "client_and_gameplay_sections_unchanged": true,
+  "round1": "all patch sections compared with delivered 4g",
+  "round2": "both patches independently applied to clean official v1.8.4; only two server files differ",
+  "binaries": [
+    {
+      "file": "STServer.dll",
+      "bytes": 7369216,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "56c013a3182bc3148cb8e0ef35a9139a4fbe4205e61bada1a24144ea84724467",
+      "imports_match_4g": true,
+      "exports_match_4g": true
+    },
+    {
+      "file": "SkyrimTogetherServer.exe",
+      "bytes": 875008,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "86bd61a97522b62eb9ac36093ee5183e0106c1cda15ce8c47615ccb236d8b0eb",
+      "imports_match_4g": true,
+      "exports_match_4g": true
+    }
+  ],
+  "game_test": "not run; one server/guest reproduction required"
+}
