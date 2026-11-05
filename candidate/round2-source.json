@@ -1,0 +1,18 @@
+{
+  "official_source": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "round": 2,
+  "clean_apply": "4g, netdiag1 and corpse1 all passed",
+  "source_revision": "a140f096a717af8c279cc41e4bbd20666786ad9b",
+  "changed_since_netdiag1": [
+    "Code/client/Components/InterpolationComponent.h",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/InterpolationSystem.cpp"
+  ],
+  "unchanged_patch_files": 56,
+  "actor_other_functions_match_tested4g": true,
+  "animation_other_functions_match_tested4g": true,
+  "interpolation_math_and_clock_unchanged": true,
+  "protocol_inventory_drops_furniture_unchanged": true,
+  "game_test": "not run"
+}

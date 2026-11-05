@@ -1,0 +1,13 @@
+{
+  "source_revision": "a140f096a717af8c279cc41e4bbd20666786ad9b",
+  "run_id": "42056025773",
+  "artifact": "STR-coopfix4g-corpse1-test.zip",
+  "bytes": 6466446,
+  "sha256": "8e9d84cbcd2b4244aa5a537b4f03a15f53961b83e798e4f29c910c4abc3d590b",
+  "tests": 75,
+  "required_tests": 48,
+  "purpose": "attempted remote NPC corpse search correction",
+  "protocol": "unchanged coopfix4g",
+  "game_test": "not run; visible-body Search prompt and differing ragdoll poses require two-player testing",
+  "disconnect_fix": "not implemented; server diagnostics retained"
+}

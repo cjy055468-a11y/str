@@ -1,0 +1,13 @@
+{
+  "baseline": "netdiag1 source37feb / tested gameplay4g",
+  "changed_source_files": [
+    "Code/client/Components/InterpolationComponent.h",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/InterpolationSystem.cpp"
+  ],
+  "unchanged_patch_sections": 56,
+  "protocol_and_inventory_unchanged": true,
+  "official_dev_checked": "711ca1b832790e9035fd05c88a728e88f69c9b4b",
+  "native_game_test": "not run"
+}

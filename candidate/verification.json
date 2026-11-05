@@ -1,0 +1,66 @@
+{
+  "source_revision": "a140f096a717af8c279cc41e4bbd20666786ad9b",
+  "run_id": "42056025773",
+  "purpose": "attempted remote NPC corpse native-motion repair; game verification pending",
+  "tests": 75,
+  "required_tests": 48,
+  "protocol": "unchanged coopfix4g",
+  "source_reviews": 2,
+  "changed_client_files": [
+    "Code/client/Components/InterpolationComponent.h",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/InterpolationSystem.cpp"
+  ],
+  "drop_furniture_inventory_unchanged": true,
+  "binaries": [
+    {
+      "file": "SkyrimTogether.exe",
+      "bytes": 6578688,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "308cd0f8dafab8e10b8dfd700de4e94ec5e7f7786efa3df7b6fcc0facce8ddb2",
+      "imports_match_4g": true,
+      "exports_match_4g": true,
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "EarlyLoad.dll",
+      "bytes": 103424,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "f362a65aa5c778c052a3ff4b3e18e6470ed15561bafd493506b5510f7ef8b103",
+      "imports_match_4g": true,
+      "exports_match_4g": true,
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "STServer.dll",
+      "bytes": 7369216,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "0df551ca5d4ebcfee03ee15ebe22ada1d1765e5eb82d10ae7476ccae6df127f7",
+      "imports_match_4g": true,
+      "exports_match_4g": true,
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "SkyrimTogetherServer.exe",
+      "bytes": 875008,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "199a76e2161998570548633d4bea36a4f27511ca17503321db8df4e1213f8d47",
+      "imports_match_4g": true,
+      "exports_match_4g": true
+    }
+  ],
+  "game_test": "not run; two players must test Search prompt at visible corpse; poses may differ",
+  "disconnect_root_cause": "unresolved; retained netdiag1 server diagnostics"
+}
