@@ -1,0 +1,9 @@
+
+Algorithm : SHA256
+Hash      : 86BD61A97522B62EB9AC36093EE5183E0106C1CDA15CE8C47615CCB236D8B0EB
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\SkyrimTogetherServer.exe
+
+Algorithm : SHA256
+Hash      : 56C013A3182BC3148CB8E0EF35A9139A4FBE4205E61BADA1A24144EA84724467
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\STServer.dll
+

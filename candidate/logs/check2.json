@@ -1,0 +1,18 @@
+[
+  {
+    "file": "STServer.dll",
+    "bytes": 7369216,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": true,
+    "sha256": "56c013a3182bc3148cb8e0ef35a9139a4fbe4205e61bada1a24144ea84724467"
+  },
+  {
+    "file": "SkyrimTogetherServer.exe",
+    "bytes": 875008,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": false,
+    "sha256": "86bd61a97522b62eb9ac36093ee5183e0106c1cda15ce8c47615ccb236d8b0eb"
+  }
+]
