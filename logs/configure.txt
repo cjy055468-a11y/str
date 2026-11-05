@@ -1,0 +1,2092 @@
+[0m[33;1mDetecting Visual Studio environment (cached); run `xmake global --clean` first if vs updated.[0m
+[0mchecking for vswhere.exe ... [32;1mC:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe[0m
+[0m[2mdetecting vstudio environment ... [32;1m2022(17.0, toolset:14.44)[0m
+[0mchecking for cl.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe[0m
+[0mchecking for Microsoft C/C++ Compiler (x64) ... [32;1mok[0m
+[0mchecking for Microsoft Visual Studio (x64) version ... [32;1m2022[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(zig.exe version), No such file or directory[0m
+[0mchecking for zig ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(nim.exe --version), No such file or directory[0m
+[0mchecking for nim ... [31;1mno[0m
+[0mchecking for dotnet ... [32;1mC:\Program Files\dotnet\dotnet.exe[0m
+[0mchecking for .NET SDK version ... [32;1m10.0.403[0m
+[0mchecking for .NET SDK directory ... [32;1mC:\Program Files\dotnet\sdk\10.0.403[0m
+[0mchecking for git ... [32;1mC:\Program Files\Git\bin\git.exe[0m
+[0mchecking for gzip ... [32;1mC:\Program Files\Git\usr\bin\gzip.exe[0m
+[0mchecking for tar ... [32;1mC:\Windows\System32\tar.exe[0m
+[0mchecking for curl ... [32;1mC:\hostedtoolcache\windows\xmake\3.1.0\x64\winenv\bin\curl[0m
+pinging the host(gitlab.com) ... 32 ms
+pinging the host(github.com) ... 108 ms
+pinging the host(gitee.com) ... 65535 ms
+pinging the host(gitcode.com) ... 886 ms
+updating repositories .. 
+cloning repository(build-artifacts): https://gitlab.com/xmake-mirror/build-artifacts.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts ..
+Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts'...
+Updating files:  26% (655/2444)
+Updating files:  27% (660/2444)
+Updating files:  28% (685/2444)
+Updating files:  29% (709/2444)
+Updating files:  30% (734/2444)
+Updating files:  31% (758/2444)
+Updating files:  32% (783/2444)
+Updating files:  33% (807/2444)
+Updating files:  34% (831/2444)
+Updating files:  35% (856/2444)
+Updating files:  36% (880/2444)
+Updating files:  37% (905/2444)
+Updating files:  38% (929/2444)
+Updating files:  39% (954/2444)
+Updating files:  40% (978/2444)
+Updating files:  40% (1000/2444)
+Updating files:  41% (1003/2444)
+Updating files:  42% (1027/2444)
+Updating files:  43% (1051/2444)
+Updating files:  44% (1076/2444)
+Updating files:  45% (1100/2444)
+Updating files:  46% (1125/2444)
+Updating files:  47% (1149/2444)
+Updating files:  48% (1174/2444)
+Updating files:  49% (1198/2444)
+Updating files:  50% (1222/2444)
+Updating files:  51% (1247/2444)
+Updating files:  52% (1271/2444)
+Updating files:  53% (1296/2444)
+Updating files:  54% (1320/2444)
+Updating files:  55% (1345/2444)
+Updating files:  56% (1369/2444)
+Updating files:  57% (1394/2444)
+Updating files:  58% (1418/2444)
+Updating files:  59% (1442/2444)
+Updating files:  60% (1467/2444)
+Updating files:  60% (1489/2444)
+Updating files:  61% (1491/2444)
+Updating files:  62% (1516/2444)
+Updating files:  63% (1540/2444)
+Updating files:  64% (1565/2444)
+Updating files:  65% (1589/2444)
+Updating files:  66% (1614/2444)
+Updating files:  67% (1638/2444)
+Updating files:  68% (1662/2444)
+Updating files:  69% (1687/2444)
+Updating files:  70% (1711/2444)
+Updating files:  71% (1736/2444)
+Updating files:  71% (1747/2444)
+Updating files:  72% (1760/2444)
+Updating files:  73% (1785/2444)
+Updating files:  74% (1809/2444)
+Updating files:  75% (1833/2444)
+Updating files:  76% (1858/2444)
+Updating files:  77% (1882/2444)
+Updating files:  78% (1907/2444)
+Updating files:  79% (1931/2444)
+Updating files:  80% (1956/2444)
+Updating files:  81% (1980/2444)
+Updating files:  82% (2005/2444)
+Updating files:  83% (2029/2444)
+Updating files:  84% (2053/2444)
+Updating files:  85% (2078/2444)
+Updating files:  85% (2095/2444)
+Updating files:  86% (2102/2444)
+Updating files:  87% (2127/2444)
+Updating files:  88% (2151/2444)
+Updating files:  89% (2176/2444)
+Updating files:  90% (2200/2444)
+Updating files:  91% (2225/2444)
+Updating files:  92% (2249/2444)
+Updating files:  93% (2273/2444)
+Updating files:  94% (2298/2444)
+Updating files:  95% (2322/2444)
+Updating files:  96% (2347/2444)
+Updating files:  97% (2371/2444)
+Updating files:  98% (2396/2444)
+Updating files:  99% (2420/2444)
+Updating files: 100% (2444/2444)
+Updating files: 100% (2444/2444), done.
+cloning repository(xmake-repo): https://gitlab.com/tboox/xmake-repo.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo ..
+Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo'...
+Updating files:  18% (538/2943)
+Updating files:  19% (560/2943)
+Updating files:  20% (589/2943)
+Updating files:  21% (619/2943)
+Updating files:  22% (648/2943)
+Updating files:  23% (677/2943)
+Updating files:  24% (707/2943)
+Updating files:  25% (736/2943)
+Updating files:  26% (766/2943)
+Updating files:  27% (795/2943)
+Updating files:  27% (799/2943)
+Updating files:  28% (825/2943)
+Updating files:  29% (854/2943)
+Updating files:  30% (883/2943)
+Updating files:  31% (913/2943)
+Updating files:  32% (942/2943)
+Updating files:  33% (972/2943)
+Updating files:  34% (1001/2943)
+Updating files:  35% (1031/2943)
+Updating files:  36% (1060/2943)
+Updating files:  37% (1089/2943)
+Updating files:  38% (1119/2943)
+Updating files:  39% (1148/2943)
+Updating files:  40% (1178/2943)
+Updating files:  41% (1207/2943)
+Updating files:  42% (1237/2943)
+Updating files:  43% (1266/2943)
+Updating files:  44% (1295/2943)
+Updating files:  45% (1325/2943)
+Updating files:  46% (1354/2943)
+Updating files:  47% (1384/2943)
+Updating files:  48% (1413/2943)
+Updating files:  49% (1443/2943)
+Updating files:  50% (1472/2943)
+Updating files:  51% (1501/2943)
+Updating files:  51% (1515/2943)
+Updating files:  52% (1531/2943)
+Updating files:  53% (1560/2943)
+Updating files:  54% (1590/2943)
+Updating files:  55% (1619/2943)
+Updating files:  56% (1649/2943)
+Updating files:  57% (1678/2943)
+Updating files:  58% (1707/2943)
+Updating files:  59% (1737/2943)
+Updating files:  60% (1766/2943)
+Updating files:  61% (1796/2943)
+Updating files:  62% (1825/2943)
+Updating files:  63% (1855/2943)
+Updating files:  64% (1884/2943)
+Updating files:  65% (1913/2943)
+Updating files:  66% (1943/2943)
+Updating files:  67% (1972/2943)
+Updating files:  67% (1996/2943)
+Updating files:  68% (2002/2943)
+Updating files:  69% (2031/2943)
+Updating files:  70% (2061/2943)
+Updating files:  71% (2090/2943)
+Updating files:  72% (2119/2943)
+Updating files:  73% (2149/2943)
+Updating files:  74% (2178/2943)
+Updating files:  75% (2208/2943)
+Updating files:  76% (2237/2943)
+Updating files:  77% (2267/2943)
+Updating files:  78% (2296/2943)
+Updating files:  79% (2325/2943)
+Updating files:  80% (2355/2943)
+Updating files:  81% (2384/2943)
+Updating files:  82% (2414/2943)
+Updating files:  83% (2443/2943)
+Updating files:  84% (2473/2943)
+Updating files:  85% (2502/2943)
+Updating files:  86% (2531/2943)
+Updating files:  87% (2561/2943)
+Updating files:  87% (2567/2943)
+Updating files:  88% (2590/2943)
+Updating files:  89% (2620/2943)
+Updating files:  90% (2649/2943)
+Updating files:  91% (2679/2943)
+Updating files:  92% (2708/2943)
+Updating files:  93% (2737/2943)
+Updating files:  94% (2767/2943)
+Updating files:  95% (2796/2943)
+Updating files:  96% (2826/2943)
+Updating files:  97% (2855/2943)
+Updating files:  98% (2885/2943)
+Updating files:  99% (2914/2943)
+Updating files: 100% (2943/2943)
+Updating files: 100% (2943/2943), done.
+[0m[32mok[0m
+C:\Program Files\Git\bin\git.exe rev-parse HEAD
+[0mchecking for ninja ... [31;1mno[0m
+[0mchecking for ninja ... [31;1mno[0m
+[0mchecking for ninja ... [32;1mC:\ProgramData\Chocolatey\bin\ninja.exe[0m
+[0mchecking for cmake ... [31;1mno[0m
+[0mchecking for cmake ... [31;1mno[0m
+[0mchecking for cmake ... [32;1mC:\Program Files\CMake\bin\cmake[0m
+finding lua from xmake ..
+[0mchecking for xmake::lua ... [31;1mno[0m
+finding lua from vcpkg ..
+[0mchecking for vcpkg.exe ... [32;1mC:\vcpkg\vcpkg.exe[0m
+finding lua from conan ..
+finding lua from system ..
+[0mchecking for cl.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe[0m
+[0m[2mchecking for the c compiler (cc) ... [32;1mcl.exe[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_7069b054231e564498a8f5cd32cb6581.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0mchecking for C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe ... [32;1mc:\program files\microsoft visual studio\2022\enterprise\vc\tools\msvc\14.44.35207\bin\hostx64\x64\cl.exe[0m
+[0m[2mchecking for flags (cl_sourceDependencies) ... [32;1mok[0m
+[0m[2m> cl.exe "/sourceDependencies" "C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_bdb61abfebf0f3a61bd73a2fc88f8673.json" "-nologo"[0m
+[0mchecking for link.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\link.exe[0m
+[0m[2mchecking for the linker (ld) ... [32;1mlink.exe[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 lua.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_7069b054231e564498a8f5cd32cb6581.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_7069b054231e564498a8f5cd32cb6581.o[0m
+[0m[2m> checking for c links(lua)[0m
+[0m[2m> checking for c snippet(find_package/lua)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'lua.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for lua ... [31;1mno[0m
+finding sol2 from xmake ..
+[0mchecking for xmake::sol2 ... [31;1mno[0m
+finding sol2 from vcpkg ..
+finding sol2 from conan ..
+finding sol2 from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f7a9214dfa6b1f40b6800a8a90c6a34a.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 sol2.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f7a9214dfa6b1f40b6800a8a90c6a34a.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f7a9214dfa6b1f40b6800a8a90c6a34a.o[0m
+[0m[2m> checking for c links(sol2)[0m
+[0m[2m> checking for c snippet(find_package/sol2)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'sol2.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for sol2 ... [31;1mno[0m
+[0mchecking for cmake ... [31;1mno[0m
+finding mimalloc from xmake ..
+[0mchecking for xmake::mimalloc ... [31;1mno[0m
+finding mimalloc from vcpkg ..
+finding mimalloc from conan ..
+finding mimalloc from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_2e576f8321fc8b7dc4b7631295dc5bce.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 mimalloc.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_2e576f8321fc8b7dc4b7631295dc5bce.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_2e576f8321fc8b7dc4b7631295dc5bce.o[0m
+[0m[2m> checking for c links(mimalloc)[0m
+[0m[2m> checking for c snippet(find_package/mimalloc)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'mimalloc.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for mimalloc ... [31;1mno[0m
+finding tiltedcore from xmake ..
+[0mchecking for xmake::tiltedcore ... [31;1mno[0m
+finding tiltedcore from vcpkg ..
+finding tiltedcore from conan ..
+finding tiltedcore from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_38ec566ed8710ec6785eeecfd017df24.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 tiltedcore.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_38ec566ed8710ec6785eeecfd017df24.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_38ec566ed8710ec6785eeecfd017df24.o[0m
+[0m[2m> checking for c links(tiltedcore)[0m
+[0m[2m> checking for c snippet(find_package/tiltedcore)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'tiltedcore.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for tiltedcore ... [31;1mno[0m
+finding hopscotch-map from xmake ..
+[0mchecking for xmake::hopscotch-map ... [31;1mno[0m
+finding hopscotch-map from vcpkg ..
+finding hopscotch-map from conan ..
+finding hopscotch-map from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_47d39dd46c4bc1f267af55bd41675c74.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 hopscotch-map.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_47d39dd46c4bc1f267af55bd41675c74.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_47d39dd46c4bc1f267af55bd41675c74.o[0m
+[0m[2m> checking for c links(hopscotch-map)[0m
+[0m[2m> checking for c snippet(find_package/hopscotch-map)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'hopscotch-map.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for hopscotch-map ... [31;1mno[0m
+finding snappy from xmake ..
+[0mchecking for xmake::snappy ... [31;1mno[0m
+finding snappy from vcpkg ..
+finding snappy from conan ..
+finding snappy from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_284027caa589ef5ede6dc3493bd191f6.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 snappy.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_284027caa589ef5ede6dc3493bd191f6.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_284027caa589ef5ede6dc3493bd191f6.o[0m
+[0m[2m> checking for c links(snappy)[0m
+[0m[2m> checking for c snippet(find_package/snappy)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'snappy.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for snappy ... [31;1mno[0m
+finding abseil from xmake ..
+[0mchecking for xmake::abseil ... [31;1mno[0m
+finding abseil from vcpkg ..
+finding abseil from conan ..
+finding abseil from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_925b118fc28bf109625c3dc906f96658.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 abseil.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_925b118fc28bf109625c3dc906f96658.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_925b118fc28bf109625c3dc906f96658.o[0m
+[0m[2m> checking for c links(abseil)[0m
+[0m[2m> checking for c snippet(find_package/abseil)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'abseil.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for abseil ... [31;1mno[0m
+finding protobuf-cpp from xmake ..
+[0mchecking for xmake::protobuf-cpp ... [31;1mno[0m
+finding protobuf-cpp from vcpkg ..
+finding protobuf-cpp from conan ..
+finding protobuf-cpp from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5b4c4ade02ce17b869b3443a8ede186f.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 protobuf-cpp.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5b4c4ade02ce17b869b3443a8ede186f.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5b4c4ade02ce17b869b3443a8ede186f.o[0m
+[0m[2m> checking for c links(protobuf-cpp)[0m
+[0m[2m> checking for c snippet(find_package/protobuf-cpp)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'protobuf-cpp.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for protobuf-cpp ... [31;1mno[0m
+finding gamenetworkingsockets from xmake ..
+[0mchecking for xmake::gamenetworkingsockets ... [31;1mno[0m
+finding gamenetworkingsockets from vcpkg ..
+finding gamenetworkingsockets from conan ..
+finding gamenetworkingsockets from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_3ef78283f18297ca01fbe82187e7ed0d.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 gamenetworkingsockets.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_3ef78283f18297ca01fbe82187e7ed0d.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_3ef78283f18297ca01fbe82187e7ed0d.o[0m
+[0m[2m> checking for c links(gamenetworkingsockets)[0m
+[0m[2m> checking for c snippet(find_package/gamenetworkingsockets)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'gamenetworkingsockets.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for gamenetworkingsockets ... [31;1mno[0m
+finding catch2 from xmake ..
+[0mchecking for xmake::catch2 ... [31;1mno[0m
+finding catch2 from vcpkg ..
+finding catch2 from conan ..
+finding catch2 from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_1bfcae0416508ce190161e93e71f666d.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 catch2.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_1bfcae0416508ce190161e93e71f666d.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_1bfcae0416508ce190161e93e71f666d.o[0m
+[0m[2m> checking for c links(catch2)[0m
+[0m[2m> checking for c snippet(find_package/catch2)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'catch2.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for catch2 ... [31;1mno[0m
+finding libuv from xmake ..
+[0mchecking for xmake::libuv ... [31;1mno[0m
+finding libuv from vcpkg ..
+finding libuv from conan ..
+finding libuv from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_61ca58ec58fc9c6ae1d19a1ea2935b4b.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 libuv.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_61ca58ec58fc9c6ae1d19a1ea2935b4b.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_61ca58ec58fc9c6ae1d19a1ea2935b4b.o[0m
+[0m[2m> checking for c links(libuv)[0m
+[0m[2m> checking for c snippet(find_package/libuv)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'libuv.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for libuv ... [31;1mno[0m
+finding mem from xmake ..
+[0mchecking for xmake::mem ... [31;1mno[0m
+finding mem from vcpkg ..
+finding mem from conan ..
+finding mem from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_50c585bec7a7adb02147558914199d08.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 mem.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_50c585bec7a7adb02147558914199d08.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_50c585bec7a7adb02147558914199d08.o[0m
+[0m[2m> checking for c links(mem)[0m
+[0m[2m> checking for c snippet(find_package/mem)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'mem.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for mem ... [31;1mno[0m
+finding minhook from xmake ..
+[0mchecking for xmake::minhook ... [31;1mno[0m
+finding minhook from vcpkg ..
+finding minhook from conan ..
+finding minhook from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_a69bd8fbb45bfc96b74c62dc2c76c7f1.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 minhook.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_a69bd8fbb45bfc96b74c62dc2c76c7f1.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_a69bd8fbb45bfc96b74c62dc2c76c7f1.o[0m
+[0m[2m> checking for c links(minhook)[0m
+[0m[2m> checking for c snippet(find_package/minhook)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'minhook.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for minhook ... [31;1mno[0m
+finding xbyak from xmake ..
+[0mchecking for xmake::xbyak ... [31;1mno[0m
+finding xbyak from vcpkg ..
+finding xbyak from conan ..
+finding xbyak from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_4754d83ea79a657f4339fcc37a0c9620.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 xbyak.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_4754d83ea79a657f4339fcc37a0c9620.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_4754d83ea79a657f4339fcc37a0c9620.o[0m
+[0m[2m> checking for c links(xbyak)[0m
+[0m[2m> checking for c snippet(find_package/xbyak)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'xbyak.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for xbyak ... [31;1mno[0m
+finding directxtk from xmake ..
+[0mchecking for xmake::directxtk ... [31;1mno[0m
+finding directxtk from vcpkg ..
+finding directxtk from conan ..
+finding directxtk from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_509153f84f794f97c725110445fa7f31.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 directxtk.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_509153f84f794f97c725110445fa7f31.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_509153f84f794f97c725110445fa7f31.o[0m
+[0m[2m> checking for c links(directxtk)[0m
+[0m[2m> checking for c snippet(find_package/directxtk)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'directxtk.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for directxtk ... [31;1mno[0m
+finding cef from xmake ..
+[0mchecking for xmake::cef ... [31;1mno[0m
+finding cef from vcpkg ..
+finding cef from conan ..
+finding cef from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f456e179e8c5780e4dda35be508ab685.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 cef.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f456e179e8c5780e4dda35be508ab685.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f456e179e8c5780e4dda35be508ab685.o[0m
+[0m[2m> checking for c links(cef)[0m
+[0m[2m> checking for c snippet(find_package/cef)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'cef.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for cef ... [31;1mno[0m
+finding entt from xmake ..
+[0mchecking for xmake::entt ... [31;1mno[0m
+finding entt from vcpkg ..
+finding entt from conan ..
+finding entt from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_369748abe056f321d4a95277b6a0d826.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 entt.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_369748abe056f321d4a95277b6a0d826.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_369748abe056f321d4a95277b6a0d826.o[0m
+[0m[2m> checking for c links(entt)[0m
+[0m[2m> checking for c snippet(find_package/entt)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'entt.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for entt ... [31;1mno[0m
+finding cryptopp from xmake ..
+[0mchecking for xmake::cryptopp ... [31;1mno[0m
+finding cryptopp from vcpkg ..
+finding cryptopp from conan ..
+finding cryptopp from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_17e9e117098acecd6e7b6d00368a1b4c.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 cryptopp.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_17e9e117098acecd6e7b6d00368a1b4c.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_17e9e117098acecd6e7b6d00368a1b4c.o[0m
+[0m[2m> checking for c links(cryptopp)[0m
+[0m[2m> checking for c snippet(find_package/cryptopp)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'cryptopp.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for cryptopp ... [31;1mno[0m
+finding spdlog from xmake ..
+[0mchecking for xmake::spdlog ... [31;1mno[0m
+finding spdlog from vcpkg ..
+finding spdlog from conan ..
+finding spdlog from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_51ae59101c72ae54d0958bc624a1ccdf.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 spdlog.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_51ae59101c72ae54d0958bc624a1ccdf.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_51ae59101c72ae54d0958bc624a1ccdf.o[0m
+[0m[2m> checking for c links(spdlog)[0m
+[0m[2m> checking for c snippet(find_package/spdlog)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'spdlog.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for spdlog ... [31;1mno[0m
+finding openssl from xmake ..
+[0mchecking for xmake::openssl ... [31;1mno[0m
+finding cpp-httplib from xmake ..
+[0mchecking for xmake::cpp-httplib ... [31;1mno[0m
+finding cpp-httplib from vcpkg ..
+finding cpp-httplib from conan ..
+finding cpp-httplib from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_fba3f9f4422b73a8726de5dee6cd5510.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 cpp-httplib.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_fba3f9f4422b73a8726de5dee6cd5510.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_fba3f9f4422b73a8726de5dee6cd5510.o[0m
+[0m[2m> checking for c links(cpp-httplib)[0m
+[0m[2m> checking for c snippet(find_package/cpp-httplib)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'cpp-httplib.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for cpp-httplib ... [31;1mno[0m
+finding gtest from xmake ..
+[0mchecking for xmake::gtest ... [31;1mno[0m
+finding gtest from vcpkg ..
+finding gtest from conan ..
+finding gtest from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_6c01520406c816eb027395e5a0aedb41.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 gtest.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_6c01520406c816eb027395e5a0aedb41.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_6c01520406c816eb027395e5a0aedb41.o[0m
+[0m[2m> checking for c links(gtest)[0m
+[0m[2m> checking for c snippet(find_package/gtest)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'gtest.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for gtest ... [31;1mno[0m
+finding glm from xmake ..
+[0mchecking for xmake::glm ... [31;1mno[0m
+finding glm from vcpkg ..
+finding glm from conan ..
+finding glm from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_84f836b7222061ffbf0f7809395c0a99.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 glm.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_84f836b7222061ffbf0f7809395c0a99.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_84f836b7222061ffbf0f7809395c0a99.o[0m
+[0m[2m> checking for c links(glm)[0m
+[0m[2m> checking for c snippet(find_package/glm)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'glm.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for glm ... [31;1mno[0m
+finding zlib from xmake ..
+[0mchecking for xmake::zlib ... [31;1mno[0m
+finding zlib from find_zlib ..
+finding zlib from vcpkg ..
+finding zlib from conan ..
+finding zlib from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f57933324b20f7e0d7e83dd7029dbc04.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 zlib.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f57933324b20f7e0d7e83dd7029dbc04.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f57933324b20f7e0d7e83dd7029dbc04.o[0m
+[0m[2m> checking for c links(zlib)[0m
+[0m[2m> checking for c snippet(find_package/zlib)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'zlib.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for zlib ... [31;1mno[0m
+finding discord from xmake ..
+[0mchecking for xmake::discord ... [31;1mno[0m
+finding discord from vcpkg ..
+finding discord from conan ..
+finding discord from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_477231be86ef93dc24e2dd50622ade88.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 discord.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_477231be86ef93dc24e2dd50622ade88.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_477231be86ef93dc24e2dd50622ade88.o[0m
+[0m[2m> checking for c links(discord)[0m
+[0m[2m> checking for c snippet(find_package/discord)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'discord.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for discord ... [31;1mno[0m
+finding imgui from xmake ..
+[0mchecking for xmake::imgui ... [31;1mno[0m
+finding imgui from vcpkg ..
+finding imgui from conan ..
+finding imgui from system ..
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_0665add95d2dc977b04afd9702e2351b.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_5c2289377258fd5de3785c74a50568f0.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 imgui.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_0665add95d2dc977b04afd9702e2351b.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_0665add95d2dc977b04afd9702e2351b.o[0m
+[0m[2m> checking for c links(imgui)[0m
+[0m[2m> checking for c snippet(find_package/imgui)[0m
+[0m[33;1mcheckinfo:[0;2m ...gramdir\core\sandbox\modules\import\core\tool\linker.lua:75: @programdir\modules\core\tools\link.lua:199: LINK : fatal error LNK1181: cannot open input file 'imgui.lib'
+
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\modules\core\tools\link.lua:199]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [@programdir\modules\core\tools\link.lua:174]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]:
+    [@programdir\core\tool\linker.lua:245]: in function 'link'
+    [...gramdir\core\sandbox\modules\import\core\tool\linker.lua:73]: in function 'link'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:255]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\lib\detect\check_cxsnippets.lua:243]:
+    [@programdir\modules\package\manager\system\find_package.lua:73]:
+    [@programdir\modules\package\manager\find_package.lua:86]: in function '_find_package_with_builtin_rule'
+    [@programdir\modules\package\manager\find_package.lua:132]: in function '_find_package'
+    [@programdir\modules\package\manager\find_package.lua:208]:
+    [@programdir\modules\lib\detect\find_package.lua:92]:
+    [@programdir\core\package\package.lua:1977]: in function '_fetch_library'
+    [@programdir\core\package\package.lua:2150]: in function 'fetch'
+    [...modules\private\action\require\impl\install_packages.lua:361]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+    [C]: in function 'xpcall'
+    [@programdir\core\base\utils.lua:299]: in function 'trycall'
+    [@programdir\core\sandbox\modules\try.lua:117]: in function 'try'
+    [@programdir\modules\async\runjobs.lua:431]: in function 'cotask'
+    [@programdir\core\base\scheduler.lua:531]:
+[0m
+[0mchecking for imgui ... [31;1mno[0m
+pinging the host(cef-builds.spotifycdn.com) ... 128 ms
+pinging the host(dl-game-sdk.discordapp.net) ... 239 ms
+pinging the host(www.lua.org) ... 65535 ms
+[0mchecking for aria2c ... [32;1mC:\ProgramData\Chocolatey\bin\aria2c.exe[0m
+C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=notice "--user-agent=Xmake/3.1.0+HEAD.96ad28edb (Windows;) aria2/1.37.0" --split=8 --max-connection-per-server=8 --min-split-size=1M --allow-overwrite=true --dir=. --out=cmake-3.30.2.7z https://github.com/xmake-mirror/build-artifacts/releases/download/cmake-3.30.2/windows-x64-vc14.42.34433-2b80cef30074424181b5e19a46ef30fc.7z
+
+11/05 14:29:30 [[1;32mNOTICE[0m] Downloading 1 item(s)
+
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+                                                                               
+[#9ef159 0B/0B CN:1 DL:0B]
+11/05 14:29:40 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://release-assets.githubusercontent.com/github-production-release-asset/378028880/01b1fbe2-27a0-4e43-965f-7dc85cc2b355?[QUERY-REDACTED]
+11/05 14:29:41 [[1;32mNOTICE[0m] Allocating disk space. Use --file-allocation=none to disable it. See --file-allocation option in man page for more details.
+
+11/05 14:29:41 [[1;32mNOTICE[0m] Download complete: ./cmake-3.30.2.7z
+
+Download Results:
+gid   |stat|avg speed  |path/URI
+======+====+===========+=======================================================
+9ef159|OK  |    69MiB/s|./cmake-3.30.2.7z
+
+Status Legend:
+(OK):download completed.
+[0mchecking for 7z ... [32;1mC:\hostedtoolcache\windows\xmake\3.1.0\x64\winenv\bin\7z[0m
+C:\hostedtoolcache\windows\xmake\3.1.0\x64\winenv\bin\7z x -y cmake-3.30.2.7z -snl- -osource.tmp
+
+7-Zip 24.08 (x64) : Copyright (c) 1999-2024 Igor Pavlov : 2024-08-11
+
+Scanning the drive for archives:
+1 file, 14801216 bytes (15 MiB)
+
+Extracting archive: cmake-3.30.2.7z
+--
+Path = cmake-3.30.2.7z
+Type = 7z
+Physical Size = 14801216
+Headers Size = 39272
+Method = LZMA2:24 BCJ
+Solid = +
+Blocks = 2
+
+Everything is Ok
+
+Folders: 65
+Files: 3413
+Size:       73996182
+Compressed: 14801216
+[0m[33m  => [0mdownload https://github.com/xmake-mirror/build-artifacts/releases/download/cmake-3.30.2/windows-x64-vc14.42.34433-2b80cef30074424181b5e19a46ef30fc.7z .. [32;1mok[0m
+[0mchecking for cmake ... [31;1mno[0m
+[0mchecking for cmake ... [31;1mno[0m
+[0m[1m{[0m 
+  [0m[31;1mname[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mcmake[0m[31m"[0m,
+  [0m[31;1mversion[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1m3.30.2[0m[31m"[0m,
+  [0m[31;1mkind[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mbinary[0m[31m"[0m,
+  [0m[31;1mdescription[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mA cross-platform family of tool designed to build, test and package software[0m[31m"[0m,
+  [0m[31;1mpathenvs[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mPYTHONPATH[0m[31m"[0m,
+    [0m[31m"[0m[31;1mCMAKE_PREFIX_PATH[0m[31m"[0m,
+    [0m[31m"[0m[31;1mDYLD_LIBRARY_PATH[0m[31m"[0m,
+    [0m[31m"[0m[31;1mPATH[0m[31m"[0m,
+    [0m[31m"[0m[31;1mPKG_CONFIG_PATH[0m[31m"[0m,
+    [0m[31m"[0m[31;1mLD_LIBRARY_PATH[0m[31m"[0m,
+    [0m[31m"[0m[31;1mACLOCAL_PATH[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mmode[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mrelease[0m[31m"[0m,
+  [0m[31;1menvs[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31;1mPATH[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+      [0m[31m"[0m[31;1mbin[0m[31m"[0m, 
+    [0m[1m}[0m, 
+  [0m[1m}[0m,
+  [0m[31;1martifacts[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31;1mremotedir[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\c\cmake\3.30.2\2b80cef30074424181b5e19a46ef30fc[0m[31m"[0m,
+    [0m[31;1minstalldir[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\c\cmake\3.30.2\2b80cef30074424181b5e19a46ef30fc[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mrepo[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31;1murl[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mhttps://github.com/xmake-io/xmake-repo.git[0m[31m"[0m,
+    [0m[31;1mcommit[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1m6168c844167d0127f7ff843c086c01cadd85e48a[0m[31m"[0m,
+    [0m[31;1mname[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mxmake-repo[0m[31m"[0m,
+    [0m[31;1mbranch[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mmaster[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mconfigs[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31;1mruntimes[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mMT[0m[31m"[0m,
+    [0m[31;1mpic[0m[0m[0m[0m [2m=[0m [0m[34mtrue[0m[0m[0m,
+    [0m[31;1mdebug[0m[0m[0m[0m [2m=[0m [0m[34mfalse[0m[0m[0m,
+    [0m[31;1mshared[0m[0m[0m[0m [2m=[0m [0m[34mfalse[0m[0m[0m, 
+  [0m[1m}[0m,
+  [0m[31;1march[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mx64[0m[31m"[0m,
+  [0m[31;1mplat[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mwindows[0m[31m"[0m, 
+[0m[1m}[0m
+
+cmake --version
+cmake version 3.30.2
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+[0m[33m  => [0minstall cmake 3.30.2 [2m(precompiled)[0m .. [32;1mok[0m
+C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=notice "--user-agent=Xmake/3.1.0+HEAD.96ad28edb (Windows;) aria2/1.37.0" --split=8 --max-connection-per-server=8 --min-split-size=1M --allow-overwrite=true --dir=. --out=lua-v5.4.8.tar.gz https://www.lua.org/ftp/lua-5.4.8.tar.gz
+
+11/05 14:29:52 [[1;32mNOTICE[0m] Downloading 1 item(s)
+
+                                                                               
+[#4776c4 0B/0B CN:1 DL:0B]
+11/05 14:29:53 [[1;32mNOTICE[0m] Download complete: ./lua-v5.4.8.tar.gz
+Download Results:
+gid   |stat|avg speed  |path/URI
+======+====+===========+=======================================================
+4776c4|OK  |   836KiB/s|./lua-v5.4.8.tar.gz
+
+Status Legend:
+(OK):download completed.
+C:\Windows\System32\tar.exe -xf C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\l\lua\v5.4.8\lua-v5.4.8.tar.gz
+[0m[33m  => [0mdownload https://www.lua.org/ftp/lua-5.4.8.tar.gz .. [32;1mok[0m
+C:\hostedtoolcache\windows\xmake\3.1.0\x64\xmake.exe f --diagnosis --verbose --yes -y -c --plat=windows --arch=x64 --mode=release --kind=static --vs=2022 --runtimes=MT --builddir=build_11a8f03d
+[0mchecking for cl.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe[0m
+[0mchecking for Microsoft C/C++ Compiler (x64) ... [32;1mok[0m
+[0mchecking for Microsoft Visual Studio (x64) version ... [32;1m2022[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(zig.exe version), No such file or directory[0m
+[0mchecking for zig ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(nim.exe --version), No such file or directory[0m
+[0mchecking for nim ... [31;1mno[0m
+[0mchecking for dotnet ... [32;1mC:\Program Files\dotnet\dotnet.exe[0m
+[0mchecking for .NET SDK version ... [32;1m10.0.403[0m
+[0mchecking for .NET SDK directory ... [32;1mC:\Program Files\dotnet\sdk\10.0.403[0m
+[0mchecking for cl.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe[0m
+[0m[2mchecking for the c compiler (cc) ... [32;1mcl.exe[0m
+[0mchecking for link.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\link.exe[0m
+[0m[2mchecking for the linker (ld) ... [32;1mlink.exe[0m
+configure
+{
+    ccache = true
+    arch = x64
+    mode = release
+    runtimes = MT
+    clean = true
+    dotnet = C:\Program Files\dotnet\sdk\10.0.403
+    builddir = build_11a8f03d
+    host = windows
+    dotnet_sdkver = 10.0.403
+    kind = static
+    plat = windows
+    ndk_stdcxx = true
+    vs = 2022
+}
+C:\hostedtoolcache\windows\xmake\3.1.0\x64\xmake.exe build --diagnosis --verbose --yes
+[0m[2mchecking for the c compiler (cc) ... [32;1mcl.exe[0m
+[0mchecking for C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe ... [32;1mc:\program files\microsoft visual studio\2022\enterprise\vc\tools\msvc\14.44.35207\bin\hostx64\x64\cl.exe[0m
+[0m[2mchecking for flags (-O2) ... [32;1mok[0m
+[0m[2m> cl.exe "-O2" "-nologo"[0m
+[0m[2mchecking for flags (-DNDEBUG) ... [32;1mok[0m
+[0m[2m> cl.exe "-DNDEBUG" "-nologo"[0m
+[0m[32;1m[  4%]:[0m [2m[36;1m<lua>[0m compiling.release src\lua.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DNDEBUG -Fobuild_11a8f03d\.objs\lua\windows\x64\release\src\lua.c.obj src\lua.c
+[0m[2mchecking for flags (cl_sourceDependencies) ... [32;1mok[0m
+[0m[2m> cl.exe "/sourceDependencies" "C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_ed5ec682cd5b9b1b94d9578ab87b2258.json" "-nologo"[0m
+[0m[32;1m[  4%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lapi.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lapi.c.obj src\lapi.c
+[0m[32;1m[  4%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lcorolib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lcorolib.c.obj src\lcorolib.c
+[0m[32;1m[  4%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lcode.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lcode.c.obj src\lcode.c
+[0m[32;1m[  4%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lbaselib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lbaselib.c.obj src\lbaselib.c
+[0m[32;1m[  4%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lauxlib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lauxlib.c.obj src\lauxlib.c
+[0m[32;1m[  7%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lctype.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lctype.c.obj src\lctype.c
+[0m[32;1m[  9%]:[0m [2m[36;1m<lualib>[0m compiling.release src\ldblib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\ldblib.c.obj src\ldblib.c
+[0m[32;1m[ 12%]:[0m [2m[36;1m<lualib>[0m compiling.release src\ldebug.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\ldebug.c.obj src\ldebug.c
+[0m[32;1m[ 14%]:[0m [2m[36;1m<lualib>[0m compiling.release src\ldo.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\ldo.c.obj src\ldo.c
+[0m[32;1m[ 17%]:[0m [2m[36;1m<lualib>[0m compiling.release src\ldump.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\ldump.c.obj src\ldump.c
+[0m[32;1m[ 19%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lfunc.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lfunc.c.obj src\lfunc.c
+[0m[32;1m[ 21%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lgc.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lgc.c.obj src\lgc.c
+[0m[32;1m[ 24%]:[0m [2m[36;1m<lualib>[0m compiling.release src\linit.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\linit.c.obj src\linit.c
+[0m[32;1m[ 26%]:[0m [2m[36;1m<lualib>[0m compiling.release src\liolib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\liolib.c.obj src\liolib.c
+[0m[32;1m[ 29%]:[0m [2m[36;1m<lualib>[0m compiling.release src\llex.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\llex.c.obj src\llex.c
+[0m[32;1m[ 31%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lmathlib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lmathlib.c.obj src\lmathlib.c
+[0m[32;1m[ 34%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lmem.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lmem.c.obj src\lmem.c
+[0m[32;1m[ 36%]:[0m [2m[36;1m<lualib>[0m compiling.release src\loadlib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\loadlib.c.obj src\loadlib.c
+[0m[32;1m[ 38%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lobject.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lobject.c.obj src\lobject.c
+[0m[32;1m[ 41%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lopcodes.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lopcodes.c.obj src\lopcodes.c
+[0m[32;1m[ 43%]:[0m [2m[36;1m<lualib>[0m compiling.release src\loslib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\loslib.c.obj src\loslib.c
+[0m[32;1m[ 46%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lparser.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lparser.c.obj src\lparser.c
+[0m[32;1m[ 48%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lstate.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lstate.c.obj src\lstate.c
+[0m[32;1m[ 51%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lstring.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lstring.c.obj src\lstring.c
+[0m[32;1m[ 53%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lstrlib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lstrlib.c.obj src\lstrlib.c
+[0m[32;1m[ 56%]:[0m [2m[36;1m<lualib>[0m compiling.release src\ltable.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\ltable.c.obj src\ltable.c
+[0m[32;1m[ 58%]:[0m [2m[36;1m<lualib>[0m compiling.release src\ltablib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\ltablib.c.obj src\ltablib.c
+[0m[32;1m[ 60%]:[0m [2m[36;1m<lualib>[0m compiling.release src\ltm.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\ltm.c.obj src\ltm.c
+[0m[32;1m[ 63%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lundump.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lundump.c.obj src\lundump.c
+[0m[32;1m[ 65%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lutf8lib.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lutf8lib.c.obj src\lutf8lib.c
+[0m[32;1m[ 68%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lvm.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lvm.c.obj src\lvm.c
+[0m[32;1m[ 70%]:[0m [2m[36;1m<lualib>[0m compiling.release src\lzio.c[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -O2 -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1 -DNDEBUG -Fobuild_11a8f03d\.objs\lualib\windows\x64\release\src\lzio.c.obj src\lzio.c
+[0mchecking for link.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\link.exe[0m
+[0m[2mchecking for the static library archiver (ar) ... [32;1mlink.exe[0m
+[0m[32;1m[ 82%]:[0m [2m[36;1m<lualib>[0m [36;1marchiving.release lua.lib[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -lib -nologo -machine:x64 /opt:ref /opt:icf -out:build_11a8f03d\windows\x64\release\lua.lib build_11a8f03d\.objs\lualib\windows\x64\release\src\lapi.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lauxlib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lbaselib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lcode.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lcorolib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lctype.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\ldblib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\ldebug.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\ldo.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\ldump.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lfunc.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lgc.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\linit.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\liolib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\llex.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lmathlib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lmem.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\loadlib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lobject.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lopcodes.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\loslib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lparser.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lstate.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lstring.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lstrlib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\ltable.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\ltablib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\ltm.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lundump.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lutf8lib.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lvm.c.obj build_11a8f03d\.objs\lualib\windows\x64\release\src\lzio.c.obj
+[0m[32;1m[ 87%]:[0m [2m[36;1m<lua>[0m [36;1mlinking.release lua.exe[0m
+"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 -nodefaultlib:msvcrt.lib -libpath:build_11a8f03d\windows\x64\release /opt:ref /opt:icf lua.lib -out:build_11a8f03d\windows\x64\release\lua.exe build_11a8f03d\.objs\lua\windows\x64\release\src\lua.c.obj /implib:build_11a8f03d\windows\x64\release\lua.lib
+
+build cache stats:
+cache directory: build_11a8f03d\.build_cache
+cache hit rate: 0%
+cache hit: 0
+cache hit total time: 0.000s
+cache miss: 0
+cache miss total time: 0.000s
+new cached files: 0
+remote cache hit: 0
+remote new cached files: 0
+preprocess failed: 0
+compile fallback count: 0
+compile total time: 0.000s
+
+[0m[32;1m[100%]:[0m [2m[32;1mbuild ok, spent 15.391s[0m
+C:\hostedtoolcache\windows\xmake\3.1.0\x64\xmake.exe install -y --packages=n -o C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d --diagnosis --verbose --yes
+installing lualib ..
+installing lualib to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d ..
+[0m[2m> copy build_11a8f03d\windows\x64\release\lua.lib to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\lib[0m
+[0m[2m> copy src\lapi.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lapi.h[0m
+[0m[2m> copy src\lauxlib.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lauxlib.h[0m
+[0m[2m> copy src\lcode.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lcode.h[0m
+[0m[2m> copy src\lctype.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lctype.h[0m
+[0m[2m> copy src\ldebug.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\ldebug.h[0m
+[0m[2m> copy src\ldo.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\ldo.h[0m
+[0m[2m> copy src\lfunc.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lfunc.h[0m
+[0m[2m> copy src\lgc.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lgc.h[0m
+[0m[2m> copy src\ljumptab.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\ljumptab.h[0m
+[0m[2m> copy src\llex.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\llex.h[0m
+[0m[2m> copy src\llimits.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\llimits.h[0m
+[0m[2m> copy src\lmem.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lmem.h[0m
+[0m[2m> copy src\lobject.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lobject.h[0m
+[0m[2m> copy src\lopcodes.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lopcodes.h[0m
+[0m[2m> copy src\lopnames.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lopnames.h[0m
+[0m[2m> copy src\lparser.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lparser.h[0m
+[0m[2m> copy src\lprefix.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lprefix.h[0m
+[0m[2m> copy src\lstate.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lstate.h[0m
+[0m[2m> copy src\lstring.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lstring.h[0m
+[0m[2m> copy src\ltable.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\ltable.h[0m
+[0m[2m> copy src\ltm.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\ltm.h[0m
+[0m[2m> copy src\lua.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lua.h[0m
+[0m[2m> copy src\luaconf.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\luaconf.h[0m
+[0m[2m> copy src\lualib.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lualib.h[0m
+[0m[2m> copy src\lundump.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lundump.h[0m
+[0m[2m> copy src\lvm.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lvm.h[0m
+[0m[2m> copy src\lzio.h to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lzio.h[0m
+[0m[2m> copy src\lua.hpp to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua\lua.hpp[0m
+installing lua ..
+installing lua to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d ..
+[0mchecking for dumpbin.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\dumpbin.exe[0m
+[0m[2m> copy build_11a8f03d\windows\x64\release\lua.exe to C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\bin[0m
+[0m[32;1minstall ok![0m
+finding lua from xmake ..
+[0mchecking for xmake::lua ... [32;1mlua v5.4.8[0m
+[0m[1m{[0m 
+  [0m[31;1mlinkdirs[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\lib[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mstatic[0m[0m[0m[0m [2m=[0m [0m[34mtrue[0m[0m[0m,
+  [0m[31;1mversion[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mv5.4.8[0m[31m"[0m,
+  [0m[31;1mlinks[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mlua[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1msysincludedirs[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mlibfiles[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\lib\lua.lib[0m[31m"[0m, 
+  [0m[1m}[0m, 
+[0m[1m}[0m
+
+patching C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\lib\pkgconfig\lua.pc ..
+lua -e "print('hello xmake!')"
+hello xmake!
+[0mchecking for link.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\link.exe[0m
+[0m[2mchecking for the shared library linker (sh) ... [32;1mlink.exe[0m
+[0m[2mchecking for flags (-MT) ... [32;1mok[0m
+[0m[2m> cl.exe "-MT" "-nologo"[0m
+[0m[2mchecking for flags (cl_external_includedir) ... [32;1mok[0m
+[0m[2m> cl.exe "-external:W0" "-external:IC:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua" "-nologo"[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -external:W0 -external:IC:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_0e7c147dfe69630ff0cdc23a7d0d87f4.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_27f6b9bfc85beac92527b7683063981a.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 -nodefaultlib:msvcrt.lib -libpath:C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\lib lua.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_0e7c147dfe69630ff0cdc23a7d0d87f4.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_0e7c147dfe69630ff0cdc23a7d0d87f4.o[0m
+[0m[2m> checking for c includes(lua.h)[0m
+[0m[2m> checking for c funcs(lua_getinfo)[0m
+[0m[2m> checking for c links(lua)[0m
+[0m[2m> checking for c snippet(has_cfuncs)[0m
+[0m[33m  => [0minstall lua v5.4.8 .. [32;1mok[0m
+C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=notice "--user-agent=Xmake/3.1.0+HEAD.96ad28edb (Windows;) aria2/1.37.0" --split=8 --max-connection-per-server=8 --min-split-size=1M --allow-overwrite=true --dir=. --out=sol2-v3.3.0.tar.gz https://github.com/ThePhD/sol2/archive/refs/tags/v3.3.0.tar.gz
+
+11/05 14:30:11 [[1;32mNOTICE[0m] Downloading 1 item(s)
+
+11/05 14:30:12 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://codeload.github.com/ThePhD/sol2/tar.gz/refs/tags/v3.3.0
+
+                                                                               
+[#07042e 1.7MiB/0B CN:1 DL:4.9MiB]
+11/05 14:30:12 [[1;32mNOTICE[0m] Download complete: ./sol2-v3.3.0.tar.gz
+Download Results:
+gid   |stat|avg speed  |path/URI
+======+====+===========+=======================================================
+07042e|OK  |   7.2MiB/s|./sol2-v3.3.0.tar.gz
+
+Status Legend:
+(OK):download completed.
+C:\Windows\System32\tar.exe -xf C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\s\sol2\v3.3.0\sol2-v3.3.0.tar.gz
+[0m[33m  => [0mdownload https://github.com/ThePhD/sol2/archive/refs/tags/v3.3.0.tar.gz .. [32;1mok[0m
+patching C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo\packages\s\sol2\patches\3.3.0\optional.patch to sol2-v3.3.0 ..
+applying patch C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\patches\sol2\v3.3.0\optional.patch
+C:\Program Files\Git\bin\git.exe apply --reject --ignore-whitespace C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\patches\sol2\v3.3.0\optional.patch
+Checking patch include/sol/optional_implementation.hpp...
+Applied patch include/sol/optional_implementation.hpp cleanly.
+[0mchecking for ninja ... [32;1mC:\ProgramData\Chocolatey\bin\ninja.exe[0m
+[0mchecking for cl.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe[0m
+[0m[2mchecking for the c++ compiler (cxx) ... [32;1mcl.exe[0m
+[0mchecking for cmake ... [32;1mC:\Program Files\CMake\bin\cmake[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkgconf.exe --version), No such file or directory[0m
+[0mchecking for pkgconf ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkg-config.exe --version), No such file or directory[0m
+[0mchecking for pkg-config ... [31;1mno[0m
+[0mchecking for link.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\link.exe[0m
+[0m[2mchecking for the static library archiver (ar) ... [32;1mlink.exe[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkgconf.exe --version), No such file or directory[0m
+[0mchecking for pkgconf ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkg-config.exe --version), No such file or directory[0m
+[0mchecking for pkg-config ... [31;1mno[0m
+C:\Program Files\CMake\bin\cmake -DSOL2_BUILD_LUA=FALSE -DLUA_INCLUDE_DIR=C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua -DLUA_LIBRARY=C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\lib\lua.lib -DCMAKE_INSTALL_PREFIX=C:\Users\runneradmin\AppData\Local\.xmake\packages\s\sol2\v3.3.0\1aa9b23f2d2040d49728efabdcb8d03d -DCMAKE_INSTALL_LIBDIR:PATH=lib -G Ninja -DCMAKE_MAKE_PROGRAM=C:\ProgramData\Chocolatey\bin\ninja.exe -DCMAKE_LINKER_TYPE=MSVC -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_COMPILE_PDB_OUTPUT_DIRECTORY=C:/Users/runneradmin/AppData/Local/.xmake/cache/packages/2611/s/sol2/v3.3.0/source/build_b8ebb0c8/pdb -DCMAKE_PDB_OUTPUT_DIRECTORY=C:/Users/runneradmin/AppData/Local/.xmake/cache/packages/2611/s/sol2/v3.3.0/source/build_b8ebb0c8/pdb "-DCMAKE_CXX_FLAGS=/DWIN32 /D_WINDOWS /GR /EHsc" "-DCMAKE_EXE_LINKER_FLAGS_RELEASE=/INCREMENTAL:NO -nodefaultlib:msvcrt.lib" "-DCMAKE_C_FLAGS_RELEASE=/O2 /Ob2 /DNDEBUG -MT" -DCMAKE_STATIC_LINKER_FLAGS=/machine:x64 "-DCMAKE_MODULE_LINKER_FLAGS_RELEASE=  -nodefaultlib:msvcrt.lib" -DCMAKE_SHARED_LINKER_FLAGS=/machine:x64 "-DCMAKE_STATIC_LINKER_FLAGS_RELEASE= -nodefaultlib:msvcrt.lib" "-DCMAKE_CXX_FLAGS_RELEASE=/O2 /Ob2 /DNDEBUG -MT" "-DCMAKE_C_FLAGS=/DWIN32 /D_WINDOWS" "-DCMAKE_SHARED_LINKER_FLAGS_RELEASE=/INCREMENTAL:NO -nodefaultlib:msvcrt.lib" C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\s\sol2\v3.3.0\source
+-- The CXX compiler identification is MSVC 19.44.35229.0
+-- The C compiler identification is MSVC 19.44.35229.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- sol2 is the top-level directory...
+-- Performing Test CXX_CHECK_FLAG_DISABLE_PERMISSIVE
+-- Performing Test CXX_CHECK_FLAG_DISABLE_PERMISSIVE - Success
+-- Performing Test C_CHECK_FLAG_DISABLE_PERMISSIVE
+-- Performing Test C_CHECK_FLAG_DISABLE_PERMISSIVE - Success
+-- Performing Test CXX_CHECK_FLAG_UTF8_LITERAL_ENCODING
+-- Performing Test CXX_CHECK_FLAG_UTF8_LITERAL_ENCODING - Success
+-- Performing Test C_CHECK_FLAG_UTF8_LITERAL_ENCODING
+-- Performing Test C_CHECK_FLAG_UTF8_LITERAL_ENCODING - Success
+-- Performing Test CXX_CHECK_FLAG_UTF8_SOURCE_ENCODING
+-- Performing Test CXX_CHECK_FLAG_UTF8_SOURCE_ENCODING - Success
+-- Performing Test C_CHECK_FLAG_UTF8_SOURCE_ENCODING
+-- Performing Test C_CHECK_FLAG_UTF8_SOURCE_ENCODING - Success
+-- Performing Test CXX_CHECK_FLAG_EXTRA_CONSTEXPR_DEPTH
+-- Performing Test CXX_CHECK_FLAG_EXTRA_CONSTEXPR_DEPTH - Success
+-- Performing Test C_CHECK_FLAG_EXTRA_CONSTEXPR_DEPTH
+-- Performing Test C_CHECK_FLAG_EXTRA_CONSTEXPR_DEPTH - Success
+-- Performing Test CXX_CHECK_FLAG_EXTRA_CONSTEXPR_STEPS
+-- Performing Test CXX_CHECK_FLAG_EXTRA_CONSTEXPR_STEPS - Success
+-- Performing Test C_CHECK_FLAG_EXTRA_CONSTEXPR_STEPS
+-- Performing Test C_CHECK_FLAG_EXTRA_CONSTEXPR_STEPS - Success
+-- Performing Test CXX_CHECK_FLAG_TEMPLATE_DEBUGGING_MODE
+-- Performing Test CXX_CHECK_FLAG_TEMPLATE_DEBUGGING_MODE - Failed
+-- Performing Test C_CHECK_FLAG_TEMPLATE_DEBUGGING_MODE
+-- Performing Test C_CHECK_FLAG_TEMPLATE_DEBUGGING_MODE - Failed
+-- Performing Test CXX_CHECK_FLAG_BIG_OBJ
+-- Performing Test CXX_CHECK_FLAG_BIG_OBJ - Success
+-- Performing Test C_CHECK_FLAG_BIG_OBJ
+-- Performing Test C_CHECK_FLAG_BIG_OBJ - Success
+-- Performing Test CXX_CHECK_FLAG_PEDANTIC
+-- Performing Test CXX_CHECK_FLAG_PEDANTIC - Failed
+-- Performing Test C_CHECK_FLAG_PEDANTIC
+-- Performing Test C_CHECK_FLAG_PEDANTIC - Failed
+-- Performing Test CXX_CHECK_FLAG_WARN_PEDANTIC
+-- Performing Test CXX_CHECK_FLAG_WARN_PEDANTIC - Failed
+-- Performing Test C_CHECK_FLAG_WARN_PEDANTIC
+-- Performing Test C_CHECK_FLAG_WARN_PEDANTIC - Failed
+-- Performing Test CXX_CHECK_FLAG_WARN_ALL
+-- Performing Test CXX_CHECK_FLAG_WARN_ALL - Success
+-- Performing Test C_CHECK_FLAG_WARN_ALL
+-- Performing Test C_CHECK_FLAG_WARN_ALL - Success
+-- Performing Test CXX_CHECK_FLAG_WARN_EXTRA
+-- Performing Test CXX_CHECK_FLAG_WARN_EXTRA - Failed
+-- Performing Test C_CHECK_FLAG_WARN_EXTRA
+-- Performing Test C_CHECK_FLAG_WARN_EXTRA - Failed
+-- Performing Test CXX_CHECK_FLAG_WARN_ERRORS
+-- Performing Test CXX_CHECK_FLAG_WARN_ERRORS - Success
+-- Performing Test C_CHECK_FLAG_WARN_ERRORS
+-- Performing Test C_CHECK_FLAG_WARN_ERRORS - Success
+-- Performing Test CXX_DIAGNOSTIC_UNKNOWN_WARNING
+-- Performing Test CXX_DIAGNOSTIC_UNKNOWN_WARNING - Failed
+-- Performing Test C_DIAGNOSTIC_UNKNOWN_WARNING
+-- Performing Test C_DIAGNOSTIC_UNKNOWN_WARNING - Failed
+-- Performing Test CXX_DIAGNOSTIC_UNKNOWN_WARNING_OPTION
+-- Performing Test CXX_DIAGNOSTIC_UNKNOWN_WARNING_OPTION - Failed
+-- Performing Test C_DIAGNOSTIC_UNKNOWN_WARNING_OPTION
+-- Performing Test C_DIAGNOSTIC_UNKNOWN_WARNING_OPTION - Failed
+-- Performing Test CXX_DIAGNOSTIC_MICROSOFT_CAST
+-- Performing Test CXX_DIAGNOSTIC_MICROSOFT_CAST - Failed
+-- Performing Test C_DIAGNOSTIC_MICROSOFT_CAST
+-- Performing Test C_DIAGNOSTIC_MICROSOFT_CAST - Failed
+-- Performing Test CXX_DIAGNOSTIC_NOEXCEPT_TYPE
+-- Performing Test CXX_DIAGNOSTIC_NOEXCEPT_TYPE - Failed
+-- Performing Test C_DIAGNOSTIC_NOEXCEPT_TYPE
+-- Performing Test C_DIAGNOSTIC_NOEXCEPT_TYPE - Failed
+-- Performing Test CXX_DIAGNOSTIC_UNREACHABLE_CODE
+-- Performing Test CXX_DIAGNOSTIC_UNREACHABLE_CODE - Success
+-- Performing Test C_DIAGNOSTIC_UNREACHABLE_CODE
+-- Performing Test C_DIAGNOSTIC_UNREACHABLE_CODE - Success
+-- Performing Test CXX_DIAGNOSTIC_PADDING_FROM_ALIGNMENT
+-- Performing Test CXX_DIAGNOSTIC_PADDING_FROM_ALIGNMENT - Success
+-- Performing Test C_DIAGNOSTIC_PADDING_FROM_ALIGNMENT
+-- Performing Test C_DIAGNOSTIC_PADDING_FROM_ALIGNMENT - Success
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - not found
+-- Found Threads: TRUE
+-- Found Lua: C:/Users/runneradmin/AppData/Local/.xmake/packages/l/lua/v5.4.8/91bcb6bfd45349338af9e393f1cb982d/lib/lua.lib (found suitable exact version "5.4.8")
+-- Configuring done (24.8s)
+-- Generating done (0.1s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+    CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY
+    CMAKE_PDB_OUTPUT_DIRECTORY
+
+
+-- Build files have been written to: C:/Users/runneradmin/AppData/Local/.xmake/cache/packages/2611/s/sol2/v3.3.0/source/build_b8ebb0c8
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkgconf.exe --version), No such file or directory[0m
+[0mchecking for pkgconf ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkg-config.exe --version), No such file or directory[0m
+[0mchecking for pkg-config ... [31;1mno[0m
+C:\ProgramData\Chocolatey\bin\ninja.exe install -C C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\s\sol2\v3.3.0\source\build_b8ebb0c8 -v -j 6
+ninja: Entering directory `C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\s\sol2\v3.3.0\source\build_b8ebb0c8'
+[0/2] "C:\Program Files\CMake\bin\cmake.exe" -P C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\s\sol2\v3.3.0\source\build_b8ebb0c8\CMakeFiles\VerifyGlobs.cmake
+[0/2] C:\Windows\system32\cmd.exe /C "cd /D C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\s\sol2\v3.3.0\source\build_b8ebb0c8 && "C:\Program Files\CMake\bin\cmake.exe" -P cmake_install.cmake"
+-- Install configuration: "Release"
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/lib/cmake/sol2/sol2-targets.cmake
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/assert.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/as_args.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/as_returns.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/base_traits.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/bind_traits.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/bytecode.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/call.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/compatibility
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/compatibility/compat-5.3.c.h
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/compatibility/compat-5.3.h
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/compatibility/compat-5.4.h
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/compatibility/lua_version.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/compatibility.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/config.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/coroutine.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/debug.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/demangle.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/deprecate.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/detail
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/detail/build_version.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/dump_handler.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/ebco.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/environment.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/epilogue.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/error.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/error_handler.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/forward.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/forward_detail.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/function.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/function_result.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/function_types.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/function_types_core.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/function_types_overloaded.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/function_types_stateful.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/function_types_stateless.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/function_types_templated.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/inheritance.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/in_place.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/load_result.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/lua_table.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/lua_value.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/make_reference.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/metatable.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/object.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/object_base.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/optional.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/optional_implementation.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/overload.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/packaged_coroutine.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/pairs_iterator.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/pointer_like.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/policies.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/prologue.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/property.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/protect.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/protected_function.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/protected_function_result.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/protected_handler.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/proxy_base.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/raii.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/reference.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/resolve.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/sol.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack/detail
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack/detail/pairs.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_check.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_check_get.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_check_get_qualified.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_check_get_unqualified.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_check_qualified.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_check_unqualified.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_core.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_field.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_get.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_get_qualified.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_get_unqualified.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_guard.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_iterator.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_pop.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_probe.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_proxy.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_proxy_base.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_push.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/stack_reference.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/state.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/state_handling.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/state_view.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/string_view.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/table.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/table_core.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/table_iterator.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/table_proxy.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/thread.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/tie.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/traits.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/trampoline.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/tuple.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/types.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/unicode.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/unique_usertype_traits.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/unsafe_function.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/unsafe_function_result.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/userdata.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/usertype.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/usertype_container.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/usertype_container_launch.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/usertype_core.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/usertype_proxy.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/usertype_storage.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/usertype_traits.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/variadic_args.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/variadic_results.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/version.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/include/sol/wrapper.hpp
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/lib/cmake/sol2/sol2-config.cmake
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/s/sol2/v3.3.0/1aa9b23f2d2040d49728efabdcb8d03d/lib/cmake/sol2/sol2-config-version.cmake
+finding sol2 from xmake ..
+[0mchecking for xmake::sol2 ... [32;1msol2 v3.3.0[0m
+[0m[1m{[0m 
+  [0m[31;1msysincludedirs[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\s\sol2\v3.3.0\1aa9b23f2d2040d49728efabdcb8d03d\include[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mversion[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mv3.3.0[0m[31m"[0m, 
+[0m[1m}[0m
+
+patching C:\Users\runneradmin\AppData\Local\.xmake\packages\s\sol2\v3.3.0\1aa9b23f2d2040d49728efabdcb8d03d\lib\pkgconfig\sol2.pc ..
+[0m[2mchecking for flags (-MT) ... [32;1mok[0m
+[0m[2m> cl.exe "-MT" "-nologo"[0m
+[0m[2mchecking for flags (cl_external_includedir) ... [32;1mok[0m
+[0m[2m> cl.exe "-external:W0" "-external:IC:\Users\runneradmin\AppData\Local\.xmake\packages\s\sol2\v3.3.0\1aa9b23f2d2040d49728efabdcb8d03d\include" "-nologo"[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -std:c++17 /EHsc -external:W0 -external:IC:\Users\runneradmin\AppData\Local\.xmake\packages\s\sol2\v3.3.0\1aa9b23f2d2040d49728efabdcb8d03d\include -external:W0 -external:IC:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\include\lua -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f80bfb5fd32daf2ad95860fb2f74c7c7.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_9d11942b65387ca5fe012e0442d017d3.cpp[0m
+[0m[2mchecking for flags (cl_sourceDependencies) ... [32;1mok[0m
+[0m[2m> cl.exe "/sourceDependencies" "C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f15874c0bc9af38348b1741c07670a5c.json" "-nologo"[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 -nodefaultlib:msvcrt.lib -libpath:C:\Users\runneradmin\AppData\Local\.xmake\packages\l\lua\v5.4.8\91bcb6bfd45349338af9e393f1cb982d\lib lua.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f80bfb5fd32daf2ad95860fb2f74c7c7.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_f80bfb5fd32daf2ad95860fb2f74c7c7.o[0m
+[0m[2m> checking for c++ links(lua)[0m
+[0m[2m> checking for c++ snippet(test)[0m
+[0m[33m  => [0minstall sol2 v3.3.0 .. [32;1mok[0m
+C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=notice "--user-agent=Xmake/3.1.0+HEAD.96ad28edb (Windows;) aria2/1.37.0" --split=8 --max-connection-per-server=8 --min-split-size=1M --allow-overwrite=true --dir=. --out=mimalloc-v2.2.4.zip https://github.com/microsoft/mimalloc/archive/refs/tags/v2.2.4.zip
+
+11/05 14:30:53 [[1;32mNOTICE[0m] Downloading 1 item(s)
+
+11/05 14:30:53 [[1;32mNOTICE[0m] CUID#7 - Redirecting to https://codeload.github.com/microsoft/mimalloc/zip/refs/tags/v2.2.4
+
+11/05 14:30:54 [[1;32mNOTICE[0m] Download complete: ./mimalloc-v2.2.4.zip
+
+Download Results:
+gid   |stat|avg speed  |path/URI
+======+====+===========+=======================================================
+06dfc1|OK  |   1.5MiB/s|./mimalloc-v2.2.4.zip
+
+Status Legend:
+(OK):download completed.
+C:\hostedtoolcache\windows\xmake\3.1.0\x64\winenv\bin\7z x -y mimalloc-v2.2.4.zip -snl- -osource.tmp
+
+7-Zip 24.08 (x64) : Copyright (c) 1999-2024 Igor Pavlov : 2024-08-11
+
+Scanning the drive for archives:
+1 file, 1432063 bytes (1399 KiB)
+
+Extracting archive: mimalloc-v2.2.4.zip
+--
+Path = mimalloc-v2.2.4.zip
+Type = zip
+Physical Size = 1432063
+Comment = fbd8b99c2b828428947d70fdc046bb55609be93e
+
+Everything is Ok
+
+Folders: 27
+Files: 304
+Size:       5031019
+Compressed: 1432063
+[0m[33m  => [0mdownload https://github.com/microsoft/mimalloc/archive/refs/tags/v2.2.4.zip .. [32;1mok[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkgconf.exe --version), No such file or directory[0m
+[0mchecking for pkgconf ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkg-config.exe --version), No such file or directory[0m
+[0mchecking for pkg-config ... [31;1mno[0m
+C:\Program Files\CMake\bin\cmake -DMI_BUILD_TESTS=OFF -DMI_BUILD_OBJECT=OFF -DCMAKE_BUILD_TYPE=Release -DMI_DEBUG_FULL=OFF -DMI_BUILD_STATIC=ON -DMI_BUILD_SHARED=OFF -DMI_SECURE=OFF -DMI_TRACK_ETW=OFF -DMI_OVERRIDE=OFF -DMI_USE_CXX=OFF -DMI_TRACK_ASAN=OFF -DMI_INSTALL_TOPLEVEL=ON -DCMAKE_INSTALL_PREFIX=C:\Users\runneradmin\AppData\Local\.xmake\packages\m\mimalloc\v2.2.4\09f4a25df05b42d79db50bc6282b23be -DCMAKE_INSTALL_LIBDIR:PATH=lib -G Ninja -DCMAKE_MAKE_PROGRAM=C:\ProgramData\Chocolatey\bin\ninja.exe -DCMAKE_LINKER_TYPE=MSVC -DBUILD_SHARED_LIBS=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_COMPILE_PDB_OUTPUT_DIRECTORY=C:/Users/runneradmin/AppData/Local/.xmake/cache/packages/2611/m/mimalloc/v2.2.4/source/build_e3756c17/pdb -DCMAKE_PDB_OUTPUT_DIRECTORY=C:/Users/runneradmin/AppData/Local/.xmake/cache/packages/2611/m/mimalloc/v2.2.4/source/build_e3756c17/pdb "-DCMAKE_CXX_FLAGS=/DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM" "-DCMAKE_EXE_LINKER_FLAGS_RELEASE=/INCREMENTAL:NO -nodefaultlib:msvcrt.lib" "-DCMAKE_C_FLAGS_RELEASE=/O2 /Ob2 /DNDEBUG -MT" -DCMAKE_STATIC_LINKER_FLAGS=/machine:x64 "-DCMAKE_MODULE_LINKER_FLAGS_RELEASE=  -nodefaultlib:msvcrt.lib" -DCMAKE_SHARED_LINKER_FLAGS=/machine:x64 "-DCMAKE_STATIC_LINKER_FLAGS_RELEASE= -nodefaultlib:msvcrt.lib" "-DCMAKE_CXX_FLAGS_RELEASE=/O2 /Ob2 /DNDEBUG -MT" "-DCMAKE_C_FLAGS=/DWIN32 /D_WINDOWS -DMI_USE_RTLGENRANDOM" "-DCMAKE_SHARED_LINKER_FLAGS_RELEASE=/INCREMENTAL:NO -nodefaultlib:msvcrt.lib" C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source
+-- The C compiler identification is MSVC 19.44.35229.0
+-- The CXX compiler identification is MSVC 19.44.35229.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- 
+-- Architecture: x64
+-- Use the C++ compiler to compile (MI_USE_CXX=ON)
+-- 
+-- Library name     : mimalloc
+-- Version          : 2.2.4
+-- Build type       : release
+-- C++ Compiler     : C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+-- Compiler flags   : /Zc:__cplusplus
+-- Compiler defines : MI_CMAKE_BUILD_TYPE=release;MI_BUILD_RELEASE
+-- Link libraries   : psapi;shell32;user32;advapi32;bcrypt
+-- Build targets    : static
+-- 
+-- Configuring done (1.9s)
+-- Generating done (0.1s)
+-- Build files have been written to: C:/Users/runneradmin/AppData/Local/.xmake/cache/packages/2611/m/mimalloc/v2.2.4/source/build_e3756c17
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkgconf.exe --version), No such file or directory[0m
+[0mchecking for pkgconf ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(pkg-config.exe --version), No such file or directory[0m
+[0mchecking for pkg-config ... [31;1mno[0m
+C:\ProgramData\Chocolatey\bin\ninja.exe install -C C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\build_e3756c17 -v -j 6
+ninja: Entering directory `C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\build_e3756c17'
+[1/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\alloc.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\alloc.c
+[2/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\arena.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\arena.c
+[3/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\alloc-aligned.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\alloc-aligned.c
+[4/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\alloc-posix.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\alloc-posix.c
+[5/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\bitmap.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\bitmap.c
+[6/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\heap.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\heap.c
+[7/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\os.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\os.c
+[8/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\libc.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\libc.c
+[9/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\init.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\init.c
+[10/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\options.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\options.c
+[11/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\page.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\page.c
+[12/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\segment.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\segment.c
+[13/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\segment-map.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\segment-map.c
+[14/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\random.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\random.c
+[15/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\stats.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\stats.c
+[16/18] C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\cl.exe  /nologo /TP -DMI_BUILD_RELEASE -DMI_CMAKE_BUILD_TYPE=release -DMI_STATIC_LIB -IC:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\include /DWIN32 /D_WINDOWS /GR /EHsc -DMI_USE_RTLGENRANDOM /O2 /Ob2 /DNDEBUG -MT -std:c++17 -MT /Zc:__cplusplus /showIncludes /FoCMakeFiles\mimalloc-static.dir\src\prim\prim.c.obj /Fdpdb\ /FS -c C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\src\prim\prim.c
+[17/18] C:\Windows\system32\cmd.exe /C "cd . && C:\PROGRA~1\MICROS~2\2022\ENTERP~1\VC\Tools\MSVC\1444~1.352\bin\Hostx64\x64\lib.exe /nologo /machine:x64  -nodefaultlib:msvcrt.lib /out:mimalloc.lib CMakeFiles\mimalloc-static.dir\src\alloc.c.obj CMakeFiles\mimalloc-static.dir\src\alloc-aligned.c.obj CMakeFiles\mimalloc-static.dir\src\alloc-posix.c.obj CMakeFiles\mimalloc-static.dir\src\arena.c.obj CMakeFiles\mimalloc-static.dir\src\bitmap.c.obj CMakeFiles\mimalloc-static.dir\src\heap.c.obj CMakeFiles\mimalloc-static.dir\src\init.c.obj CMakeFiles\mimalloc-static.dir\src\libc.c.obj CMakeFiles\mimalloc-static.dir\src\options.c.obj CMakeFiles\mimalloc-static.dir\src\os.c.obj CMakeFiles\mimalloc-static.dir\src\page.c.obj CMakeFiles\mimalloc-static.dir\src\random.c.obj CMakeFiles\mimalloc-static.dir\src\segment.c.obj CMakeFiles\mimalloc-static.dir\src\segment-map.c.obj CMakeFiles\mimalloc-static.dir\src\stats.c.obj CMakeFiles\mimalloc-static.dir\src\prim\prim.c.obj && cd ."
+[17/18] C:\Windows\system32\cmd.exe /C "cd /D C:\Users\runneradmin\AppData\Local\.xmake\cache\packages\2611\m\mimalloc\v2.2.4\source\build_e3756c17 && "C:\Program Files\CMake\bin\cmake.exe" -P cmake_install.cmake"
+-- Install configuration: "Release"
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/lib/mimalloc.lib
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/lib/cmake/mimalloc/mimalloc.cmake
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/lib/cmake/mimalloc/mimalloc-release.cmake
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/include/mimalloc.h
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/include/mimalloc-override.h
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/include/mimalloc-new-delete.h
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/include/mimalloc-stats.h
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/lib/cmake/mimalloc/mimalloc-config.cmake
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/lib/cmake/mimalloc/mimalloc-config-version.cmake
+-- Installing: C:/Users/runneradmin/AppData/Local/.xmake/packages/m/mimalloc/v2.2.4/09f4a25df05b42d79db50bc6282b23be/lib/pkgconfig/mimalloc.pc
+finding mimalloc from xmake ..
+[0mchecking for xmake::mimalloc ... [32;1mmimalloc v2.2.4[0m
+[0m[1m{[0m 
+  [0m[31;1mlinkdirs[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\m\mimalloc\v2.2.4\09f4a25df05b42d79db50bc6282b23be\lib[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mversion[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mv2.2.4[0m[31m"[0m,
+  [0m[31;1mlicense[0m[0m[0m[0m [2m=[0m [0m[31m"[0m[31;1mMIT[0m[31m"[0m,
+  [0m[31;1mstatic[0m[0m[0m[0m [2m=[0m [0m[34mtrue[0m[0m[0m,
+  [0m[31;1msyslinks[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1madvapi32[0m[31m"[0m,
+    [0m[31m"[0m[31;1mbcrypt[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mlinks[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mmimalloc[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1msysincludedirs[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\m\mimalloc\v2.2.4\09f4a25df05b42d79db50bc6282b23be\include[0m[31m"[0m, 
+  [0m[1m}[0m,
+  [0m[31;1mlibfiles[0m[0m[0m[0m [2m=[0m [0m[1m{[0m 
+    [0m[31m"[0m[31;1mC:\Users\runneradmin\AppData\Local\.xmake\packages\m\mimalloc\v2.2.4\09f4a25df05b42d79db50bc6282b23be\lib\mimalloc.lib[0m[31m"[0m, 
+  [0m[1m}[0m, 
+[0m[1m}[0m
+
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\cl.exe" -c -nologo -MT -external:W0 -external:IC:\Users\runneradmin\AppData\Local\.xmake\packages\m\mimalloc\v2.2.4\09f4a25df05b42d79db50bc6282b23be\include -FoC:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_787bf23895aabb23b0c9ab59c0039228.o C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_ba162e4cf5edcd2202895c4106f369d2.c[0m
+[0m[2m> "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\HostX64\\x64\\link.exe" -nologo -dynamicbase -nxcompat -machine:x64 -nodefaultlib:msvcrt.lib -libpath:C:\Users\runneradmin\AppData\Local\.xmake\packages\m\mimalloc\v2.2.4\09f4a25df05b42d79db50bc6282b23be\lib mimalloc.lib advapi32.lib bcrypt.lib -out:C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_787bf23895aabb23b0c9ab59c0039228.b C:\Users\RUNNER~1\AppData\Local\Temp\.xmake\261105\_787bf23895aabb23b0c9ab59c0039228.o[0m
+[0m[2m> checking for c includes(mimalloc.h)[0m
+[0m[2m> checking for c funcs(mi_malloc)[0m
+[0m[2m> checking for c links(mimalloc, advapi32, bcrypt)[0m
+[0m[2m> checking for c snippet(has_cfuncs)[0m
+[0m[33m  => [0minstall mimalloc v2.2.4 .. [32;1mok[0m
+C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=notice "--user-agent=Xmake/3.1.0+HEAD.96ad28edb (Windows;) aria2/1.37.0" --split=8 --max-connection-per-server=8 --min-split-size=1M --allow-overwrite=true --dir=. --out=tiltedcore-v0.2.9.7z https://github.com/xmake-mirror/build-artifacts/releases/download/tiltedcore-v0.2.9/windows-x64-vc14.44.35207-a984d563f9e448bfa7c6d9b92f93e32d.7z
+
+11/05 14:31:01 [[1;32mNOTICE[0m] Downloading 1 item(s)
+
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+                                                                               
+[#f7e685 0B/0B CN:1 DL:0B]
+11/05 14:31:13 [[1;31mERROR[0m] CUID#7 - Download aborted. URI=https://github.com/xmake-mirror/build-artifacts/releases/download/tiltedcore-v0.2.9/windows-x64-vc14.44.35207-a984d563f9e448bfa7c6d9b92f93e32d.7z
+Exception: [HttpSkipResponseCommand.cc:235] errorCode=29 The response status is not successful. status=504
+
+11/05 14:31:13 [[1;32mNOTICE[0m] Download GID#f7e6856ddf098868 not complete: ./tiltedcore-v0.2.9.7z
+
+Download Results:
+gid   |stat|avg speed  |path/URI
+======+====+===========+=======================================================
+f7e685|ERR |       0B/s|./tiltedcore-v0.2.9.7z
+
+Status Legend:
+(ERR):error occurred.
+
+aria2 will resume download if the transfer is restarted.
+If there are any errors, then see the log file. See '-l' option in help/man page for details.
+[0m[2;31;1merror: [0m@programdir\modules\net\http\download.lua:362: @programdir\core\sandbox\modules\os.lua:378: execv(C:\ProgramData\Chocolatey\bin\aria2c.exe --no-conf=true --console-log-level=notice "--user-agent=Xmake/3.1.0+HEAD.96ad28edb (Windows;) aria2/1.37.0" --split=8 --max-connection-per-server=8 --min-split-size=1M --allow-overwrite=true --dir=. --out=tiltedcore-v0.2.9.7z https://github.com/xmake-mirror/build-artifacts/releases/download/tiltedcore-v0.2.9/windows-x64-vc14.44.35207-a984d563f9e448bfa7c6d9b92f93e32d.7z) failed(29), unknown reason
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [@programdir\core\sandbox\modules\os.lua:378]:
+    [@programdir\core\sandbox\modules\os.lua:291]: in function 'vrunv'
+    [@programdir\modules\net\http\download.lua:128]:
+    [@programdir\modules\net\http\download.lua:347]:
+[0m
+[0m[33m  => [0mdownload https://github.com/xmake-mirror/build-artifacts/releases/download/tiltedcore-v0.2.9/windows-x64-vc14.44.35207-a984d563f9e448bfa7c6d9b92f93e32d.7z .. [31;1mfailed[0m
+
+we can also download these packages manually:
+[0m  [33m- https://github.com/xmake-mirror/build-artifacts/releases/download/tiltedcore-v0.2.9/windows-x64-vc14.44.35207-a984d563f9e448bfa7c6d9b92f93e32d.7z[0m
+[0mto the local search directories: [1m[0m
+[0m  [1m- tiltedcore-v0.2.9.7z, windows-x64-vc14.44.35207-a984d563f9e448bfa7c6d9b92f93e32d.7z[0m
+[0mand we can run `xmake g --pkg_searchdirs=/xxx` to set the search directories.[0m
+[0m[1;31;1merror: [0m@programdir\core\main.lua:274: @programdir\modules\async\runjobs.lua:282: ...modules\private\action\require\impl\actions\download.lua:468: 
+stack traceback:
+    [C]: in function 'error'
+    [@programdir\core\base\os.lua:1193]:
+    [...modules\private\action\require\impl\actions\download.lua:468]: in function 'catch'
+    [@programdir\core\sandbox\modules\try.lua:123]: in function 'try'
+    [...modules\private\action\require\impl\actions\download.lua:379]:
+    [...modules\private\action\require\impl\install_packages.lua:515]: in function 'job_func'
+    [@programdir\modules\async\runjobs.lua:462]:
+
+stack traceback:
+	[C]: in global 'error'
+	@programdir\core\base\os.lua:1193: in function 'base/os.raiselevel'
+	(...tail calls...)
+	@programdir\core\main.lua:274: in upvalue 'cotask'
+	@programdir\core\base\scheduler.lua:531: in function <@programdir\core\base\scheduler.lua:524>[0m
+[0m[1;33;1mwarning: [33;1mplease use add_configs("runtimes") instead of add_configs("vs_runtime").[0m
+
