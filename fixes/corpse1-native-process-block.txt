@@ -1,0 +1,5 @@
+        // Native corpse processing must be allowed to advance the ragdoll
+        // and publish its local reference position through HookSetPosition.
+        if (!apThis->GetExtension()->IsPlayer() && apThis->VirtIsDead(false))
+            return TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
+

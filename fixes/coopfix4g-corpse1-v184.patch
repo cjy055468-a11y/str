@@ -28,7 +28,7 @@ index 1dfe4aff..20c63e27 100644
 +    std::optional<uint32_t> KnownServerId{};
  };
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
-index 9e1933e8..c8aa8299 100644
+index 9e1933e8..1eceadb9 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
 @@ -24,6 +24,7 @@
@@ -113,6 +113,18 @@ index 9e1933e8..c8aa8299 100644
  }
  
  void Actor::DropOrPickUpObject(const Inventory::Entry& arEntry, NiPoint3* apLocation, NiPoint3* apRotation) noexcept
+@@ -1250,6 +1289,11 @@ char TP_MAKE_THISCALL(HookActorProcess, Actor, float aDeltaTime)
+     // Suppress local movement for remote actors, but preserve controller timing.
+     if (apThis->GetExtension()->IsRemote())
+     {
++        // Native corpse processing must be allowed to advance the ragdoll
++        // and publish its local reference position through HookSetPosition.
++        if (!apThis->GetExtension()->IsPlayer() && apThis->VirtIsDead(false))
++            return TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
++
+         if (apThis->currentProcess)
+         {
+             if (auto* pController = apThis->currentProcess->GetCharController())
 diff --git a/Code/client/Games/Skyrim/Forms/TESForm.h b/Code/client/Games/Skyrim/Forms/TESForm.h
 index 331dcc0f..b14e9335 100644
 --- a/Code/client/Games/Skyrim/Forms/TESForm.h

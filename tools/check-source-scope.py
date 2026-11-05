@@ -28,6 +28,10 @@ regions = [
 for start, end in regions:
     original = before[before.index(start):before.index(end, before.index(start))]
     current = after[after.index(start):after.index(end, after.index(start))]
+    if start.startswith('char TP_MAKE_THISCALL(HookActorProcess') and '--native-corpses' in sys.argv:
+        exception = (Path(__file__).resolve().parent.parent / 'fixes/corpse1-native-process-block.txt').read_text()
+        assert current.count(exception) == 1, 'Unexpected corpse process change'
+        current = current.replace(exception, '')
     if start.startswith('char TP_MAKE_THISCALL(HookSetPosition') and '--native-corpses' in sys.argv:
         prefix = '    if (bIsRemote && !ScopedReferencesOverride::IsOverriden())\n'
         begin = current.index(prefix) + len(prefix)
