@@ -14,7 +14,12 @@ unchanged = [
 ]
 for file in unchanged:
     before = subprocess.check_output(['git', '-C', str(root), 'show', 'HEAD:' + file])
-    assert before.replace(b'\r\n', b'\n') == (root / file).read_bytes().replace(b'\r\n', b'\n'), file
+    actual = (root / file).read_bytes().replace(b'\r\n', b'\n')
+    if file.endswith('/Actor.h') and '--corpse-death-recovery' in sys.argv:
+        declaration = b'    [[nodiscard]] bool IsInRagdollState() const noexcept;\n'
+        assert actual.count(declaration) == 1
+        actual = actual.replace(declaration, b'')
+    assert before.replace(b'\r\n', b'\n') == actual, file
 file = 'Code/client/Games/Skyrim/Actor.cpp'
 before = subprocess.check_output(['git', '-C', str(root), 'show', 'HEAD:' + file]).decode()
 after = (root / file).read_text()
@@ -30,13 +35,17 @@ for start, end in regions:
     current = after[after.index(start):after.index(end, after.index(start))]
     if start.startswith('char TP_MAKE_THISCALL(HookActorProcess') and '--native-corpses' in sys.argv:
         exception = (Path(__file__).resolve().parent.parent / 'fixes/corpse1-native-process-block.txt').read_text()
-        assert current.count(exception) == 1, 'Unexpected corpse process change'
-        current = current.replace(exception, '')
+        if '--corpse-death-recovery' in sys.argv:
+            assert exception not in current, 'Corpse1 native process override must be removed'
+        else:
+            assert current.count(exception) == 1, 'Unexpected corpse process change'
+            current = current.replace(exception, '')
     if start.startswith('char TP_MAKE_THISCALL(HookSetPosition') and '--native-corpses' in sys.argv:
         prefix = '    if (bIsRemote && !ScopedReferencesOverride::IsOverriden())\n'
         begin = current.index(prefix) + len(prefix)
         end_block = current.index('    // Don\'t interfere', begin)
-        expected = (Path(__file__).resolve().parent.parent / 'fixes/corpse1-native-position-block.txt').read_text()
+        block_name = 'corpse2-native-position-block.txt' if '--corpse-death-recovery' in sys.argv else 'corpse1-native-position-block.txt'
+        expected = (Path(__file__).resolve().parent.parent / 'fixes' / block_name).read_text()
         assert current[begin:end_block] == expected, 'Unexpected corpse hook change'
         current = current[:begin] + '        return 1;\n\n' + current[end_block:]
     assert original.replace('\r\n', '\n') == current.replace('\r\n', '\n'), start
