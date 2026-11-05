@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="TPTests.exe" errors="0" failures="0" tests="496" hostname="tbd" time="0.007" timestamp="2026-11-05T15:55:22Z">
+    <testcase classname="TPTests.exe.global" name="Temporary actor identity survives discovery unload and ownership changes" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Recycled temporary form IDs and new connections cannot inherit actor identity" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Known temporary actor identity survives real assignment factory round trips" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Death received before 3D updates the pending spawn snapshot" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Loot received before 3D changes the pending corpse inventory" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Pending inventory guard leaves legacy drop events on their existing path" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Ownership handoff advances the pending snapshot before subsequent death and loot" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Exit-only replay requires a reset even when its action list is empty" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="A seated NPC replay preserves its enter state" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Exit followed by a different furniture enter retains the new action" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="A cache with no observed animations does not invent a reset or a pose" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="EnTT initializes the original replay counter on creation and replacement" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Furniture recovery exit replaces a stale chair replay" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Dropped instances retain distinct IDs and duplicate creation is idempotent" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.002" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Consumed drops stay absent from snapshots and creation retries" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Unacknowledged grants recover on reconnect without a second credit" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="An already applied recovered grant does not add to the new actor again" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Disabled drops are recorded for deduplication but are never public or claimable" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Invalid drop counts and unknown IDs cannot produce grants" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="An owned NPC can consume a drop without granting the same client's player a copy" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Dropped-item request and notification factories preserve IDs and stack metadata" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Drop rotation keeps fractional and negative radians through both message factories" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="A registration ACK preserves a pickup reserved before its queue task runs" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Pickup-before-ACK and ACK-before-pickup retain the same registered identity" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="A delayed pickup cannot retarget a recycled reference or a different drop nonce" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="An unreserved drop remains pickable after its registration ACK" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Only a drop creator can update placement without changing stack identity" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Placement updates cannot revive consumed drops or accept nonfinite coordinates" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Drop placement messages and snapshots retain placement through real factories" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Drop placement waits for stable samples and rate limits later movement" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="An unsent placement remains pending until publication is confirmed" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Unattached native drops cannot invent an authoritative placement" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Encoding factory" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: GameId" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: Vector3_NetQuantize" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: Vector2_NetQuantize" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: Rotator2_NetQuantize" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Static structures/Given: Rotator2_NetQuantize needing wrap" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Differential structures/Given: Full ActionEvent" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Differential structures/Given: A single cached event name" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Differential structures/Given: Full Mods" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Differential structures/Given: AnimationVariables" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/AuthenticationRequest" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/AuthenticationResponse" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/AssignCharacterRequest" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/Given: ClientReferencesMoveRequest" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/Given: RequestActionEvents" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Packets/Given: NotifyActionEvents" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="StringCache/Messages" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Owner drop debit tolerates stale metadata and fragmented cached stacks" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Owner drop debit never invents a negative delta from an unavailable cache" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Equipment snapshots replace stale worn metadata without duplicating a cached item" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Equipment snapshots supply missing outfit entries and retain both worn hands" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="An empty equipment snapshot clears worn flags without deleting owned inventory" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Pending equipment respects ownership epochs and never restores looted corpse armor" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Equipment notifications preserve the authoritative worn snapshot through the real factory" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Visible drop geometry without collision does not consume physics setup attempts" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="A drop outfit refresh round trips without requesting another native equip action" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Stays well under the old fixed 300ms delay on a stable connection" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Buffers more on a jittery connection and rarely runs out of snapshots" time="0.001" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Plays low rate actors further behind instead of starving them" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Quickly plays further behind when the owner starts sending less often" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Keeps up with a 60 fps owner whose frame times vary" time="0.001" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Is not thrown off by a long frame on our side" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/A long frame does not carry a catch-up past where playback should be" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Does not depend on the owner's clock matching ours" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Jumps instead of crawling when the owner's timeline jumps" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Ignores duplicate snapshots" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Drop proxies wait for attached geometry and make bounded wake attempts" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Reloaded drop geometry receives a new setup without repeated teleports" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Furniture recovery waits then exits only once per eligible episode" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Furniture recovery cancels when combat furniture or ownership eligibility ends" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="A delayed furniture poll preserves the grace period after reevaluation" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Drop setup waits for cell attachment even while the old geometry is present" time="0.000" status="run"/>
+    <system-out/>
+    <system-err/>
+  </testsuite>
+</testsuites>
+

@@ -1,6 +1,6 @@
  Code/client/Components/InterpolationComponent.h    |  2 +
  .../Components/WaitingForAssignmentComponent.h     |  4 ++
- Code/client/Games/Skyrim/Actor.cpp                 | 43 +++++++++++-
+ Code/client/Games/Skyrim/Actor.cpp                 | 48 ++++++++++++-
  Code/client/Games/Skyrim/Forms/TESForm.h           |  1 +
  Code/client/Games/Skyrim/Misc/MiddleProcess.h      |  6 +-
  Code/client/Games/Skyrim/NetImmerse/NiAVObject.h   |  3 +
@@ -30,5 +30,5 @@
  Code/server/Services/InventoryService.h            |  1 +
  Code/server/World.cpp                              |  2 +
  Code/tests/xmake.lua                               |  3 +-
- 32 files changed, 424 insertions(+), 49 deletions(-)
+ 32 files changed, 429 insertions(+), 49 deletions(-)
 
