@@ -1,0 +1,78 @@
+{
+  "source_revision": "6b1635e0cb759a7f80c618a132cd324a1a13c68c",
+  "run_id": "42069705469",
+  "purpose": "restore corpse death playback after corpse1 regression; restrict transform release to actual ragdoll",
+  "tests": 75,
+  "required_tests": 48,
+  "protocol": "unchanged coopfix4g",
+  "source_reviews": 2,
+  "changed_client_files": [
+    "Code/client/Components/InterpolationComponent.h",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Games/Skyrim/Actor.h",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/InterpolationSystem.cpp"
+  ],
+  "drop_furniture_inventory_unchanged": true,
+  "binaries": [
+    {
+      "file": "SkyrimTogether.exe",
+      "bytes": 6580224,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "ee277eff7ad642aa4998c40637b61dd0e2e32c679ee6dd9a599ddc6ce3f2c4cb",
+      "imports_match_4g": true,
+      "exports_match_4g": true,
+      "imports_match_corpse1": true,
+      "exports_match_corpse1": true,
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "EarlyLoad.dll",
+      "bytes": 103424,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "f7633f592e30c5e02e544298573f970bf335c40f3d7ad17a1e2c1fea8d5dbe18",
+      "imports_match_4g": true,
+      "exports_match_4g": true,
+      "imports_match_corpse1": true,
+      "exports_match_corpse1": true,
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "STServer.dll",
+      "bytes": 7369216,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "3f16defcba238b7b0d6a14c0b5f59ffdda7b27f7d7f592594468815f533ee191",
+      "imports_match_4g": true,
+      "exports_match_4g": true,
+      "imports_match_corpse1": true,
+      "exports_match_corpse1": true,
+      "imports_match_original": true,
+      "exports_match_original": true
+    },
+    {
+      "file": "SkyrimTogetherServer.exe",
+      "bytes": 875008,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "ff9cec7082e818de742af505d36e3baa36976d969bc9b6d42eaabdb8c5ddc237",
+      "imports_match_4g": true,
+      "exports_match_4g": true,
+      "imports_match_corpse1": true,
+      "exports_match_corpse1": true
+    }
+  ],
+  "game_test": "not run; both players must verify normal falling BEFORE Search alignment on a newly killed NPC",
+  "corpse1_death_queue_guard": "removed; original4g action/graph behavior restored",
+  "missives": "paused and excluded",
+  "engine_verification": "CommonLib AE37491 source reference only; no IDA/Ghidra",
+  "disconnect_root_cause": "unresolved; retained netdiag1 server diagnostics"
+}

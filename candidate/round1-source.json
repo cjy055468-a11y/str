@@ -1,0 +1,15 @@
+{
+  "baseline_corpse1": "a140f096a717af8c279cc41e4bbd20666786ad9b",
+  "changed_files": [
+    "Code/client/Components/InterpolationComponent.h",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Games/Skyrim/Actor.h",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/InterpolationSystem.cpp"
+  ],
+  "unchanged_sections": 56,
+  "missives_paused_and_excluded": true,
+  "restored_death_actions_and_graph_variables": true,
+  "ragdoll_query_source": "CommonLibSSE-NG AE Address Library ID37491 (not IDA verified)",
+  "native_game_test": "not run"
+}

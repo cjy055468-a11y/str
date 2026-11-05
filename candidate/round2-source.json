@@ -1,0 +1,21 @@
+{
+  "round": 2,
+  "source_revision": "6b1635e0cb759a7f80c618a132cd324a1a13c68c",
+  "official_source": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "clean_application": "tested4g, regression-corpse1 and corpse2 passed",
+  "changed_since_corpse1": [
+    "Code/client/Components/InterpolationComponent.h",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Games/Skyrim/Actor.h",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/InterpolationSystem.cpp"
+  ],
+  "original_actor_process_restored": true,
+  "full_death_action_and_graph_behavior_restored_to_4g": true,
+  "interpolation_math_and_clock_unchanged": true,
+  "native_query_on_playback_thread_only": true,
+  "missives_paused_and_excluded": true,
+  "npc_furniture_drop_gear_inventory_protocol_preserved": true,
+  "native_game_test": "not run; both falling and Search alignment require two-player tests",
+  "engine_verification": "CommonLibSSE-NG AE37491 source reference only, not IDA/Ghidra"
+}

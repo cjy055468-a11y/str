@@ -1,0 +1,13 @@
+{
+  "source_revision": "6b1635e0cb759a7f80c618a132cd324a1a13c68c",
+  "run_id": "42069705469",
+  "artifact": "STR-coopfix4g-corpse2-test.zip",
+  "bytes": 6467325,
+  "sha256": "e99d0f837f09d9463858289a89620846970bba6d637a00042015ac104948c6c2",
+  "tests": 75,
+  "required_tests": 48,
+  "purpose": "recover normal death playback and attempt ragdoll-gated Search alignment",
+  "protocol": "unchanged coopfix4g",
+  "game_test": "not run; newly killed NPC must fall normally, then test visible-body Search and loot",
+  "disconnect_fix": "not implemented; server diagnostics retained"
+}
