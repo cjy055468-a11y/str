@@ -58,8 +58,16 @@ jobs:
       - name: Configure Windows x64 for Skyrim 1.6.1170
         working-directory: source
         run: |
-          xmake config --plat=windows --arch=x64 --mode=release --skyrim_version=1.6.1170 --yes -vD 2>&1 | Tee-Object ../logs/configure.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Windows configure failed' }
+          $configured = $false
+          foreach ($attempt in 1..2) {
+            $attemptLog = "../logs/configure-attempt$attempt.txt"
+            xmake config --plat=windows --arch=x64 --mode=release --skyrim_version=1.6.1170 --yes -vD 2>&1 | Tee-Object $attemptLog
+            $configureExit = $LASTEXITCODE
+            Copy-Item $attemptLog ../logs/configure.txt -Force
+            if ($configureExit -eq 0) { $configured = $true; break }
+            if ($attempt -lt 2) { Start-Sleep -Seconds 10 }
+          }
+          if (-not $configured) { throw 'Windows configure failed after two attempts; inspect retained dependency errors' }
       - name: Check 1 - compile and link diagnostic server
         working-directory: source
         run: |
