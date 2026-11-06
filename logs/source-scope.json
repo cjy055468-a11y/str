@@ -1,0 +1,14 @@
+{
+  "native_changes_from_delivered_missives2r1": [
+    "Code/client/Games/Skyrim/ExtraData/ExtraData.h",
+    "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+    "Code/common/BuildInfo.h.in",
+    "Code/encoding/Structs/NpcInventorySnapshot.h",
+    "Code/tests/npc_inventory_snapshot.cpp"
+  ],
+  "delta_sha256": "fb64c630dbe2588216818ea36ebe924789e8f4dfbb3a2f0af3c741682864be75",
+  "exact_missives2r1_recovery": true,
+  "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "game_test": "not run"
+}
+
