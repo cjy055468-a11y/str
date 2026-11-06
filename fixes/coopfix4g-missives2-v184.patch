@@ -1050,7 +1050,7 @@ index 00000000..8249a4e8
 +}
 diff --git a/Code/client/ModCompat/MissivesContext.cpp b/Code/client/ModCompat/MissivesContext.cpp
 new file mode 100644
-index 00000000..d6785a5b
+index 00000000..eee50692
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesContext.cpp
 @@ -0,0 +1,283 @@
@@ -1149,27 +1149,27 @@ index 00000000..d6785a5b
 +    void* pAlias = GetAlias(aAlias);
 +    const void* pFunction = World::Get().ctx().at<PapyrusService>().Get("ReferenceAlias", "ForceRefTo");
 +    if (pAlias && pFunction)
-+        PapyrusFunction<void, void, TESObjectREFR*>(pFunction)(pAlias, apReference);
++        PapyrusFunction<void, void, TESObjectREFR*>{pFunction}(pAlias, apReference);
 +}
 +void MissivesContext::ForceLocation(uint32_t aAlias, TESForm* apLocation) noexcept
 +{
 +    void* pAlias = GetAlias(aAlias);
 +    const void* pFunction = World::Get().ctx().at<PapyrusService>().Get("LocationAlias", "ForceLocationTo");
 +    if (pAlias && pFunction)
-+        PapyrusFunction<void, void, TESForm*>(pFunction)(pAlias, apLocation);
++        PapyrusFunction<void, void, TESForm*>{pFunction}(pAlias, apLocation);
 +}
 +
 +TESObjectREFR* MissivesContext::MakeItem(const MissivesAlias& acAlias) noexcept
 +{
-+    if (const auto found = m_created.find(acAlias.Id); found != m_created.end()) return found->second.get();
++    if (const auto found = m_created.find(acAlias.Id); found != m_created.end()) return found->second;
 +    auto& world = World::Get();
 +    const void* pFunction = world.ctx().at<PapyrusService>().Get("ObjectReference", "PlaceAtMe");
 +    auto* pBase = TESForm::GetById(world.GetModSystem().GetGameId(acAlias.Base));
 +    if (!pFunction || !pBase || pBase->formType == FormType::Npc || pBase->formType == FormType::Character || pBase->formType == FormType::LeveledCharacter)
 +        return nullptr;
-+    auto* pReference = PapyrusFunction<TESObjectREFR*, TESObjectREFR, TESForm*, int32_t, bool, bool>(pFunction)(PlayerCharacter::Get(), pBase, 1, true, true);
++    auto* pReference = PapyrusFunction<TESObjectREFR*, TESObjectREFR, TESForm*, int32_t, bool, bool>{pFunction}(PlayerCharacter::Get(), pBase, 1, true, true);
 +    if (!pReference) return nullptr;
-+    m_created.emplace(acAlias.Id, GamePtr<TESObjectREFR>{pReference});
++    m_created.try_emplace(acAlias.Id, pReference);
 +    return pReference;
 +}
 +
@@ -1281,7 +1281,7 @@ index 00000000..d6785a5b
 +        if (auto* pGlobal = Cast<TESGlobal>(TESForm::GetById(world.GetModSystem().GetGameId(entry.Id))))
 +        {
 +            pGlobal->f = entry.Value;
-+            if (pUpdate) PapyrusFunction<bool, TESQuest, TESGlobal*>(pUpdate)(m_quest, pGlobal);
++            if (pUpdate) PapyrusFunction<bool, TESQuest, TESGlobal*>{pUpdate}(m_quest, pGlobal);
 +        }
 +    RebindPlayer(aRecipientActor, acResolveActor);
 +    BindText();
@@ -1317,7 +1317,7 @@ index 00000000..d6785a5b
 +{
 +    if (!m_quest) return;
 +    const void* pStop = World::Get().ctx().at<PapyrusService>().Get("Quest", "Stop");
-+    if (pStop && IsRunning()) PapyrusFunction<void, TESQuest>(pStop)(m_quest);
++    if (pStop && IsRunning()) PapyrusFunction<void, TESQuest>{pStop}(m_quest);
 +    if (!IsRunning())
 +    {
 +        for (const auto& pin : m_pins)
@@ -6645,7 +6645,7 @@ index 8d9f2c78..8a5effe4 100644
  
 diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
 new file mode 100644
-index 00000000..a7536c34
+index 00000000..4c201282
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
 @@ -0,0 +1,550 @@
@@ -6885,7 +6885,7 @@ index 00000000..a7536c34
 +            const void* pFunction = m_world.ctx().at<PapyrusService>().Get("LocationAlias", "GetLocation");
 +            void* pAlias = nullptr;
 +            for (void* p : apQuest->aliases) if (p && static_cast<AliasPrefix*>(p)->Id == spec.Id) pAlias = p;
-+            TESForm* pLocation = pAlias && pFunction ? PapyrusFunction<TESForm*, void>(pFunction)(pAlias) : nullptr;
++            TESForm* pLocation = pAlias && pFunction ? PapyrusFunction<TESForm*, void>{pFunction}(pAlias) : nullptr;
 +            if (!pLocation) continue;
 +            entry.Type = MissivesAlias::Kind::Location;
 +            if (!mods.GetServerModId(pLocation->formID, entry.Form)) return false;

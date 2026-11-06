@@ -586,27 +586,27 @@ new file mode 100644
 +    void* pAlias = GetAlias(aAlias);
 +    const void* pFunction = World::Get().ctx().at<PapyrusService>().Get("ReferenceAlias", "ForceRefTo");
 +    if (pAlias && pFunction)
-+        PapyrusFunction<void, void, TESObjectREFR*>(pFunction)(pAlias, apReference);
++        PapyrusFunction<void, void, TESObjectREFR*>{pFunction}(pAlias, apReference);
 +}
 +void MissivesContext::ForceLocation(uint32_t aAlias, TESForm* apLocation) noexcept
 +{
 +    void* pAlias = GetAlias(aAlias);
 +    const void* pFunction = World::Get().ctx().at<PapyrusService>().Get("LocationAlias", "ForceLocationTo");
 +    if (pAlias && pFunction)
-+        PapyrusFunction<void, void, TESForm*>(pFunction)(pAlias, apLocation);
++        PapyrusFunction<void, void, TESForm*>{pFunction}(pAlias, apLocation);
 +}
 +
 +TESObjectREFR* MissivesContext::MakeItem(const MissivesAlias& acAlias) noexcept
 +{
-+    if (const auto found = m_created.find(acAlias.Id); found != m_created.end()) return found->second.get();
++    if (const auto found = m_created.find(acAlias.Id); found != m_created.end()) return found->second;
 +    auto& world = World::Get();
 +    const void* pFunction = world.ctx().at<PapyrusService>().Get("ObjectReference", "PlaceAtMe");
 +    auto* pBase = TESForm::GetById(world.GetModSystem().GetGameId(acAlias.Base));
 +    if (!pFunction || !pBase || pBase->formType == FormType::Npc || pBase->formType == FormType::Character || pBase->formType == FormType::LeveledCharacter)
 +        return nullptr;
-+    auto* pReference = PapyrusFunction<TESObjectREFR*, TESObjectREFR, TESForm*, int32_t, bool, bool>(pFunction)(PlayerCharacter::Get(), pBase, 1, true, true);
++    auto* pReference = PapyrusFunction<TESObjectREFR*, TESObjectREFR, TESForm*, int32_t, bool, bool>{pFunction}(PlayerCharacter::Get(), pBase, 1, true, true);
 +    if (!pReference) return nullptr;
-+    m_created.emplace(acAlias.Id, GamePtr<TESObjectREFR>{pReference});
++    m_created.try_emplace(acAlias.Id, pReference);
 +    return pReference;
 +}
 +
@@ -718,7 +718,7 @@ new file mode 100644
 +        if (auto* pGlobal = Cast<TESGlobal>(TESForm::GetById(world.GetModSystem().GetGameId(entry.Id))))
 +        {
 +            pGlobal->f = entry.Value;
-+            if (pUpdate) PapyrusFunction<bool, TESQuest, TESGlobal*>(pUpdate)(m_quest, pGlobal);
++            if (pUpdate) PapyrusFunction<bool, TESQuest, TESGlobal*>{pUpdate}(m_quest, pGlobal);
 +        }
 +    RebindPlayer(aRecipientActor, acResolveActor);
 +    BindText();
@@ -754,7 +754,7 @@ new file mode 100644
 +{
 +    if (!m_quest) return;
 +    const void* pStop = World::Get().ctx().at<PapyrusService>().Get("Quest", "Stop");
-+    if (pStop && IsRunning()) PapyrusFunction<void, TESQuest>(pStop)(m_quest);
++    if (pStop && IsRunning()) PapyrusFunction<void, TESQuest>{pStop}(m_quest);
 +    if (!IsRunning())
 +    {
 +        for (const auto& pin : m_pins)
@@ -4549,7 +4549,7 @@ new file mode 100644
 +            const void* pFunction = m_world.ctx().at<PapyrusService>().Get("LocationAlias", "GetLocation");
 +            void* pAlias = nullptr;
 +            for (void* p : apQuest->aliases) if (p && static_cast<AliasPrefix*>(p)->Id == spec.Id) pAlias = p;
-+            TESForm* pLocation = pAlias && pFunction ? PapyrusFunction<TESForm*, void>(pFunction)(pAlias) : nullptr;
++            TESForm* pLocation = pAlias && pFunction ? PapyrusFunction<TESForm*, void>{pFunction}(pAlias) : nullptr;
 +            if (!pLocation) continue;
 +            entry.Type = MissivesAlias::Kind::Location;
 +            if (!mods.GetServerModId(pLocation->formID, entry.Form)) return false;

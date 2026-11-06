@@ -34,6 +34,7 @@ jobs:
         with:
           xmake-version: 3.1.0
       - uses: actions/cache@v4
+        id: dependencies
         with:
           path: ~/AppData/Local/.xmake/packages
           key: windows-x64-str-v184-xmake310-${{ hashFiles('source/**/xmake.lua') }}
@@ -90,6 +91,12 @@ jobs:
             if ($attempt -lt 2) { Start-Sleep -Seconds 10 }
           }
           if (-not $configured) { throw 'Windows configure failed after two attempts' }
+      - name: Retain configured dependency cache
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/AppData/Local/.xmake/packages
+          key: windows-x64-str-v184-xmake310-${{ hashFiles('source/**/xmake.lua') }}
       - name: Check 1 - compile and link real client and server
         working-directory: source
         run: |
