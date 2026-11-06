@@ -1,0 +1,15 @@
+{
+  "source_revision": "69e9b471ad684fb159cf70f48d5c8ea3352c03d4",
+  "run_id": "42237137423",
+  "artifact": "STR-coopfix4g-loot1-test.zip",
+  "bytes": 6466337,
+  "sha256": "799aea54ed394fd91071f0b2922c413a29067d19ef38cce9a91b06dd7922cf45",
+  "tests": 99,
+  "required_tests": 72,
+  "compiled_papyrus_scripts": 18,
+  "protocol": "coopfix4g-missives2r1-loot1",
+  "game_test": "not run; requires two clients",
+  "source_reviews": 2,
+  "corpse_fix_preserved": true,
+  "missives2r1_preserved": true
+}

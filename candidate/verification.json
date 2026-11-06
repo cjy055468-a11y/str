@@ -1,0 +1,82 @@
+{
+  "source_revision": "69e9b471ad684fb159cf70f48d5c8ea3352c03d4",
+  "run_id": "42237137423",
+  "tests": 99,
+  "old_corpse3_tests_retained": 83,
+  "required_tests": 72,
+  "source_reviews": 2,
+  "compiled_papyrus_scripts": 18,
+  "pex": "Skyrim3.2/game1",
+  "plugin_sha256": "a1b76f7fe9504c8759610700f25ae916f8db1697d00c6a048b624456d286924c",
+  "binaries": [
+    {
+      "file": "SkyrimTogether.exe",
+      "bytes": 6706688,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "1310b7fd115f95189206740dc60eb5d314283f97e4b7aac30bc3078535a3c39d",
+      "exports_match_corpse3": true,
+      "added_import_dlls": []
+    },
+    {
+      "file": "EarlyLoad.dll",
+      "bytes": 103424,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "154b8265ca101e5478c64e1aba6deaeba6ac0652ce5f7fded15f4e1fa5818386",
+      "exports_match_corpse3": true,
+      "added_import_dlls": []
+    },
+    {
+      "file": "STServer.dll",
+      "bytes": 7409664,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": true,
+      "sha256": "a16d27a9d286690fc005d3983f0f996f7649ebf4f166635590da5b5cefec920f",
+      "exports_match_corpse3": true,
+      "added_import_dlls": []
+    },
+    {
+      "file": "SkyrimTogetherServer.exe",
+      "bytes": 875008,
+      "machine": "AMD64",
+      "format": "PE32+",
+      "dll": false,
+      "sha256": "cb8dbead00009ad15bc0531800b320e4d37215be40cd59d6d846a1b3b2ea6b3d",
+      "exports_match_corpse3": true,
+      "added_import_dlls": []
+    }
+  ],
+  "protocol": "coopfix4g-missives2r1-loot1; both clients and server must match",
+  "recipient_only": true,
+  "intended_behavior": "NPC ExtraLeveledItem runtime quantities replace their template counts; preserve valid spare gear and all metadata; prior corpse and Missives repairs retained",
+  "game_test": "not run; candidate requires two-client testing",
+  "engine_reverse_engineering": "no IDA/Ghidra; source-referenced assumptions authorized by user",
+  "ai_compatibility": "queued and excluded",
+  "random_disconnect_root_cause": "unresolved; retains existing diagnostics",
+  "old_missives2r1_tests_retained": 93,
+  "engine_reverse_engineering_npc": "ExtraLeveledItem 0x2E and replacement-count semantics referenced from CommonLibSSE-NG b93280e; not verified with IDA/Ghidra or in Skyrim",
+  "upstream_source_review": [
+    {
+      "branch": "dev",
+      "sha": "8b2b1b0cd9fc53ab7518a2c980486d07e5edea97",
+      "inventory_function_found": true,
+      "leveled_marker_in_getinventory": false,
+      "saved_to": "/workspace/str-artifacts/npc-loot-upstream/dev-TESObjectREFR.cpp",
+      "inventory_reading_identical_to_official_v184": true,
+      "upstream_inventory_scope_sha256": "95439c00c165bd4ee8683939e0d60c55bed5a842b88f910daf90ca9c23a6dc8d"
+    },
+    {
+      "branch": "master",
+      "sha": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+      "inventory_function_found": true,
+      "leveled_marker_in_getinventory": false,
+      "saved_to": "/workspace/str-artifacts/npc-loot-upstream/master-TESObjectREFR.cpp",
+      "inventory_reading_identical_to_official_v184": true,
+      "upstream_inventory_scope_sha256": "95439c00c165bd4ee8683939e0d60c55bed5a842b88f910daf90ca9c23a6dc8d"
+    }
+  ]
+}
