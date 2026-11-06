@@ -4277,7 +4277,7 @@ diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Serv
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,543 @@
+@@ -0,0 +1,549 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -4373,6 +4373,7 @@ new file mode 100644
 +    m_claims.clear();
 +    if (!m_enabled) return;
 +    m_token = ProfileToken();
++    if (!m_token) spdlog::error("STR Missives profile identity unavailable: check the local Missives data directory");
 +    MissivesBridge::SetConnection(true, false, false);
 +    const auto* pMod = Plugin("Missives.esp");
 +    for (const auto& spec : cMissiveQuestSpecs)
@@ -4635,7 +4636,12 @@ new file mode 100644
 +        const bool cSource = source != m_sources.end() && source->second.second == post.Data.SourceNonce;
 +        const bool cResume = post.Mine && m_personal.contains(quest) && context->IsRunning() && context->GetStage() >= 20;
 +        if (!post.Applied)
++        {
 +            post.Applied = context->Apply(post.Data, cSource || cResume, post.Recipient, [this](uint32_t actor) { return ResolveActor(actor); });
++            if (post.Applied)
++                spdlog::info("STR Missives context applied: posting {}, quest {:X}, source {}, personal {}, resumed {}, stage {}, aliases {}",
++                    id, quest, cSource, post.Mine, cResume, post.Data.Stage, post.Data.Aliases.size());
++        }
 +        if (!post.Applied) continue;
 +        context->RebindPlayer(post.Recipient, [this](uint32_t actor) { return ResolveActor(actor); });
 +        if (post.State == 2 || post.State == 3) context->SetStage(static_cast<uint16_t>(post.Data.Stage));
@@ -5584,7 +5590,7 @@ diff --git a/Code/server/Services/MissivesService.cpp b/Code/server/Services/Mis
 new file mode 100644
 --- /dev/null
 +++ b/Code/server/Services/MissivesService.cpp
-@@ -0,0 +1,278 @@
+@@ -0,0 +1,281 @@
 +#include <Services/MissivesService.h>
 +#include <Services/CharacterService.h>
 +#include <Services/PartyService.h>
@@ -5692,6 +5698,9 @@ new file mode 100644
 +        if (!found->second.contains(token)) token = *found->second.begin();
 +    }
 +    m_ledger.SetBoardAuthority(aScope, acBoard, token);
++    const auto player = m_bindings.find(token);
++    spdlog::info("STR Missives board authority: board {:X}:{:X}, generator player {}", acBoard.ModId, acBoard.BaseId,
++        player != m_bindings.end() ? player->second.PlayerId : 0);
 +    BoardControl(aScope, acBoard);
 +}
 +
