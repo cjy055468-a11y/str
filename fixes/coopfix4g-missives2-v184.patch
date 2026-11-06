@@ -5035,7 +5035,7 @@ index b3f309a7..765a6783 100644
      {
          spdlog::info("Applying death state {} to remote actor {:X}, server id: {:X}", acMessage.IsDead, pActor->formID, acMessage.Id);
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 7d3ac21a..d4c40dd0 100644
+index 7d3ac21a..9ae4da82 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
 @@ -4,11 +4,14 @@
@@ -5053,7 +5053,15 @@ index 7d3ac21a..d4c40dd0 100644
  
  #include <Forms/TESNPC.h>
  #include <Interface/UI.h>
-@@ -130,6 +133,9 @@ void CharacterService::DeclineOwnership(const uint32_t aServerId, const uint32_t
+@@ -24,6 +27,7 @@
+ #include <Systems/LeveledNpcSystem.h>
+ 
+ #include <Events/ActorAddedEvent.h>
++#include <Services/MissivesService.h>
+ #include <Events/ActorRemovedEvent.h>
+ #include <Events/UpdateEvent.h>
+ #include <Events/ConnectedEvent.h>
+@@ -130,6 +134,9 @@ void CharacterService::DeclineOwnership(const uint32_t aServerId, const uint32_t
  void CharacterService::ReconcileActorData(
      const entt::entity aEntity, Actor* apActor, const uint32_t aOwnershipEpoch, const ActorData& acActorData, const bool aApplyInventory, const bool aIsLocalOwner) noexcept
  {
@@ -5063,7 +5071,7 @@ index 7d3ac21a..d4c40dd0 100644
      if (auto* pWaitingFor3D = m_world.try_get<WaitingFor3D>(aEntity))
      {
          pWaitingFor3D->SpawnRequest.InitialActorValues = acActorData.InitialActorValues;
-@@ -142,6 +148,7 @@ void CharacterService::ReconcileActorData(
+@@ -142,6 +149,7 @@ void CharacterService::ReconcileActorData(
      if (!apActor)
          return;
  
@@ -5071,7 +5079,34 @@ index 7d3ac21a..d4c40dd0 100644
      apActor->SetActorValues(acActorData.InitialActorValues);
  
      if (aApplyInventory)
-@@ -266,7 +273,11 @@ void CharacterService::OnActorAdded(const ActorAddedEvent& acEvent) noexcept
+@@ -231,6 +239,26 @@ void CharacterService::OnActorAdded(const ActorAddedEvent& acEvent) noexcept
+ {
+     Actor* pActor = Cast<Actor>(TESForm::GetById(acEvent.FormId));
+ 
++    // A far quest alias can be registered before normal 3D discovery. Its
++    // later load event must not create a second ECS entity/assignment. Limit
++    // this guard to the exact reference generation registered by Missives.
++    if (pActor)
++        if (const auto* pMissives = m_world.ctx().find<MissivesService>();
++            pMissives && pMissives->RegisteredQuestActor(pActor->formID, pActor->GetHandle().handle.iBits))
++        {
++            const uint32_t cHandle = pActor->GetHandle().handle.iBits;
++            const auto known = m_actorIdentities.Find(pActor->formID, cHandle);
++            const auto existing = m_world.view<FormIdComponent>();
++            for (const auto entity : existing)
++            {
++                if (existing.get<FormIdComponent>(entity).Id != pActor->formID) continue;
++                const auto* pPending = m_world.try_get<WaitingForAssignmentComponent>(entity);
++                const auto* pLocal = m_world.try_get<LocalComponent>(entity);
++                if ((pPending && pPending->ReferenceHandle == cHandle) || (pLocal && known && *known == pLocal->Id))
++                    return;
++            }
++        }
++
+     if (acEvent.FormId == 0x14)
+     {
+         pActor->GetExtension()->SetPlayer(true);
+@@ -266,7 +294,11 @@ void CharacterService::OnActorAdded(const ActorAddedEvent& acEvent) noexcept
  void CharacterService::OnActorRemoved(const ActorRemovedEvent& acEvent) noexcept
  {
      if (auto* pActor = Cast<Actor>(TESForm::GetById(acEvent.FormId)))
@@ -5083,7 +5118,7 @@ index 7d3ac21a..d4c40dd0 100644
  
      m_pendingLeveledConforms.erase(acEvent.FormId);
  
-@@ -285,6 +296,7 @@ void CharacterService::OnActorRemoved(const ActorRemovedEvent& acEvent) noexcept
+@@ -285,6 +317,7 @@ void CharacterService::OnActorRemoved(const ActorRemovedEvent& acEvent) noexcept
      CancelServerAssignment(*entityIt, formIdComponent.Id);
  
      m_world.remove<EarlyAnimationBufferComponent>(cId);
@@ -5091,7 +5126,7 @@ index 7d3ac21a..d4c40dd0 100644
  
      if (m_world.all_of<FormIdComponent>(cId))
          m_world.remove<FormIdComponent>(cId);
-@@ -304,6 +316,7 @@ void CharacterService::OnUpdate(const UpdateEvent& acUpdateEvent) noexcept
+@@ -304,6 +337,7 @@ void CharacterService::OnUpdate(const UpdateEvent& acUpdateEvent) noexcept
      RunExperienceUpdates();
      ApplyCachedWeaponDraws(acUpdateEvent);
      ProcessLeveledConforms();
@@ -5099,7 +5134,7 @@ index 7d3ac21a..d4c40dd0 100644
  }
  
  void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const noexcept
-@@ -331,6 +344,11 @@ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const
+@@ -331,6 +365,11 @@ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const
  
  void CharacterService::OnDisconnected(const DisconnectedEvent& acDisconnectedEvent) const noexcept
  {
@@ -5111,7 +5146,7 @@ index 7d3ac21a..d4c40dd0 100644
      auto remoteView = m_world.view<FormIdComponent, RemoteComponent>();
      for (auto entity : remoteView)
      {
-@@ -378,7 +396,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -378,7 +417,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
      }
  
      const auto cEntity = *itor;
@@ -5122,7 +5157,7 @@ index 7d3ac21a..d4c40dd0 100644
  
      m_world.remove<WaitingForAssignmentComponent>(cEntity);
  #if (!IS_MASTER)
-@@ -428,6 +449,23 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -428,6 +470,23 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
      // TODO: how could this possibly trigger?
      // it's kinda interfering with my WaitingFor3D code
@@ -5146,7 +5181,7 @@ index 7d3ac21a..d4c40dd0 100644
      if (acMessage.PlayerId != 0)
          m_world.emplace_or_replace<PlayerComponent>(cEntity, acMessage.PlayerId);
  
-@@ -441,6 +479,18 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -441,6 +500,18 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
      {
          spdlog::info("Received local actor, form id: {:X}", pActor->formID);
  
@@ -5165,7 +5200,7 @@ index 7d3ac21a..d4c40dd0 100644
          // We are the authority, and the server's data is only an echo of our own request snapshot, which can already be stale.
          // Applying it would e.g. Respawn() (Resurrect + Reset) an actor that was killed while the request was in flight,
          // which re-rolls leveled temporary actors, removes them, and makes them get rediscovered as new entities endlessly.
-@@ -465,12 +515,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -465,12 +536,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
          localComponent.IsDead = acMessage.IsDead;
          localComponent.IsWeaponDrawn = acMessage.IsWeaponDrawn;
          pActor->GetExtension()->SetRemote(false);
@@ -5182,7 +5217,7 @@ index 7d3ac21a..d4c40dd0 100644
  
          pActor->GetExtension()->SetRemote(true);
  
-@@ -485,6 +538,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -485,6 +559,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
          ReconcileActorData(cEntity, pActor, acMessage.OwnershipEpoch, actorData, true, false);
  
@@ -5193,7 +5228,7 @@ index 7d3ac21a..d4c40dd0 100644
          MoveActor(pActor, acMessage.WorldSpaceId, acMessage.CellId, acMessage.Position);
  
          // The owner's leveled pick rides the assignment response for actors we discovered ourselves
-@@ -544,7 +601,22 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+@@ -544,7 +622,22 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
              FaceGenSystem::Setup(m_world, *entity, acMessage.FaceTints);
          }
  
@@ -5217,7 +5252,7 @@ index 7d3ac21a..d4c40dd0 100644
      }
      else
      {
-@@ -604,7 +676,8 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+@@ -604,7 +697,8 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
  
      pActor->rotation.x = acMessage.Rotation.x;
      pActor->rotation.z = acMessage.Rotation.y;
@@ -5227,7 +5262,7 @@ index 7d3ac21a..d4c40dd0 100644
      pActor->SetActorValues(acMessage.InitialActorValues);
  
      pActor->GetExtension()->SetPlayer(acMessage.IsPlayer);
-@@ -631,6 +704,8 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+@@ -631,6 +725,8 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
          ApplyLeveledNpcPick(pActor, acMessage.LeveledNpcPickId);
  
      m_world.emplace_or_replace<RemoteComponent>(*entity, acMessage.ServerId, pActor->formID, acMessage.OwnershipEpoch);
@@ -5236,7 +5271,7 @@ index 7d3ac21a..d4c40dd0 100644
  
      auto& interpolationComponent = InterpolationSystem::Setup(m_world, *entity);
      interpolationComponent.Position = acMessage.Position;
-@@ -787,10 +862,12 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -787,10 +883,12 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
      const entt::entity cEntity = *entity;
      const auto* pFormIdComponent = m_world.try_get<FormIdComponent>(cEntity);
      Actor* pActor = pFormIdComponent ? Cast<Actor>(TESForm::GetById(pFormIdComponent->Id)) : nullptr;
@@ -5250,7 +5285,7 @@ index 7d3ac21a..d4c40dd0 100644
  
      if (isLocalOwner)
      {
-@@ -809,6 +886,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -809,6 +907,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
              else if (cachedRefId != 0)
                  m_world.emplace<RemoteComponent>(cEntity, acMessage.ServerId, cachedRefId, acMessage.OwnershipEpoch);
  
@@ -5260,7 +5295,7 @@ index 7d3ac21a..d4c40dd0 100644
              spdlog::warn("Declined ownership of actor {:X} at epoch {} because the actor is not ready", acMessage.ServerId, acMessage.OwnershipEpoch);
              DeclineOwnership(acMessage.ServerId, acMessage.OwnershipEpoch);
              return;
-@@ -832,6 +912,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -832,6 +933,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
          // LocalComponent is installed only after canonical reconciliation is complete.
          pActor->GetExtension()->SetRemote(false);
          spdlog::info("Gained ownership of actor {:X} at epoch {}", acMessage.ServerId, acMessage.OwnershipEpoch);
@@ -5270,7 +5305,7 @@ index 7d3ac21a..d4c40dd0 100644
          return;
      }
  
-@@ -1150,6 +1233,67 @@ static bool IsLineVoicedByLocalScene(Actor* apActor, const GameId& acSceneId, ui
+@@ -1150,6 +1254,67 @@ static bool IsLineVoicedByLocalScene(Actor* apActor, const GameId& acSceneId, ui
      return !IsPhaseStuckOnRemotePackage(pScene, cPhase);
  }
  
@@ -5338,7 +5373,7 @@ index 7d3ac21a..d4c40dd0 100644
  void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
  {
      if (!m_transport.IsConnected())
-@@ -1161,6 +1305,9 @@ void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
+@@ -1161,6 +1326,9 @@ void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
      if (entityIt == view.end())
          return;
  
@@ -5348,7 +5383,7 @@ index 7d3ac21a..d4c40dd0 100644
      auto serverIdRes = Utils::GetServerId(*entityIt);
      if (!serverIdRes)
      {
-@@ -1184,6 +1331,9 @@ void CharacterService::OnNotifyDialogue(const NotifyDialogue& acMessage) noexcep
+@@ -1184,6 +1352,9 @@ void CharacterService::OnNotifyDialogue(const NotifyDialogue& acMessage) noexcep
      if (!pActor)
          return;
  
@@ -5358,7 +5393,7 @@ index 7d3ac21a..d4c40dd0 100644
      // Every client plays scenes itself, the local copy usually voices the line. Menu and other-scene lines still play.
      if (IsLineVoicedByLocalScene(pActor, acMessage.SceneId, acMessage.ScenePhase))
      {
-@@ -1208,6 +1358,9 @@ void CharacterService::OnSubtitleEvent(const SubtitleEvent& acEvent) noexcept
+@@ -1208,6 +1379,9 @@ void CharacterService::OnSubtitleEvent(const SubtitleEvent& acEvent) noexcept
      if (entityIt == view.end())
          return;
  
@@ -5368,7 +5403,7 @@ index 7d3ac21a..d4c40dd0 100644
      auto serverIdRes = Utils::GetServerId(*entityIt);
      if (!serverIdRes)
      {
-@@ -1231,6 +1384,9 @@ void CharacterService::OnNotifySubtitle(const NotifySubtitle& acMessage) noexcep
+@@ -1231,6 +1405,9 @@ void CharacterService::OnNotifySubtitle(const NotifySubtitle& acMessage) noexcep
      if (!pActor)
          return;
  
@@ -5378,7 +5413,7 @@ index 7d3ac21a..d4c40dd0 100644
      // The local copy of the scene shows its own subtitle, see OnNotifyDialogue. Only the actor's own voice line ending
      // hides a subtitle, so a remote one arriving after the local line has finished would stay on screen.
      if (IsLineVoicedByLocalScene(pActor, acMessage.SceneId, acMessage.ScenePhase))
-@@ -1360,6 +1516,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1360,6 +1537,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
      AssignCharacterRequest message{};
  
      message.Cookie = sCookieSeed;
@@ -5389,7 +5424,7 @@ index 7d3ac21a..d4c40dd0 100644
  
      if (!m_world.GetModSystem().GetServerModId(formIdComponent.Id, message.ReferenceId))
      {
-@@ -1490,7 +1650,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1490,7 +1671,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
  
      if (m_transport.Send(message))
      {
@@ -5401,7 +5436,7 @@ index 7d3ac21a..d4c40dd0 100644
  
          sCookieSeed++;
      }
-@@ -1613,17 +1776,20 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
+@@ -1613,17 +1797,20 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
              FaceGenSystem::Setup(m_world, aEntity, acMessage.FaceTints);
          }
  
@@ -5423,7 +5458,7 @@ index 7d3ac21a..d4c40dd0 100644
      pActor->GetExtension()->SetRemote(true);
      pActor->rotation.x = acMessage.Rotation.x;
      pActor->rotation.z = acMessage.Rotation.y;
-@@ -1894,6 +2060,34 @@ void CharacterService::RunRemoteUpdates() noexcept
+@@ -1894,6 +2081,34 @@ void CharacterService::RunRemoteUpdates() noexcept
              pActor = Cast<Actor>(pForm);
          }
  
@@ -5458,7 +5493,7 @@ index 7d3ac21a..d4c40dd0 100644
          InterpolationSystem::Update(pActor, interpolationComponent, cNow);
      }
  
-@@ -1912,7 +2106,8 @@ void CharacterService::RunRemoteUpdates() noexcept
+@@ -1912,7 +2127,8 @@ void CharacterService::RunRemoteUpdates() noexcept
          // Actions run on the clock the interpolation pass above just advanced, so the body and its animations stay in step
          const auto cTick = InterpolationSystem::GetPlaybackTick(animatedView.get<InterpolationComponent>(entity));
  
@@ -7252,10 +7287,10 @@ index ec897b18..a802bb3a 100644
  
 diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/MissivesService.h
 new file mode 100644
-index 00000000..feaa7ba8
+index 00000000..d6e9acd6
 --- /dev/null
 +++ b/Code/client/Services/MissivesService.h
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,77 @@
 +#pragma once
 +#include <Messages/NotifyMissives.h>
 +#include <Messages/RequestMissives.h>
@@ -7275,6 +7310,7 @@ index 00000000..feaa7ba8
 +{
 +public:
 +    MissivesService(World& aWorld, entt::dispatcher& aDispatcher, TransportService& aTransport) noexcept;
++    bool RegisteredQuestActor(uint32_t aForm, uint32_t aHandle) const noexcept { return m_assigning.contains({aForm, aHandle}); }
 +private:
 +    struct Posting
 +    {

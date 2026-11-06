@@ -4216,7 +4216,42 @@ new file mode 100644
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
-@@ -601,7 +601,22 @@
+@@ -27,6 +27,7 @@
+ #include <Systems/LeveledNpcSystem.h>
+ 
+ #include <Events/ActorAddedEvent.h>
++#include <Services/MissivesService.h>
+ #include <Events/ActorRemovedEvent.h>
+ #include <Events/UpdateEvent.h>
+ #include <Events/ConnectedEvent.h>
+@@ -238,6 +239,26 @@
+ {
+     Actor* pActor = Cast<Actor>(TESForm::GetById(acEvent.FormId));
+ 
++    // A far quest alias can be registered before normal 3D discovery. Its
++    // later load event must not create a second ECS entity/assignment. Limit
++    // this guard to the exact reference generation registered by Missives.
++    if (pActor)
++        if (const auto* pMissives = m_world.ctx().find<MissivesService>();
++            pMissives && pMissives->RegisteredQuestActor(pActor->formID, pActor->GetHandle().handle.iBits))
++        {
++            const uint32_t cHandle = pActor->GetHandle().handle.iBits;
++            const auto known = m_actorIdentities.Find(pActor->formID, cHandle);
++            const auto existing = m_world.view<FormIdComponent>();
++            for (const auto entity : existing)
++            {
++                if (existing.get<FormIdComponent>(entity).Id != pActor->formID) continue;
++                const auto* pPending = m_world.try_get<WaitingForAssignmentComponent>(entity);
++                const auto* pLocal = m_world.try_get<LocalComponent>(entity);
++                if ((pPending && pPending->ReferenceHandle == cHandle) || (pLocal && known && *known == pLocal->Id))
++                    return;
++            }
++        }
++
+     if (acEvent.FormId == 0x14)
+     {
+         pActor->GetExtension()->SetPlayer(true);
+@@ -601,7 +622,22 @@
              FaceGenSystem::Setup(m_world, *entity, acMessage.FaceTints);
          }
  
@@ -4240,7 +4275,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
      }
      else
      {
-@@ -661,7 +676,8 @@
+@@ -661,7 +697,8 @@
  
      pActor->rotation.x = acMessage.Rotation.x;
      pActor->rotation.z = acMessage.Rotation.y;
@@ -4916,7 +4951,7 @@ diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/Missi
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/MissivesService.h
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,77 @@
 +#pragma once
 +#include <Messages/NotifyMissives.h>
 +#include <Messages/RequestMissives.h>
@@ -4936,6 +4971,7 @@ new file mode 100644
 +{
 +public:
 +    MissivesService(World& aWorld, entt::dispatcher& aDispatcher, TransportService& aTransport) noexcept;
++    bool RegisteredQuestActor(uint32_t aForm, uint32_t aHandle) const noexcept { return m_assigning.contains({aForm, aHandle}); }
 +private:
 +    struct Posting
 +    {
