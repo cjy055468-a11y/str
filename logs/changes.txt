@@ -14,9 +14,10 @@
  Code/client/Games/Skyrim/TESObjectREFR.cpp         |  57 ++++++++
  Code/client/Services/CharacterService.h            |   6 +
  Code/client/Services/Generic/ActorValueService.cpp |  13 ++
- Code/client/Services/Generic/CharacterService.cpp  | 157 ++++++++++++++++++++-
+ Code/client/Services/Generic/CharacterService.cpp  | 160 ++++++++++++++++++++-
  Code/client/Services/Generic/InventoryService.cpp  |  82 +++++++----
- Code/client/Systems/AnimationSystem.cpp            |  29 +++-
+ Code/client/Systems/AnimationSystem.cpp            |  40 ++++--
+ Code/client/Systems/AnimationSystem.h              |   2 +-
  Code/client/Systems/InterpolationSystem.cpp        |  21 ++-
  Code/client/World.cpp                              |   4 +
  Code/common/BuildInfo.h.in                         |   2 +-
@@ -36,5 +37,5 @@
  Code/server/Services/InventoryService.h            |   1 +
  Code/server/World.cpp                              |   2 +
  Code/tests/xmake.lua                               |   3 +-
- 38 files changed, 620 insertions(+), 64 deletions(-)
+ 39 files changed, 632 insertions(+), 68 deletions(-)
 

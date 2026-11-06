@@ -13,11 +13,14 @@
     "Code/client/Services/CharacterService.h",
     "Code/client/Services/Generic/ActorValueService.cpp",
     "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/AnimationSystem.h",
+    "Code/client/Systems/CorpseLifeState.h",
     "Code/client/Systems/CorpseSpeechWindow.h",
     "Code/client/Systems/InterpolationSystem.cpp",
     "Code/tests/corpse_speech_window.cpp"
   ],
-  "delta_sha256": "88a5530d00d581539f8da305b20137dc11ec3cec5d0265c0cb4b7225ca661d31",
+  "delta_sha256": "1eb1d74e634a978e41c8bb8772ac298b983123e280b669c2aa3d8e5339461507",
   "legacy_scope_after_exact_increment_reversal": {
     "unchanged_files": [
       "Code/client/Games/Forms.cpp",
