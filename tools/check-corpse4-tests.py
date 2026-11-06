@@ -8,6 +8,7 @@ expected = {
     'Remote dying NPC keeps its native transition instead of replaying a fake completion',
     'Native corpse completion and actual resurrection supersede stale pose life bits',
     'Native death processing excludes living unconscious and essential down states',
+    'remote corpse playback leaves Havok animation-driven state local',
 
     'Resolved NPC equipment replaces template counts instead of duplicating armor and weapons',
     'NPC snapshot preserves legitimate spare equipment stacks and different enchantments',

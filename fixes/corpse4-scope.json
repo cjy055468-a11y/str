@@ -1,9 +1,14 @@
 [
+  "Code/client/Games/ActorExtension.h",
   "Code/client/Games/Skyrim/Actor.cpp",
+  "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+  "Code/client/Games/Skyrim/TESObjectREFR.h",
   "Code/client/Services/Generic/CharacterService.cpp",
   "Code/client/Systems/AnimationSystem.cpp",
+  "Code/client/Systems/CorpseAnimationSync.h",
   "Code/client/Systems/CorpseLifeState.h",
   "Code/client/Systems/InterpolationSystem.cpp",
   "Code/common/BuildInfo.h.in",
+  "Code/tests/corpse_animation_sync.cpp",
   "Code/tests/corpse_speech_window.cpp"
 ]

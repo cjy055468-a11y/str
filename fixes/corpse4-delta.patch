@@ -1,4 +1,27 @@
+diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtension.h
+index 970d31e..bbb75d1 100644
+--- a/Code/client/Games/ActorExtension.h
++++ b/Code/client/Games/ActorExtension.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <cstdint>
+ #include <Structs/ActionEvent.h>
+ 
+ struct ActorExtension
+@@ -37,6 +38,10 @@ struct ActorExtension
+     ActionEvent LatestAnimation{};
+     size_t GraphDescriptorHash = 0;
+     uint64_t GraphDescriptorProjectKey = 0;
++    uint64_t AnimationDrivenVariableDescriptorHash = 0;
++    uint64_t AnimationDrivenVariableProjectKey = 0;
++    uint32_t AnimationDrivenVariableIndex = ~uint32_t{0};
++    bool AnimationDrivenVariableResolved = false;
+ 
+     // TODO: atomic? bool instead? maybe simplify to `IsReenabling()` ?
+     // Protects discovery while rebuilding a leveled NPC.
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
+index 9f2c895..8aeb94d 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
 @@ -1,3 +1,4 @@
@@ -6,7 +29,7 @@ diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor
  #include <Games/References.h>
  #include <Games/Skyrim/EquipManager.h>
  #include <AI/AIProcess.h>
-@@ -942,7 +943,7 @@
+@@ -942,7 +943,7 @@ char TP_MAKE_THISCALL(HookSetPosition, Actor, NiPoint3& aPosition)
          // Dead NPCs use native ragdoll/reference positioning. Blocking that
          // update leaves their activation position behind the visible body.
          // Remote players retain their existing custom death/respawn handling.
@@ -15,7 +38,7 @@ diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor
              return TiltedPhoques::ThisCall(RealSetPosition, apThis, aPosition);
  
          return 1;
-@@ -1321,10 +1322,10 @@
+@@ -1321,10 +1322,10 @@ char TP_MAKE_THISCALL(HookActorProcess, Actor, float aDeltaTime)
      // Suppress local movement for remote actors, but preserve controller timing.
      if (apThis->GetExtension()->IsRemote())
      {
@@ -28,10 +51,104 @@ diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor
              return TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
  
          if (apThis->currentProcess)
+diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+index e42b1fb..24abe44 100644
+--- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
++++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+@@ -39,6 +39,7 @@
+ 
+ #include <Structs/AnimationGraphDescriptorManager.h>
+ #include <Structs/AnimationVariables.h>
++#include <Systems/CorpseAnimationSync.h>
+ 
+ extern const AnimationGraphDescriptor* BehaviorVarPatch(BSAnimationGraphManager* pManager, Actor* pActor);
+ 
+@@ -74,6 +75,14 @@ void UpdateGraphDescriptorHash(Actor* apActor, BSAnimationGraphManager* apManage
+     const auto cPreviousHash = pExtension->GraphDescriptorHash;
+     pExtension->GraphDescriptorHash = apManager->GetDescriptorKey(aForceIndex);
+     pExtension->GraphDescriptorProjectKey = cProjectKey;
++    if (pExtension->AnimationDrivenVariableDescriptorHash != pExtension->GraphDescriptorHash ||
++        pExtension->AnimationDrivenVariableProjectKey != pExtension->GraphDescriptorProjectKey)
++    {
++        pExtension->AnimationDrivenVariableDescriptorHash = 0;
++        pExtension->AnimationDrivenVariableProjectKey = 0;
++        pExtension->AnimationDrivenVariableIndex = ~uint32_t{0};
++        pExtension->AnimationDrivenVariableResolved = false;
++    }
+ 
+     if (cPreviousHash != 0)
+         spdlog::info("Animation graph project of actor {:X} changed, graph descriptor {} -> {}", apActor->formID, cPreviousHash, pExtension->GraphDescriptorHash);
+@@ -272,7 +281,7 @@ void TESObjectREFR::SaveAnimationVariables(AnimationVariables& aVariables) const
+     }
+ }
+ 
+-void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables) const noexcept
++void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables, const bool aPreserveCorpsePhysics) const noexcept
+ {
+     const auto spManager = animationGraphHolder.GetAnimationGraphManagerPtr();
+     if (spManager)
+@@ -306,6 +315,31 @@ void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables)
+             if (!pDescriptor)
+                 return;
+ 
++            // Resolve this once per graph project. DumpAnimationVariables reads the Havok name table,
++            // so doing it for every corpse movement snapshot would be needlessly expensive.
++            const bool cAnimationDrivenCacheMatches =
++                pExtendedActor->AnimationDrivenVariableDescriptorHash == pExtendedActor->GraphDescriptorHash &&
++                pExtendedActor->AnimationDrivenVariableProjectKey == pExtendedActor->GraphDescriptorProjectKey;
++            if (aPreserveCorpsePhysics && (!pExtendedActor->AnimationDrivenVariableResolved || !cAnimationDrivenCacheMatches) && pGraph->hkxDB)
++            {
++                pExtendedActor->AnimationDrivenVariableIndex = ~uint32_t{0};
++                const auto cVariableNames = pManager->DumpAnimationVariables(false);
++                for (const auto& [cIndex, cName] : cVariableNames)
++                {
++                    if (!ShouldApplyCorpseAnimationVariable(true, cName))
++                    {
++                        pExtendedActor->AnimationDrivenVariableIndex = cIndex;
++                        break;
++                    }
++                }
++                pExtendedActor->AnimationDrivenVariableDescriptorHash = pExtendedActor->GraphDescriptorHash;
++                pExtendedActor->AnimationDrivenVariableProjectKey = pExtendedActor->GraphDescriptorProjectKey;
++                pExtendedActor->AnimationDrivenVariableResolved = true;
++                spdlog::info("STR corpse animation sync guard: actor {:X}, graph {}, animation-driven index {}, found {}",
++                    pActor->formID, pExtendedActor->GraphDescriptorHash, pExtendedActor->AnimationDrivenVariableIndex,
++                    pExtendedActor->AnimationDrivenVariableIndex != ~uint32_t{0});
++            }
++
+             const auto* pBehaviorGraph = pGraph->behaviorGraph;
+             const auto* pVariableSet = pBehaviorGraph->animationVariables;
+ 
+@@ -318,6 +352,11 @@ void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables)
+             {
+                 const auto idx = pDescriptor->BooleanLookUpTable[i];
+ 
++                // Once this remote NPC is dead, don't let an animation snapshot put Havok back
++                // into animation-driven mode during local ragdoll playback.
++                if (aPreserveCorpsePhysics && idx == pExtendedActor->AnimationDrivenVariableIndex)
++                    continue;
++
+                 if (pVariableSet->size > idx && pBehaviorGraph->IsWordVariable(idx))
+                 {
+                     pVariableSet->data[idx] = aVariables.Booleans.size() > i ? aVariables.Booleans[i] : false;
+diff --git a/Code/client/Games/Skyrim/TESObjectREFR.h b/Code/client/Games/Skyrim/TESObjectREFR.h
+index 207d514..f64d605 100644
+--- a/Code/client/Games/Skyrim/TESObjectREFR.h
++++ b/Code/client/Games/Skyrim/TESObjectREFR.h
+@@ -179,7 +179,7 @@ struct TESObjectREFR : TESForm
+     TESObjectCELL* GetParentCellEx() const noexcept;
+ 
+     void SaveAnimationVariables(AnimationVariables& aWriter) const noexcept;
+-    void LoadAnimationVariables(const AnimationVariables& aReader) const noexcept;
++    void LoadAnimationVariables(const AnimationVariables& aReader, bool aPreserveCorpsePhysics = false) const noexcept;
+     uint32_t GetAnimationVariableInt(BSFixedString* apVariableName) noexcept;
+ 
+     void RemoveAllItems() noexcept;
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
+index 9ae4da8..9a4c01a 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
-@@ -2090,7 +2090,8 @@
+@@ -2090,7 +2090,8 @@ void CharacterService::RunRemoteUpdates() noexcept
              const bool cCompletedDeath = IsCompletedCorpseLifeState(pActor->actorState.flags1);
              const bool cHas3D = pActor->GetNiNode() != nullptr;
              const bool cAttached = pActor->parentCell && pActor->parentCell->IsAttached();
@@ -41,23 +158,67 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
                  cHas3D && cAttached && pActor->currentProcess && pActor->unk10 != 0xFFFF;
              const bool cWasAllowed = pExtension->CanRunNativeCorpseProcess();
              pExtension->SetNativeCorpseProcess(cAllowNative);
+@@ -2165,7 +2166,9 @@ void CharacterService::RunRemoteUpdates() noexcept
+ 
+         if (!waitingFor3D.SpawnRequest.ActionsToReplay.Actions.empty())
+         {
+-            pActor->LoadAnimationVariables(waitingFor3D.SpawnRequest.ActionsToReplay.Actions[0].Variables);
++            const auto* pExtension = pActor->GetExtension();
++            const bool cPreserveCorpsePhysics = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && waitingFor3D.SpawnRequest.IsDead;
++            pActor->LoadAnimationVariables(waitingFor3D.SpawnRequest.ActionsToReplay.Actions[0].Variables, cPreserveCorpsePhysics);
+         }
+ 
+         m_weaponDrawUpdates[pActor->formID] = {waitingFor3D.SpawnRequest.IsWeaponDrawn};
 diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
+index 4b70c46..e51450e 100644
 --- a/Code/client/Systems/AnimationSystem.cpp
 +++ b/Code/client/Systems/AnimationSystem.cpp
-@@ -61,7 +61,8 @@
-         const bool cWasCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
+@@ -58,10 +58,12 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+         const auto pTarget = Cast<TESObjectREFR>(TESForm::GetById(targetId));
+ 
+         const auto* pExtension = apActor->GetExtension();
+-        const bool cWasCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
++        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
++        const bool cWasCorpse = cRemoteNpc && apActor->VirtIsDead(false);
++        const bool cPreserveCorpsePhysics = cRemoteNpc && (cWasCorpse || aConfirmedDeath);
  
          const uint32_t cNativeState = apActor->actorState.flags1;
 -        const uint32_t cAppliedState = PreserveConfirmedCorpseLifeState(cNativeState, first.State1, cWasCorpse && aConfirmedDeath);
-+        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
 +        const uint32_t cAppliedState = cRemoteNpc ? PreserveRemoteNpcDeathTransition(cNativeState, first.State1, aConfirmedDeath) : first.State1;
          apActor->actorState.flags1 = cAppliedState;
          apActor->actorState.flags2 = first.State2;
  
+@@ -69,7 +71,7 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+             spdlog::info("STR corpse life-state guard: actor {:X}, native {:X}, incoming {:X}, applied {:X}, event {}",
+                 apActor->formID, cNativeState, first.State1, cAppliedState, first.EventName.c_str());
+ 
+-        apActor->LoadAnimationVariables(first.Variables);
++        apActor->LoadAnimationVariables(first.Variables, cPreserveCorpsePhysics);
+ 
+         aAnimationComponent.LastRanAction = first;
+ 
+diff --git a/Code/client/Systems/CorpseAnimationSync.h b/Code/client/Systems/CorpseAnimationSync.h
+new file mode 100644
+index 0000000..41e3a49
+--- /dev/null
++++ b/Code/client/Systems/CorpseAnimationSync.h
+@@ -0,0 +1,11 @@
++#pragma once
++
++#include <string_view>
++
++// A dead remote NPC's local Havok death path owns this switch. Replaying its
++// owner's value every movement/action update can put the local graph back into
++// animation-driven mode and prevent the ragdoll transition from settling.
++inline bool ShouldApplyCorpseAnimationVariable(const bool aPreserveCorpsePhysics, const std::string_view acName) noexcept
++{
++    return !aPreserveCorpsePhysics || acName != "bAnimationDriven";
++}
 diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseLifeState.h
+index 266c6be..e505f37 100644
 --- a/Code/client/Systems/CorpseLifeState.h
 +++ b/Code/client/Systems/CorpseLifeState.h
-@@ -19,3 +19,21 @@
+@@ -19,3 +19,21 @@ inline uint32_t PreserveConfirmedCorpseLifeState(uint32_t aNativeState, uint32_t
          return (aActionState & ~kLifeMask) | kDead;
      return aActionState;
  }
@@ -80,9 +241,10 @@ diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseL
 +    return life == 1 || life == 2;
 +}
 diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/InterpolationSystem.cpp
+index 94040eb..fb3a771 100644
 --- a/Code/client/Systems/InterpolationSystem.cpp
 +++ b/Code/client/Systems/InterpolationSystem.cpp
-@@ -101,7 +101,7 @@
+@@ -101,7 +101,7 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
      const bool cPhysicalCorpse = cRemoteCorpse && apActor->IsInRagdollState();
      // Let a confirmed, completed death reach ragdoll instead of waiting for
      // ragdoll while repeatedly forcing the living reference transform.
@@ -91,7 +253,17 @@ diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/I
      if (aInterpolationComponent.CorpsePlaybackObserved != cRemoteCorpse || aInterpolationComponent.CorpseRagdollObserved != cPhysicalCorpse)
      {
          aInterpolationComponent.CorpsePlaybackObserved = cRemoteCorpse;
+@@ -116,7 +116,7 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
+     // physical corpses or the narrowly validated native death-update path.
+     if (!cReleaseCorpseRoot)
+         apActor->ForcePosition(aInterpolationComponent.Position);
+-    apActor->LoadAnimationVariables(second.Variables);
++    apActor->LoadAnimationVariables(second.Variables, cRemoteCorpse);
+ 
+     if (apActor->currentProcess && apActor->currentProcess->middleProcess)
+     {
 diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
+index 5bf5cb4..2275a05 100644
 --- a/Code/common/BuildInfo.h.in
 +++ b/Code/common/BuildInfo.h.in
 @@ -1,4 +1,4 @@
@@ -99,11 +271,28 @@ diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
  // This file was autogenerated by xmake
  #define BUILD_BRANCH "${GIT_BRANCH}"
 -#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-missives2r1-loot1"
-+#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4-loot1"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4h-corpse4-loot1"
+diff --git a/Code/tests/corpse_animation_sync.cpp b/Code/tests/corpse_animation_sync.cpp
+new file mode 100644
+index 0000000..b5d7953
+--- /dev/null
++++ b/Code/tests/corpse_animation_sync.cpp
+@@ -0,0 +1,10 @@
++#include <catch2/catch.hpp>
++#include "../client/Systems/CorpseAnimationSync.h"
++
++TEST_CASE("remote corpse playback leaves Havok animation-driven state local", "[corpse][animation]")
++{
++    CHECK_FALSE(ShouldApplyCorpseAnimationVariable(true, "bAnimationDriven"));
++    CHECK(ShouldApplyCorpseAnimationVariable(true, "bAllowRotation"));
++    CHECK(ShouldApplyCorpseAnimationVariable(true, "kIsAttacking"));
++    CHECK(ShouldApplyCorpseAnimationVariable(false, "bAnimationDriven"));
++}
 diff --git a/Code/tests/corpse_speech_window.cpp b/Code/tests/corpse_speech_window.cpp
+index e2e680b..bc6c3ba 100644
 --- a/Code/tests/corpse_speech_window.cpp
 +++ b/Code/tests/corpse_speech_window.cpp
-@@ -78,3 +78,35 @@
+@@ -78,3 +78,35 @@ TEST_CASE("An accepted resurrection or unknown death state does not retain corps
      CHECK(PreserveConfirmedCorpseLifeState(kDead | 9, 23, false) == 23);
      CHECK(PreserveConfirmedCorpseLifeState(kDead, 4u << 21, false) == (4u << 21));
  }
