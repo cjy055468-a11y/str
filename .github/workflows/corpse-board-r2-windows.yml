@@ -1,0 +1,225 @@
+name: Build NPC loot count correction on Missives2r1 for Skyrim 1.6.1170
+
+on:
+  push:
+    branches: [codex/corpse-board-r2-v184]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: str-corpse-board-r2-windows
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      SOURCE_COMMIT: 54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: tiltedphoques/TiltedEvolution
+          ref: 54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
+          path: source
+          fetch-depth: 0
+          submodules: recursive
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: 3.1.0
+      - uses: actions/cache@v4
+        id: dependencies
+        with:
+          path: ~/AppData/Local/.xmake/packages
+          key: windows-x64-str-v184-xmake310-${{ hashFiles('source/**/xmake.lua') }}
+          restore-keys: windows-x64-str-v184-xmake310-
+      - name: Verify official source and apply candidate
+        run: |
+          New-Item -ItemType Directory -Force logs | Out-Null
+          Start-Transcript -Path logs/source-validation.txt
+          if ((git -C source rev-parse HEAD) -ne $env:SOURCE_COMMIT) { throw 'Wrong source commit' }
+          git -C source submodule status --recursive | Tee-Object logs/submodules.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Submodule status failed' }
+          if (Select-String -Path logs/submodules.txt -Pattern '^[+\-U]') { throw 'Submodule mismatch' }
+          git -C source apply --check ../fixes/coopfix4g-corpse-board-r2-v184.patch 2>&1 | Tee-Object logs/patch-check.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Patch does not match official release' }
+          git -C source apply ../fixes/coopfix4g-corpse-board-r2-v184.patch
+          if ($LASTEXITCODE -ne 0) { throw 'Patch apply failed' }
+          git -C source diff --check
+          if ($LASTEXITCODE -ne 0) { throw 'Invalid patch whitespace' }
+          git -C source diff --stat | Out-File logs/changes.txt
+          python tools/check-corpse-board-r2-scope.py source | Tee-Object logs/source-scope.json
+          if ($LASTEXITCODE -ne 0) { throw 'Missives source scope verification failed' }
+          git -C source switch -c master
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot set release build branch' }
+      - name: Compile all patched Papyrus scripts for Skyrim
+        run: |
+          Invoke-WebRequest 'https://github.com/Orvid/Caprica/releases/download/v0.3.0/Caprica.v0.3.0.7z' -OutFile Caprica.7z
+          if ((Get-FileHash Caprica.7z -Algorithm SHA256).Hash.ToLowerInvariant() -ne '0037e54cf3a1021e976278d9a637e8ae541aaf9ebeb8d274b6c2cfe32f4ee559') { throw 'Compiler hash mismatch' }
+          7z x Caprica.7z -ocaprica -y
+          if ($LASTEXITCODE -ne 0) { throw 'Compiler extraction failed' }
+          $compiler = (Get-ChildItem caprica -Recurse -Filter Caprica.exe | Select-Object -First 1).FullName
+          if (-not $compiler) { throw 'Compiler executable missing' }
+          & $compiler --help 2>&1 | Tee-Object logs/papyrus-help.txt
+          git clone https://github.com/ianpatt/skse64.git papyrus-api
+          if ($LASTEXITCODE -ne 0) { throw 'Native Papyrus declarations unavailable' }
+          git -C papyrus-api checkout 25b72352adb6543fa6d0bd3795780672b2e238e0
+          if ($LASTEXITCODE -ne 0) { throw 'Wrong interface revision' }
+          New-Item -ItemType Directory -Force papyrus-imports, compiled-pex | Out-Null
+          Copy-Item papyrus-api/scripts/vanilla/* papyrus-imports/
+          Copy-Item tools/papyrus-interfaces/* papyrus-imports/
+          $imports = "$env:GITHUB_WORKSPACE/mods/missives2/Scripts/Source;$env:GITHUB_WORKSPACE/papyrus-imports"
+          & $compiler --game=skyrim --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/missives2/Scripts/Source" 2>&1 | Tee-Object logs/papyrus-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Papyrus compilation failed' }
+          python tools/check-missives2-pex.py mods/missives2/Scripts/Source compiled-pex | Tee-Object logs/papyrus-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'PEX output validation failed' }
+      - name: Configure Windows x64 for Skyrim 1.6.1170
+        working-directory: source
+        run: |
+          $configured = $false
+          foreach ($attempt in 1..2) {
+            $attemptLog = "../logs/configure-attempt$attempt.txt"
+            xmake config --plat=windows --arch=x64 --mode=release --skyrim_version=1.6.1170 --yes -vD 2>&1 | Tee-Object $attemptLog
+            $configureExit = $LASTEXITCODE
+            Copy-Item $attemptLog ../logs/configure.txt -Force
+            if ($configureExit -eq 0) { $configured = $true; break }
+            if ($attempt -lt 2) { Start-Sleep -Seconds 10 }
+          }
+          if (-not $configured) { throw 'Windows configure failed after two attempts' }
+      - name: Retain configured dependency cache
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/AppData/Local/.xmake/packages
+          key: windows-x64-str-v184-xmake310-${{ hashFiles('source/**/xmake.lua') }}
+      - name: Check 1 - compile and link real client and server
+        working-directory: source
+        run: |
+          xmake build -y -vD SkyrimImmersiveLauncher 2>&1 | Tee-Object ../logs/build-client.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Client build failed' }
+          xmake build -y -vD SkyrimServerRunner 2>&1 | Tee-Object ../logs/build-server.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Server build failed' }
+          if (-not (Test-Path build/windows/x64/release/SkyrimTogether.exe)) { throw 'EXE missing' }
+          & ./build/windows/x64/release/SkyrimTogetherServer.exe --generate-config "$env:GITHUB_WORKSPACE/logs/STServer.ini" 2>&1 | Tee-Object ../logs/server-smoke.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Matching server runner/DLL failed to start for config generation' }
+          if (-not (Select-String "$env:GITHUB_WORKSPACE/logs/STServer.ini" -Pattern 'bEnableItemDrops')) { throw 'Drop sync configuration missing' }
+          'PASS: MSVC compile/link and matching server config-generation smoke test completed.' | Out-File ../logs/check1.txt
+      - name: Run production drop-ledger, protocol, replay and existing tests
+        working-directory: source
+        run: |
+          xmake build -y -vD TPTests 2>&1 | Tee-Object ../logs/build-tests.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Unit test build failed' }
+          & ./build/windows/x64/release/TPTests.exe -r junit -o "$env:GITHUB_WORKSPACE/logs/tests.xml"
+          if ($LASTEXITCODE -ne 0) { throw 'Unit test execution failed' }
+          python ../tools/check-corpse-board-r2-tests.py "$env:GITHUB_WORKSPACE/logs/tests.xml" | Tee-Object ../logs/test-summary.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Required replay tests did not complete successfully' }
+      - name: Check 2 - architecture, version, fix marker and imports
+        run: |
+          $out = 'source/build/windows/x64/release'
+          python tools/check-corpse-board-r2-pe.py "$out/SkyrimTogether.exe" "$out/EarlyLoad.dll" "$out/STServer.dll" "$out/SkyrimTogetherServer.exe" 2>&1 | Tee-Object logs/check2.json
+          if ($LASTEXITCODE -ne 0) { throw 'PE/version/fix validation failed' }
+          Get-ChildItem source/.xmake -Recurse -Filter xmake.conf | ForEach-Object { Get-Content $_.FullName } | Out-File logs/xmake-config.txt
+          if (-not (Select-String logs/xmake-config.txt -Pattern '1.6.1170')) { throw 'Target config is not 1.6.1170' }
+      - name: Check 3 - match deliverable hashes to the PE report
+        run: |
+          $out = 'source/build/windows/x64/release'
+          $metadata = Get-Content logs/check2.json -Raw | ConvertFrom-Json
+          foreach ($entry in $metadata) {
+            $file = Join-Path $out $entry.file
+            if ((Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) { throw "Delivery hash mismatch: $file" }
+          }
+          'PASS: all four delivery hashes match the PE report; one build round was requested.' | Out-File logs/check3.txt
+      - name: Package only verified candidate files
+        run: |
+          New-Item -ItemType Directory -Force candidate/SkyrimTogetherReborn, candidate/MissivesCompat/Scripts | Out-Null
+          $out = 'source/build/windows/x64/release'
+          Copy-Item "$out/SkyrimTogether.exe", "$out/EarlyLoad.dll", "$out/STServer.dll", "$out/SkyrimTogetherServer.exe" candidate/SkyrimTogetherReborn/
+          Copy-Item compiled-pex/*.pex candidate/MissivesCompat/Scripts/
+          Copy-Item mods/missives2/STR_Missives_Compat.esp candidate/MissivesCompat/
+          Copy-Item mods/missives2/Scripts/Source candidate/MissivesCompat/Scripts/ -Recurse
+          Copy-Item fixes/coopfix4g-corpse-board-r2-v184.patch candidate/
+          Copy-Item fixes/README-corpse-board-r2.zh-CN.md candidate/README.zh-CN.md
+          Copy-Item source/LICENSE candidate/LICENSE
+          Copy-Item logs candidate/logs -Recurse
+          $deliveryHashes = Get-ChildItem candidate -File -Recurse | Where-Object { $_.Name -ne 'SHA256.txt' } | Get-FileHash -Algorithm SHA256
+          $deliveryHashes | Format-List | Out-File candidate/SHA256.txt
+      - name: Upload candidate after all three checks pass
+        uses: actions/upload-artifact@v4
+        with:
+          name: STR-v184-SSE-161170-corpse-board-r2
+          path: candidate/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Always retain diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: STR-v184-corpse-board-r2-diagnostics
+          path: logs/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Checkout isolated results workspace
+        if: always()
+        uses: actions/checkout@v4
+        with:
+          path: build-results
+          ref: codex/corpse-board-r2-v184
+      - name: Save inspectable results on a separate branch
+        if: always()
+        run: |
+          $results = 'codex/corpse-board-r2-v184-results'
+          Push-Location build-results
+          $existing = git ls-remote --heads origin "refs/heads/$results"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot check results branch' }
+          if ($existing) {
+            git fetch origin $results
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot fetch previous results' }
+            git switch -c $results FETCH_HEAD
+          } else {
+            git switch --orphan $results
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot select isolated results branch' }
+          Pop-Location
+          if (Test-Path build-results/logs) { Remove-Item build-results/logs -Recurse -Force }
+          New-Item -ItemType Directory -Force build-results/logs | Out-Null
+          if (Test-Path logs) {
+            Get-ChildItem logs -File | ForEach-Object {
+              $text = Get-Content $_.FullName -Raw
+              $text = $text -replace '(gh[pousr]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+)', '[REDACTED]'
+              $text = $text -replace '(?im)(Authorization:|AUTHORIZATION:|extraheader[ =]+).*', '$1 [REDACTED]'
+              $text = $text -replace '(https://[^\s\"<>?]+)\?[^\s\"<>]+', '$1?[QUERY-REDACTED]'
+              $text | Set-Content "build-results/logs/$($_.Name)"
+            }
+          }
+          @{
+            run_id = '${{ github.run_id }}'
+            source_revision = '${{ github.sha }}'
+            job_status = '${{ job.status }}'
+            checked_candidate = ((Test-Path candidate/SkyrimTogetherReborn/SkyrimTogether.exe) -and (Test-Path logs/check3.txt))
+          } | ConvertTo-Json | Set-Content build-results/status.json
+          if ((Test-Path candidate/SkyrimTogetherReborn/SkyrimTogether.exe) -and (Test-Path logs/check3.txt)) {
+            if (Test-Path build-results/candidate) { Remove-Item build-results/candidate -Recurse -Force }
+            Copy-Item candidate build-results/candidate -Recurse
+          } elseif (Test-Path build-results/candidate) {
+            Remove-Item build-results/candidate -Recurse -Force
+          }
+          Push-Location build-results
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add logs status.json
+          if (Test-Path candidate) { git add candidate }
+          git add -u
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m 'Record Windows build results for run ${{ github.run_id }}'
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot commit build results' }
+            git push origin "HEAD:refs/heads/$results"
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot save isolated build results' }
+          }
+          Pop-Location

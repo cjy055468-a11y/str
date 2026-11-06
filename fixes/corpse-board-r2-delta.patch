@@ -1,0 +1,192 @@
+diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
+--- a/Code/client/Games/Skyrim/Actor.cpp
++++ b/Code/client/Games/Skyrim/Actor.cpp
+@@ -1,3 +1,4 @@
++#include <Systems/CorpseLifeState.h>
+ #include <Games/References.h>
+ #include <Games/Skyrim/EquipManager.h>
+ #include <AI/AIProcess.h>
+@@ -942,7 +943,7 @@
+         // Dead NPCs use native ragdoll/reference positioning. Blocking that
+         // update leaves their activation position behind the visible body.
+         // Remote players retain their existing custom death/respawn handling.
+-        if (apThis->formType == Actor::Type && !pExtension->IsPlayer() && apThis->VirtIsDead(false))
++        if (apThis->formType == Actor::Type && !pExtension->IsPlayer() && (apThis->VirtIsDead(false) || (pExtension->CanRunNativeCorpseProcess() && IsNativeDeathTransition(apThis->actorState.flags1))))
+             return TiltedPhoques::ThisCall(RealSetPosition, apThis, aPosition);
+ 
+         return 1;
+@@ -1321,10 +1322,10 @@
+     // Suppress local movement for remote actors, but preserve controller timing.
+     if (apThis->GetExtension()->IsRemote())
+     {
+-        // Main-thread state validation enables only completed, confirmed NPC
++        // Main-thread state validation enables only dying/dead, confirmed NPC
+         // deaths with attached 3D. Do not query ragdoll/graph/UI on this worker.
+         const auto* pExtension = apThis->GetExtension();
+-        if (pExtension->CanRunNativeCorpseProcess() && !pExtension->IsPlayer() && apThis->VirtIsDead(false))
++        if (pExtension->CanRunNativeCorpseProcess() && !pExtension->IsPlayer() && IsNativeDeathTransition(apThis->actorState.flags1))
+             return TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
+ 
+         if (apThis->currentProcess)
+diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
+--- a/Code/client/Services/Generic/CharacterService.cpp
++++ b/Code/client/Services/Generic/CharacterService.cpp
+@@ -2090,7 +2090,8 @@
+             const bool cCompletedDeath = IsCompletedCorpseLifeState(pActor->actorState.flags1);
+             const bool cHas3D = pActor->GetNiNode() != nullptr;
+             const bool cAttached = pActor->parentCell && pActor->parentCell->IsAttached();
+-            const bool cAllowNative = pExtension->IsRemote() && cConfirmedDeath && cNativeDead && cCompletedDeath &&
++            const bool cDeathTransition = IsNativeDeathTransition(pActor->actorState.flags1);
++            const bool cAllowNative = pExtension->IsRemote() && !pExtension->IsPlayer() && cConfirmedDeath && cDeathTransition &&
+                 cHas3D && cAttached && pActor->currentProcess && pActor->unk10 != 0xFFFF;
+             const bool cWasAllowed = pExtension->CanRunNativeCorpseProcess();
+             pExtension->SetNativeCorpseProcess(cAllowNative);
+diff --git a/Code/client/Services/Generic/InventoryService.cpp b/Code/client/Services/Generic/InventoryService.cpp
+--- a/Code/client/Services/Generic/InventoryService.cpp
++++ b/Code/client/Services/Generic/InventoryService.cpp
+@@ -209,6 +209,11 @@
+     TESObjectREFR* pObject = Utils::GetByServerId<TESObjectREFR>(acMessage.ServerId);
+     if (!pObject)
+         return;
++    if (MissivesCompat::HasBoardPatch() && MissivesCompat::IsBoard(pObject))
++    {
++        spdlog::warn("STR Missives generic delta ignored: board {:X}, count {}", pObject->formID, acMessage.Item.Count);
++        return;
++    }
+ 
+     ScopedInventoryOverride _;
+     pObject->AddOrRemoveItem(acMessage.Item);
+diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
+--- a/Code/client/Services/Generic/MissivesService.cpp
++++ b/Code/client/Services/Generic/MissivesService.cpp
+@@ -237,10 +237,11 @@
+     if (!pPost || !pPost->baseForm || !MissivesCompat::IsBoard(pBoard) || !m_boards.contains(pBoard->formID)) return false;
+     if (!mods.GetServerModId(apQuest->formID, aData.Quest) || !mods.GetServerModId(pBoard->formID, aData.Board)
+         || !mods.GetServerModId(pPost->baseForm->formID, aData.Book)) return false;
+-    const uint32_t cHandle = pPost->GetHandle().handle.iBits;
+-    if (!cHandle) return false;
++    // Quest instances identify the generated posting across inventory moves;
++    // an inventory-bound alias need not have a usable world-reference handle.
++    const uint32_t cInstance = apQuest->currentInstanceID;
+     auto& source = m_sources[apQuest->formID];
+-    if (!source.second || source.first != cHandle) source = {cHandle, ++m_nonce};
++    if (!source.second || source.first != cInstance) source = {cInstance, ++m_nonce};
+     aData.SourceNonce = source.second;
+     aData.Stage = apQuest->currentStage;
+     for (uint32_t i = 0; i < acSpec.AliasCount; ++i)
+diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
+--- a/Code/client/Services/Generic/ObjectService.cpp
++++ b/Code/client/Services/Generic/ObjectService.cpp
+@@ -201,6 +201,14 @@
+             continue;
+         }
+ 
++        // Late snapshots from a previous generic-container registration must
++        // never replace alias-bound postings handled by the board service.
++        if (MissivesCompat::HasBoardPatch() && MissivesCompat::IsBoard(pObject))
++        {
++            spdlog::warn("STR Missives generic snapshot ignored: board {:X}, entries {}", pObject->formID, objectData.CurrentInventory.Entries.size());
++            continue;
++        }
++
+         CreateObjectEntity(pObject->formID, objectData.ServerId);
+ 
+         if (MissivesCompat::IsBoard(pObject))
+diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
+--- a/Code/client/Systems/AnimationSystem.cpp
++++ b/Code/client/Systems/AnimationSystem.cpp
+@@ -61,7 +61,8 @@
+         const bool cWasCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
+ 
+         const uint32_t cNativeState = apActor->actorState.flags1;
+-        const uint32_t cAppliedState = PreserveConfirmedCorpseLifeState(cNativeState, first.State1, cWasCorpse && aConfirmedDeath);
++        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
++        const uint32_t cAppliedState = cRemoteNpc ? PreserveRemoteNpcDeathTransition(cNativeState, first.State1, aConfirmedDeath) : first.State1;
+         apActor->actorState.flags1 = cAppliedState;
+         apActor->actorState.flags2 = first.State2;
+ 
+diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseLifeState.h
+--- a/Code/client/Systems/CorpseLifeState.h
++++ b/Code/client/Systems/CorpseLifeState.h
+@@ -19,3 +19,21 @@
+         return (aActionState & ~kLifeMask) | kDead;
+     return aActionState;
+ }
++
++// Actor action snapshots carry pose state, not a completed native Kill call.
++// Copying their dead bit onto a still-live replica makes IsDead skip KillImpl.
++inline uint32_t PreserveRemoteNpcDeathTransition(uint32_t aNative, uint32_t aIncoming, bool aConfirmed) noexcept
++{
++    constexpr uint32_t kMask = 0x01E00000;
++    const uint32_t nativeLife = (aNative & kMask) >> 21;
++    const uint32_t incomingLife = (aIncoming & kMask) >> 21;
++    if (nativeLife <= 2 && incomingLife <= 2)
++        return (aIncoming & ~kMask) | (aNative & kMask);
++    return PreserveConfirmedCorpseLifeState(aNative, aIncoming, aConfirmed);
++}
++
++inline bool IsNativeDeathTransition(uint32_t aNative) noexcept
++{
++    const uint32_t life = (aNative & 0x01E00000) >> 21;
++    return life == 1 || life == 2;
++}
+diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/InterpolationSystem.cpp
+--- a/Code/client/Systems/InterpolationSystem.cpp
++++ b/Code/client/Systems/InterpolationSystem.cpp
+@@ -101,7 +101,7 @@
+     const bool cPhysicalCorpse = cRemoteCorpse && apActor->IsInRagdollState();
+     // Let a confirmed, completed death reach ragdoll instead of waiting for
+     // ragdoll while repeatedly forcing the living reference transform.
+-    const bool cReleaseCorpseRoot = cPhysicalCorpse || (cRemoteCorpse && pExtension->CanRunNativeCorpseProcess());
++    const bool cReleaseCorpseRoot = cPhysicalCorpse || (pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && pExtension->CanRunNativeCorpseProcess());
+     if (aInterpolationComponent.CorpsePlaybackObserved != cRemoteCorpse || aInterpolationComponent.CorpseRagdollObserved != cPhysicalCorpse)
+     {
+         aInterpolationComponent.CorpsePlaybackObserved = cRemoteCorpse;
+diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
+--- a/Code/common/BuildInfo.h.in
++++ b/Code/common/BuildInfo.h.in
+@@ -1,4 +1,4 @@
+ #pragma once
+ // This file was autogenerated by xmake
+ #define BUILD_BRANCH "${GIT_BRANCH}"
+-#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-missives2r1-loot1"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4-missives2r2-loot1"
+diff --git a/Code/tests/corpse_speech_window.cpp b/Code/tests/corpse_speech_window.cpp
+--- a/Code/tests/corpse_speech_window.cpp
++++ b/Code/tests/corpse_speech_window.cpp
+@@ -78,3 +78,35 @@
+     CHECK(PreserveConfirmedCorpseLifeState(kDead | 9, 23, false) == 23);
+     CHECK(PreserveConfirmedCorpseLifeState(kDead, 4u << 21, false) == (4u << 21));
+ }
++
++TEST_CASE("Remote NPC pose cannot fabricate native death before KillImpl", "[corpse.state]")
++{
++    constexpr uint32_t mask = 0x01E00000;
++    for (bool confirmed : {false, true})
++        for (uint32_t life : {1u, 2u})
++        {
++            const uint32_t result = PreserveRemoteNpcDeathTransition(17, (life << 21) | 29, confirmed);
++            CHECK((result & mask) == 0);
++            CHECK((result & ~mask) == 29);
++        }
++}
++TEST_CASE("Remote dying NPC keeps its native transition instead of replaying a fake completion", "[corpse.state]")
++{
++    constexpr uint32_t mask = 0x01E00000;
++    for (uint32_t incoming : {0u, 1u, 2u})
++        CHECK((PreserveRemoteNpcDeathTransition(1u << 21, incoming << 21, true) & mask) == (1u << 21));
++}
++TEST_CASE("Native corpse completion and actual resurrection supersede stale pose life bits", "[corpse.state]")
++{
++    constexpr uint32_t mask = 0x01E00000;
++    CHECK((PreserveRemoteNpcDeathTransition(2u << 21, 17, true) & mask) == (2u << 21));
++    CHECK((PreserveRemoteNpcDeathTransition(0, 2u << 21, false) & mask) == 0);
++    CHECK(PreserveRemoteNpcDeathTransition(0, 8u << 21, false) == (8u << 21));
++}
++TEST_CASE("Native death processing excludes living unconscious and essential down states", "[corpse.state]")
++{
++    CHECK(IsNativeDeathTransition(1u << 21));
++    CHECK(IsNativeDeathTransition(2u << 21));
++    for (uint32_t state : {0u, 3u, 4u, 5u, 6u, 7u, 8u})
++        CHECK_FALSE(IsNativeDeathTransition(state << 21));
++}
