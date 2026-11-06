@@ -30,6 +30,7 @@
   "Code/encoding/Opcodes.h",
   "Code/encoding/Structs/Inventory.cpp",
   "Code/encoding/Structs/Inventory.h",
+  "Code/encoding/Structs/MissivesActorId.h",
   "Code/encoding/Structs/MissivesData.cpp",
   "Code/encoding/Structs/MissivesData.h",
   "Code/server/Game/Inventory/MissivesLedger.h",

@@ -4,6 +4,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 expected = {
+    'Missives encodes the valid zero network entity without confusing it with absence',
+    'Missives actor zero and revision three survive the actual request factory',
+
     'Missives publishes one canonical instance and preserves its claim tombstone',
     'Concurrent Missives claims elect exactly one personal recipient',
     'Missives progress is claimant-only ordered and survives authority handoff',

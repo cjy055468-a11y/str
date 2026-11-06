@@ -4317,7 +4317,7 @@ diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Serv
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,598 @@
+@@ -0,0 +1,642 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -4332,6 +4332,7 @@ new file mode 100644
 +#include <Forms/TESGlobal.h>
 +#include <Forms/TESObjectCELL.h>
 +#include <bcrypt.h>
++#include <Structs/MissivesActorId.h>
 +
 +namespace
 +{
@@ -4411,8 +4412,11 @@ new file mode 100644
 +    m_reserved.clear();
 +    m_sentReservations.clear();
 +    m_claims.clear();
++    spdlog::info("STR Missives plugins: base_loaded {}, patch_loaded {}", Plugin("Missives.esp") != nullptr, Plugin("STR_Missives_Compat.esp") != nullptr);
 +    if (!m_enabled) return;
 +    m_token = ProfileToken();
++    m_waitReason = -1;
++    spdlog::info("STR Missives startup: enabled {}, scripts_seen {}, identity_available {}", m_enabled, MissivesBridge::SawScript(), m_token != 0);
 +    if (!m_token) spdlog::error("STR Missives profile identity unavailable: check the local Missives data directory");
 +    MissivesBridge::SetConnection(true, false, false);
 +    const auto* pMod = Plugin("Missives.esp");
@@ -4458,16 +4462,16 @@ new file mode 100644
 +    m_claims.clear();
 +}
 +
-+void MissivesService::Send(RequestMissives::Operation aAction, const MissivesData& acData, uint64_t aSequence) noexcept
++bool MissivesService::Send(RequestMissives::Operation aAction, const MissivesData& acData, uint64_t aSequence) noexcept
 +{
-+    if (!m_token || !m_transport.IsOnline()) return;
++    if (!m_token || !m_transport.IsOnline()) return false;
 +    RequestMissives request;
 +    request.Action = aAction;
 +    request.ClientSession = m_token;
 +    request.ServerSession = m_server;
 +    request.Sequence = aSequence;
 +    request.Data = acData;
-+    m_transport.Send(request);
++    return m_transport.Send(request);
 +}
 +
 +void MissivesService::Cache(uint32_t aQuest, const MissiveQuestSpec& acSpec, const Posting* apPosting) noexcept
@@ -4494,10 +4498,10 @@ new file mode 100644
 +    const auto view = m_world.view<FormIdComponent>();
 +    for (const auto entity : view)
 +        if (view.get<FormIdComponent>(entity).Id == apReference->formID)
-+            if (const auto id = Utils::GetServerId(entity)) return *id;
++            if (const auto id = Utils::GetServerId(entity)) return EncodeMissivesActorId(*id);
 +    const auto remote = m_world.view<RemoteComponent>();
 +    for (const auto entity : remote)
-+        if (remote.get<RemoteComponent>(entity).CachedRefId == apReference->formID) return remote.get<RemoteComponent>(entity).Id;
++        if (remote.get<RemoteComponent>(entity).CachedRefId == apReference->formID) return EncodeMissivesActorId(remote.get<RemoteComponent>(entity).Id);
 +    auto* pActor = Cast<Actor>(apReference);
 +    if (pActor && !pActor->IsStillLoading() && pActor->parentCell)
 +    {
@@ -4516,8 +4520,9 @@ new file mode 100644
 +
 +TESObjectREFR* MissivesService::ResolveActor(uint32_t aId) noexcept
 +{
-+    if (!aId) return nullptr;
-+    const auto entity = Utils::FindEntityByServerId(aId);
++    const auto serverId = DecodeMissivesActorId(aId);
++    if (!serverId) return nullptr;
++    const auto entity = Utils::FindEntityByServerId(*serverId);
 +    if (!entity) return nullptr;
 +    if (const auto* pForm = m_world.try_get<FormIdComponent>(*entity))
 +        return Cast<TESObjectREFR>(TESForm::GetById(pForm->Id));
@@ -4608,6 +4613,9 @@ new file mode 100644
 +{
 +    const auto* pMod = Plugin("Missives.esp");
 +    if (!pMod || !m_ready || m_snapshot || m_generators.empty()) return;
++    uint32_t running = 0;
++    uint32_t publishing = 0;
++    uint32_t waiting = 0;
 +    for (const auto& spec : cMissiveQuestSpecs)
 +    {
 +        const uint32_t cQuest = pMod->GetFormId(spec.Quest);
@@ -4628,9 +4636,21 @@ new file mode 100644
 +        }
 +        auto* pQuest = Cast<TESQuest>(TESForm::GetById(cQuest));
 +        if (!pQuest || pQuest->IsStopped() || pQuest->currentStage >= 20) continue;
++        ++running;
 +        MissivesData data;
 +        if (Capture(spec, pQuest, data) && m_generators.contains(m_world.GetModSystem().GetGameId(data.Board)))
++        {
 +            Send(RequestMissives::Operation::Publish, data);
++            ++publishing;
++        }
++        else ++waiting;
++    }
++    const auto now = std::chrono::steady_clock::now();
++    if (now >= m_nextBoardReport)
++    {
++        spdlog::info("STR Missives board scan: boards {}, generators {}, records {}, running_unpublished {}, publishing {}, capture_wait {}",
++            m_boards.size(), m_generators.size(), m_postings.size(), running, publishing, waiting);
++        m_nextBoardReport = now + 5s;
 +    }
 +}
 +
@@ -4742,10 +4762,18 @@ new file mode 100644
 +            m_contextIds.erase(it->first);
 +            it = m_contexts.erase(it);
 +        }
-+        if (!m_token || !MissivesBridge::SawScript() || !papyrus.Get("ReferenceAlias", "ForceRefTo")) return;
-+        if (!ActorId(PlayerCharacter::Get())) return;
-+        Send(RequestMissives::Operation::Hello);
++        const int cReason = !m_token ? 1 : !MissivesBridge::SawScript() ? 2 :
++            !papyrus.Get("ReferenceAlias", "ForceRefTo") ? 3 : !ActorId(PlayerCharacter::Get()) ? 4 : 0;
++        if (cReason)
++        {
++            if (m_waitReason != cReason)
++                spdlog::warn("STR Missives startup waiting: reason {} (1=identity, 2=patched scripts, 3=alias API, 4=player assignment)", cReason);
++            m_waitReason = cReason;
++            return;
++        }
++        if (!Send(RequestMissives::Operation::Hello)) return;
 +        m_hello = true;
++        spdlog::info("STR Missives hello sent: revision 3");
 +    }
 +    for (const auto& event : MissivesBridge::Drain())
 +    {
@@ -4764,7 +4792,13 @@ new file mode 100644
 +            if (m_ready && m_world.GetModSystem().GetServerModId(event.Id, data.Board)) Send(RequestMissives::Operation::CloseBoard, data);
 +            continue;
 +        }
-+        if (event.Action == O::Changed) continue;
++        if (event.Action == O::Changed)
++        {
++            // The controller periodically renews discovery. Reconnecting while
++            // still inside the trigger must not require another enter event.
++            if (MissivesCompat::IsBoard(Cast<TESObjectREFR>(TESForm::GetById(event.Id)))) m_boards.insert(event.Id);
++            continue;
++        }
 +        const auto* pSpec = Spec(event.Id);
 +        if (!pSpec) continue;
 +        if (event.Action == O::Claim)
@@ -4797,8 +4831,11 @@ new file mode 100644
 +            MissivesData data;
 +            if (m_world.GetModSystem().GetServerModId(board, data.Board))
 +            {
-+                Send(RequestMissives::Operation::OpenBoard, data);
-+                m_boardQueries.insert(board);
++                if (Send(RequestMissives::Operation::OpenBoard, data))
++                {
++                    m_boardQueries.insert(board);
++                    spdlog::info("STR Missives board requested: board {:X}", board);
++                }
 +            }
 +        }
 +    std::vector<uint32_t> released;
@@ -4867,6 +4904,7 @@ new file mode 100644
 +        }
 +        m_server = acMessage.ServerSession;
 +        m_ready = true;
++        spdlog::info("STR Missives ready: scope {}", acMessage.Scope);
 +    }
 +    if (acMessage.ServerSession != m_server) return;
 +    if (acMessage.Action == O::BoardControl)
@@ -4875,13 +4913,19 @@ new file mode 100644
 +        if (acMessage.Authority) m_generators.insert(cBoard);
 +        else m_generators.erase(cBoard);
 +        MissivesBridge::SetBoardAuthority(cBoard, acMessage.Authority);
++        spdlog::info("STR Missives board control: board {:X}, generator {}", cBoard, acMessage.Authority);
 +        return;
 +    }
 +    if (acMessage.Action == O::Ready || acMessage.Action == O::SnapshotBegin)
 +        m_authority = acMessage.Authority;
 +    MissivesBridge::SetConnection(true, m_ready, m_authority);
 +    if (acMessage.Action == O::SnapshotBegin) { m_snapshot = true; m_reserved.clear(); return; }
-+    if (acMessage.Action == O::SnapshotEnd) { m_snapshot = false; return; }
++    if (acMessage.Action == O::SnapshotEnd)
++    {
++        m_snapshot = false;
++        spdlog::info("STR Missives snapshot ready: records {}", m_postings.size());
++        return;
++    }
 +    const uint32_t cQuest = m_world.GetModSystem().GetGameId(acMessage.Data.Quest);
 +    const auto* pSpec = Spec(cQuest);
 +    if (!pSpec) return;
@@ -5005,7 +5049,7 @@ diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/Missi
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/MissivesService.h
-@@ -0,0 +1,77 @@
+@@ -0,0 +1,79 @@
 +#pragma once
 +#include <Messages/NotifyMissives.h>
 +#include <Messages/RequestMissives.h>
@@ -5040,7 +5084,7 @@ new file mode 100644
 +    void OnDisconnected(const DisconnectedEvent&) noexcept;
 +    void OnUpdate(const UpdateEvent&) noexcept;
 +    void OnNotify(const NotifyMissives& acMessage) noexcept;
-+    void Send(RequestMissives::Operation aAction, const MissivesData& acData = {}, uint64_t aSequence = 0) noexcept;
++    bool Send(RequestMissives::Operation aAction, const MissivesData& acData = {}, uint64_t aSequence = 0) noexcept;
 +    void PublishBoards() noexcept;
 +    void ApplyPostings() noexcept;
 +    bool Capture(const MissiveQuestSpec& acSpec, TESQuest* apQuest, MissivesData& aData) noexcept;
@@ -5061,6 +5105,7 @@ new file mode 100644
 +    bool m_ready{};
 +    bool m_authority{};
 +    bool m_snapshot{};
++    int m_waitReason{-1};
 +    std::map<uint64_t, Posting> m_postings;
 +    std::map<uint32_t, std::unique_ptr<MissivesContext>> m_contexts;
 +    std::map<uint32_t, uint64_t> m_current;
@@ -5078,6 +5123,7 @@ new file mode 100644
 +    std::set<uint32_t> m_claims;
 +    std::set<uint64_t> m_terminal;
 +    std::chrono::steady_clock::time_point m_next{};
++    std::chrono::steady_clock::time_point m_nextBoardReport{};
 +    entt::scoped_connection m_connectedConnection;
 +    entt::scoped_connection m_disconnectedConnection;
 +    entt::scoped_connection m_updateConnection;
@@ -5110,7 +5156,7 @@ diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
  // This file was autogenerated by xmake
  #define BUILD_BRANCH "${GIT_BRANCH}"
 -#define BUILD_COMMIT "${GIT_TAG}-coopfix4g"
-+#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-missives2"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-missives2r1"
 diff --git a/Code/encoding/Messages/CharacterSpawnRequest.cpp b/Code/encoding/Messages/CharacterSpawnRequest.cpp
 --- a/Code/encoding/Messages/CharacterSpawnRequest.cpp
 +++ b/Code/encoding/Messages/CharacterSpawnRequest.cpp
@@ -5268,7 +5314,7 @@ new file mode 100644
 +    uint64_t ClientSession{};
 +    uint64_t ServerSession{};
 +    uint64_t Sequence{};
-+    uint32_t Revision{2};
++    uint32_t Revision{3};
 +    MissivesData Data;
 +};
 diff --git a/Code/encoding/Messages/ServerMessageFactory.h b/Code/encoding/Messages/ServerMessageFactory.h
@@ -5355,6 +5401,27 @@ diff --git a/Code/encoding/Structs/Inventory.h b/Code/encoding/Structs/Inventory
          }
  
          bool IsWorn() const noexcept { return ExtraWorn || ExtraWornLeft; }
+diff --git a/Code/encoding/Structs/MissivesActorId.h b/Code/encoding/Structs/MissivesActorId.h
+new file mode 100644
+--- /dev/null
++++ b/Code/encoding/Structs/MissivesActorId.h
+@@ -0,0 +1,16 @@
++#pragma once
++#include <cstdint>
++#include <limits>
++#include <optional>
++
++// Zero is a valid EnTT/network entity. Only this Missives wire field is
++// one-based so zero can represent an absent reference. Ordinary character
++// messages retain their original server IDs.
++constexpr uint32_t EncodeMissivesActorId(uint32_t aServerId) noexcept
++{
++    return aServerId == std::numeric_limits<uint32_t>::max() ? 0 : aServerId + 1;
++}
++constexpr std::optional<uint32_t> DecodeMissivesActorId(uint32_t aWireId) noexcept
++{
++    return aWireId ? std::optional<uint32_t>(aWireId - 1) : std::nullopt;
++}
 diff --git a/Code/encoding/Structs/MissivesData.cpp b/Code/encoding/Structs/MissivesData.cpp
 new file mode 100644
 --- /dev/null
@@ -5680,7 +5747,7 @@ diff --git a/Code/server/Services/MissivesService.cpp b/Code/server/Services/Mis
 new file mode 100644
 --- /dev/null
 +++ b/Code/server/Services/MissivesService.cpp
-@@ -0,0 +1,281 @@
+@@ -0,0 +1,285 @@
 +#include <Services/MissivesService.h>
 +#include <Services/CharacterService.h>
 +#include <Services/PartyService.h>
@@ -5690,6 +5757,7 @@ new file mode 100644
 +#include <Game/Player.h>
 +#include <Game/PlayerManager.h>
 +#include <Components.h>
++#include <Structs/MissivesActorId.h>
 +
 +MissivesService::MissivesService(World& aWorld, entt::dispatcher& aDispatcher) noexcept
 +    : m_world(aWorld), m_session(static_cast<uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) | 1ULL)
@@ -5796,8 +5864,10 @@ new file mode 100644
 +
 +void MissivesService::SendActor(Player* apPlayer, uint32_t aActorId) const noexcept
 +{
-+    const auto entity = static_cast<entt::entity>(aActorId);
-+    if (!aActorId || !m_world.valid(entity) || !m_world.all_of<CharacterComponent, CellIdComponent, AnimationComponent>(entity))
++    const auto serverId = DecodeMissivesActorId(aActorId);
++    if (!serverId) return;
++    const auto entity = static_cast<entt::entity>(*serverId);
++    if (!m_world.valid(entity) || !m_world.all_of<CharacterComponent, CellIdComponent, AnimationComponent>(entity))
 +        return;
 +    CharacterSpawnRequest spawn;
 +    CharacterService::Serialize(m_world, entity, &spawn);
@@ -5838,7 +5908,7 @@ new file mode 100644
 +{
 +    const auto& request = acEvent.Packet;
 +    Player* pPlayer = acEvent.pPlayer;
-+    if (!request.ClientSession || request.Revision != 2 || !request.Data.Valid || request.Action > RequestMissives::Operation::CloseBoard)
++    if (!request.ClientSession || request.Revision != 3 || !request.Data.Valid || request.Action > RequestMissives::Operation::CloseBoard)
 +        return;
 +    const uint64_t cToken = request.ClientSession;
 +    const uint64_t cScope = GetScope(pPlayer);
@@ -5860,7 +5930,7 @@ new file mode 100644
 +            for (const auto& record : m_ledger.Snapshot(cScope))
 +                if (record.Status == MissivesLedger::State::Claimed && record.Owner == cToken)
 +                {
-+                    m_ledger.Claim(cScope, record.Data.Id, cToken, World::ToInteger(*actor));
++                    m_ledger.Claim(cScope, record.Data.Id, cToken, EncodeMissivesActorId(World::ToInteger(*actor)));
 +                    Broadcast(*m_ledger.Get(cScope, record.Data.Id), NotifyMissives::Operation::Taken);
 +                }
 +        NotifyMissives ready;
@@ -5869,6 +5939,7 @@ new file mode 100644
 +        ready.Scope = cScope;
 +        ready.Authority = m_ledger.GetAuthority(cScope) == cToken;
 +        pPlayer->Send(ready);
++        spdlog::info("STR Missives hello accepted: player {}, revision 3", pPlayer->GetId());
 +        Snapshot(pPlayer, cToken, cScope);
 +        return;
 +    }
@@ -5924,7 +5995,7 @@ new file mode 100644
 +    }
 +    if (request.Action == RequestMissives::Operation::Claim)
 +    {
-+        const uint32_t cActor = pPlayer->GetCharacter() ? World::ToInteger(*pPlayer->GetCharacter()) : 0;
++        const uint32_t cActor = pPlayer->GetCharacter() ? EncodeMissivesActorId(World::ToInteger(*pPlayer->GetCharacter())) : 0;
 +        const auto result = m_ledger.Claim(cScope, request.Data.Id, cToken, cActor);
 +        if (result != MissivesLedger::ClaimResult::Unavailable)
 +        {
@@ -6021,11 +6092,13 @@ diff --git a/Code/tests/missives.cpp b/Code/tests/missives.cpp
 new file mode 100644
 --- /dev/null
 +++ b/Code/tests/missives.cpp
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,250 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
 +#include <glm/glm.hpp>
++#include <entt/entt.hpp>
++#include <Structs/MissivesActorId.h>
 +#include <catch2/catch.hpp>
 +#include <Messages/ClientMessageFactory.h>
 +#include <Messages/ServerMessageFactory.h>
@@ -6235,4 +6308,38 @@ new file mode 100644
 +    ledger.SetBoardAuthority(1, second.Board, 30);
 +    REQUIRE(ledger.Retire(1, other->Data.Id, 30));
 +    REQUIRE(ledger.GetBoardAuthority(1, first.Board) == 10);
++}
++
++TEST_CASE("Missives encodes the valid zero network entity without confusing it with absence", "[missives][encoding]")
++{
++    entt::registry world;
++    const auto entity = world.create();
++    REQUIRE(entt::to_integral(entity) == 0);
++    const uint32_t wire = EncodeMissivesActorId(entt::to_integral(entity));
++    REQUIRE(wire == 1);
++    const auto restored = DecodeMissivesActorId(wire);
++    REQUIRE(restored);
++    REQUIRE(world.valid(static_cast<entt::entity>(*restored)));
++    REQUIRE(*restored == 0);
++    REQUIRE_FALSE(DecodeMissivesActorId(0));
++    REQUIRE(EncodeMissivesActorId(std::numeric_limits<uint32_t>::max()) == 0);
++}
++
++TEST_CASE("Missives actor zero and revision three survive the actual request factory", "[missives][encoding]")
++{
++    RequestMissives request;
++    request.Action = RequestMissives::Operation::Publish;
++    request.Data = Notice();
++    request.Data.Aliases[0].ActorId = EncodeMissivesActorId(0);
++    TiltedPhoques::Buffer buffer(16384);
++    TiltedPhoques::Buffer::Writer writer(&buffer);
++    request.Serialize(writer);
++    TiltedPhoques::Buffer::Reader reader(&buffer);
++    auto decoded = ClientMessageFactory{}.Extract(reader);
++    REQUIRE(decoded);
++    const auto* result = static_cast<RequestMissives*>(decoded.get());
++    REQUIRE(result->Revision == 3);
++    const auto actor = DecodeMissivesActorId(result->Data.Aliases[0].ActorId);
++    REQUIRE(actor);
++    REQUIRE(*actor == 0);
 +}
