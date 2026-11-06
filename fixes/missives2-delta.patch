@@ -4250,7 +4250,7 @@ diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Serv
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,437 @@
+@@ -0,0 +1,479 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -4335,7 +4335,6 @@ new file mode 100644
 +{
 +    m_enabled = Plugin("Missives.esp") && Plugin("STR_Missives_Compat.esp");
 +    m_hello = m_ready = m_authority = m_snapshot = false;
-+    m_server = 0;
 +    m_boards.clear();
 +    m_assigning.clear();
 +    m_actorRequests.clear();
@@ -4391,7 +4390,9 @@ new file mode 100644
 +    MissivesBridge::QuestState state;
 +    state.Personal = m_personal.contains(aQuest) || (apPosting && apPosting->Mine);
 +    state.State = apPosting ? apPosting->State : -1;
-+    state.Reserved = m_reserved.contains(aQuest) || state.Personal || (apPosting && apPosting->State != 0);
++    state.Reserved = m_reserved.contains(aQuest) || m_personal.contains(aQuest)
++        || (apPosting && ((apPosting->State > 0 && apPosting->State < 4)
++            || (apPosting->State >= 4 && !m_terminal.contains(apPosting->Data.Id))));
 +    state.PostingAlias = acSpec.PostingAlias;
 +    state.BoardAlias = acSpec.BoardAlias;
 +    if (apPosting)
@@ -4525,7 +4526,17 @@ new file mode 100644
 +        if (const auto current = m_current.find(cQuest); current != m_current.end())
 +        {
 +            const auto record = m_postings.find(current->second);
-+            if (record != m_postings.end() && record->second.State < 4) continue;
++            if (record != m_postings.end() && record->second.State < 4)
++            {
++                const auto source = m_sources.find(cQuest);
++                auto* pCurrentQuest = Cast<TESQuest>(TESForm::GetById(cQuest));
++                if (record->second.State == 0 && source != m_sources.end()
++                    && source->second.second == record->second.Data.SourceNonce
++                    && pCurrentQuest && (pCurrentQuest->IsStopped() || pCurrentQuest->currentStage >= 110))
++                    Send(RequestMissives::Operation::Retire, record->second.Data);
++                continue;
++            }
++            if (!m_terminal.contains(current->second)) continue;
 +        }
 +        auto* pQuest = Cast<TESQuest>(TESForm::GetById(cQuest));
 +        if (!pQuest || pQuest->IsStopped() || pQuest->currentStage >= 20) continue;
@@ -4547,17 +4558,34 @@ new file mode 100644
 +        auto& context = m_contexts[quest];
 +        if (context && m_contextIds[quest] != id)
 +        {
-+            context->Stop();
-+            if (context->IsRunning()) continue;
++            if (!m_terminal.contains(m_contextIds[quest]))
++            {
++                context->Stop();
++                if (context->IsRunning()) continue;
++            }
 +            context.reset();
 +        }
++        if (m_terminal.contains(id)) continue;
 +        if (!context) context = std::make_unique<MissivesContext>(*spec);
 +        m_contextIds[quest] = id;
 +        context->SetPersonal(post.Mine);
 +        if (post.State >= 4)
 +        {
-+            context->Stop();
++            if (context->IsRunning()) context->SetStage(110);
++            else
++            {
++                context->Stop(); // Restore pinned definitions only after cleanup.
++                m_terminal.insert(id);
++                m_personal.erase(quest);
++            }
 +            continue;
++        }
++        if (post.Recipient && !ResolveActor(post.Recipient) && now >= m_actorRequests[post.Recipient])
++        {
++            MissivesData request = post.Data;
++            request.Stage = post.Recipient;
++            Send(RequestMissives::Operation::Actor, request);
++            m_actorRequests[post.Recipient] = now + 2s;
 +        }
 +        for (const auto& alias : post.Data.Aliases)
 +            if (alias.Type == MissivesAlias::Kind::Actor && !ResolveActor(alias.ActorId) && now >= m_actorRequests[alias.ActorId])
@@ -4623,6 +4651,7 @@ new file mode 100644
 +        }
 +    }
 +    if (!m_ready || m_snapshot) return;
++    std::vector<uint32_t> released;
 +    for (const uint32_t quest : m_personal)
 +    {
 +        MissivesData data;
@@ -4636,9 +4665,20 @@ new file mode 100644
 +                Send(RequestMissives::Operation::Reserve, data);
 +                m_sentReservations.insert(quest);
 +            }
-+            else if (!cRunning && m_sentReservations.erase(quest)) Send(RequestMissives::Operation::ReleaseReserve, data);
++            else if (!cRunning)
++            {
++                if (m_sentReservations.erase(quest)) Send(RequestMissives::Operation::ReleaseReserve, data);
++                released.push_back(quest);
++            }
 +        }
 +    }
++    for (uint32_t quest : released) m_personal.erase(quest);
++    if (const auto* pMod = Plugin("Missives.esp"))
++        for (const auto& spec : cMissiveQuestSpecs)
++        {
++            const uint32_t cQuest = pMod->GetFormId(spec.Quest);
++            if (!m_current.contains(cQuest)) Cache(cQuest, spec, nullptr);
++        }
 +    PublishBoards();
 +    ApplyPostings();
 +}
@@ -4654,6 +4694,7 @@ new file mode 100644
 +            m_current.clear();
 +            m_postings.clear();
 +            m_sources.clear();
++            m_terminal.clear();
 +        }
 +        m_server = acMessage.ServerSession;
 +        m_ready = true;
@@ -4684,6 +4725,7 @@ new file mode 100644
 +    post.State = acMessage.Action == O::Posting ? 0 : acMessage.Action == O::Retired ? 4 : acMessage.Action == O::Complete ? 5 : post.Mine ? 2 : 3;
 +    post.Applied = false;
 +    const auto current = m_current.find(cQuest);
++    if (current != m_current.end() && acMessage.Data.Id < current->second) return;
 +    if (current == m_current.end() || acMessage.Data.Id >= current->second) m_current[cQuest] = acMessage.Data.Id;
 +    if (post.State >= 2) m_claims.erase(cQuest);
 +    Cache(cQuest, *pSpec, &post);
@@ -4777,7 +4819,7 @@ diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/Missi
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/MissivesService.h
-@@ -0,0 +1,72 @@
+@@ -0,0 +1,73 @@
 +#pragma once
 +#include <Messages/NotifyMissives.h>
 +#include <Messages/RequestMissives.h>
@@ -4844,6 +4886,7 @@ new file mode 100644
 +    std::set<uint32_t> m_personal;
 +    std::set<uint32_t> m_sentReservations;
 +    std::set<uint32_t> m_claims;
++    std::set<uint64_t> m_terminal;
 +    std::chrono::steady_clock::time_point m_next{};
 +    entt::scoped_connection m_connectedConnection;
 +    entt::scoped_connection m_disconnectedConnection;

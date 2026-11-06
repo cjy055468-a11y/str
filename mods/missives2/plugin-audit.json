@@ -9,6 +9,6 @@
     "Update.esm",
     "Missives.esp"
   ],
-  "plugin_sha256": "b94fb557d7c7ccf4f2a0aa24798b4fb84e0d128abd3b470b1c5ea887de908e26",
+  "plugin_sha256": "a1b76f7fe9504c8759610700f25ae916f8db1697d00c6a048b624456d286924c",
   "runtime_game_validation": "not run; condition layout and alias APIs source-referenced only"
 }

@@ -45,7 +45,7 @@ jobs:
           git -C source submodule status --recursive | Tee-Object logs/submodules.txt
           if ($LASTEXITCODE -ne 0) { throw 'Submodule status failed' }
           if (Select-String -Path logs/submodules.txt -Pattern '^[+\-U]') { throw 'Submodule mismatch' }
-          git -C source apply --check ../fixes/coopfix4g-missives2-v184.patch
+          git -C source apply --check ../fixes/coopfix4g-missives2-v184.patch 2>&1 | Tee-Object logs/patch-check.txt
           if ($LASTEXITCODE -ne 0) { throw 'Patch does not match official release' }
           git -C source apply ../fixes/coopfix4g-missives2-v184.patch
           if ($LASTEXITCODE -ne 0) { throw 'Patch apply failed' }
