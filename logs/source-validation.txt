@@ -1,12 +1,12 @@
 **********************
 PowerShell transcript start
-Start time: 20261106164016
+Start time: 20261106200838
 Username: runnervmquqza\runneradmin
 RunAs User: runnervmquqza\runneradmin
 Configuration Name: 
 Machine: runnervmquqza (Microsoft Windows NT 10.0.20348.0)
-Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\b3cc0d04-d06c-406c-b60e-9f4028ea25b3.ps1'
-Process ID: 6216
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\5bdadc44-cacf-4dd4-a82e-19d3c9f86ec9.ps1'
+Process ID: 6536
 PSVersion: 7.6.9
 PSEdition: Core
 GitCommitId: 7.6.9
@@ -26,15 +26,20 @@ Transcript started, output file is logs/source-validation.txt
 
 {
   "native_changes_from_delivered_loot1": [
+    "Code/client/Games/ActorExtension.h",
     "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+    "Code/client/Games/Skyrim/TESObjectREFR.h",
     "Code/client/Services/Generic/CharacterService.cpp",
     "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/CorpseAnimationSync.h",
     "Code/client/Systems/CorpseLifeState.h",
     "Code/client/Systems/InterpolationSystem.cpp",
     "Code/common/BuildInfo.h.in",
+    "Code/tests/corpse_animation_sync.cpp",
     "Code/tests/corpse_speech_window.cpp"
   ],
-  "delta_sha256": "ac61dbac7c628597e759276f90b3e583a0704170e16254d410b2381bd8e444f1",
+  "delta_sha256": "6d0f369bac45da4e94a64c53b8d55a0a59d1bdf64fc7727c2ee5e78236c56833",
   "exact_loot1_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"
@@ -44,6 +49,6 @@ PS>$global:?
 True
 **********************
 PowerShell transcript end
-End time: 20261106164019
+End time: 20261106200843
 **********************
 

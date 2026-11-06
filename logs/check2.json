@@ -1,35 +1,8 @@
-[
-  {
-    "file": "SkyrimTogether.exe",
-    "bytes": 6707200,
-    "machine": "AMD64",
-    "format": "PE32+",
-    "dll": false,
-    "sha256": "3d7538895742ff56b9775aab028b174d218573e3dece201f1629a9a81765f3da"
-  },
-  {
-    "file": "EarlyLoad.dll",
-    "bytes": 103424,
-    "machine": "AMD64",
-    "format": "PE32+",
-    "dll": true,
-    "sha256": "3e758a4c8602092118151bf1b54f349eb29a96b0421980d369e415bcc3300c1d"
-  },
-  {
-    "file": "STServer.dll",
-    "bytes": 7409664,
-    "machine": "AMD64",
-    "format": "PE32+",
-    "dll": true,
-    "sha256": "1774530811009c7f79bf93bfb0c29c2a4544289834cd55db5fb0a40baff0a0b5"
-  },
-  {
-    "file": "SkyrimTogetherServer.exe",
-    "bytes": 875008,
-    "machine": "AMD64",
-    "format": "PE32+",
-    "dll": false,
-    "sha256": "0626a887f30b7581d0129b4e5d80d96bacea2771ff58d4fefd7f9450dcd2380e"
-  }
-]
+Traceback (most recent call last):
+  File "D:\a\str\str\tools\check-corpse4-pe.py", line 6, in <module>
+    reports=[inspect(p) for p in files]
+             ^^^^^^^^^^
+  File "D:\a\str\str\tools\check-pe.py", line 27, in inspect
+    raise ValueError(f"{path.name}: missing expected marker {marker!r}")
+ValueError: SkyrimTogether.exe: missing expected marker b'v1.8.4-coopfix4g'
 

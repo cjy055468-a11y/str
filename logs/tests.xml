@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="TPTests.exe" errors="0" failures="0" tests="693" hostname="tbd" time="0.012" timestamp="2026-11-06T17:04:05Z">
+  <testsuite name="TPTests.exe" errors="0" failures="0" tests="700" hostname="tbd" time="0.012" timestamp="2026-11-06T20:18:16Z">
     <testcase classname="TPTests.exe.global" name="Temporary actor identity survives discovery unload and ownership changes" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Recycled temporary form IDs and new connections cannot inherit actor identity" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Known temporary actor identity survives real assignment factory round trips" time="0.000" status="run"/>
@@ -14,6 +14,7 @@
     <testcase classname="TPTests.exe.global" name="A cache with no observed animations does not invent a reset or a pose" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="EnTT initializes the original replay counter on creation and replacement" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Furniture recovery exit replaces a stale chair replay" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="remote corpse playback leaves Havok animation-driven state local" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Corpse speech allows a final line before a bounded death deadline" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Repeated late speech cannot extend an expired corpse deadline" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="A revived actor regains speech and a later death receives a new grace period" time="0.000" status="run"/>
@@ -27,7 +28,7 @@
     <testcase classname="TPTests.exe.global" name="Native corpse completion and actual resurrection supersede stale pose life bits" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Native death processing excludes living unconscious and essential down states" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Dropped instances retain distinct IDs and duplicate creation is idempotent" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.002" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.003" status="run"/>
     <testcase classname="TPTests.exe.global" name="Consumed drops stay absent from snapshots and creation retries" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Unacknowledged grants recover on reconnect without a second credit" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="An already applied recovered grant does not add to the new actor again" time="0.000" status="run"/>
