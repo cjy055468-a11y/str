@@ -1,6 +1,6 @@
 {
-  "checked_candidate": false,
-  "source_revision": "aa3e5af699cfbba3279961aa7bc26a61bc9420a9",
-  "run_id": "42285647963",
-  "job_status": "failure"
+  "job_status": "success",
+  "run_id": "42287573698",
+  "source_revision": "3e3bb1c859c71bb11f25b4fb88ca28f161715da1",
+  "checked_candidate": true
 }

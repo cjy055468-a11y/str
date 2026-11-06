@@ -15,16 +15,14 @@
 [0mchecking for gzip ... [32;1mC:\Program Files\Git\usr\bin\gzip.exe[0m
 [0mchecking for tar ... [32;1mC:\Windows\System32\tar.exe[0m
 [0mchecking for curl ... [32;1mC:\hostedtoolcache\windows\xmake\3.1.0\x64\winenv\bin\curl[0m
-pinging the host(github.com) ... 13 ms
-pinging the host(gitlab.com) ... 37 ms
-pinging the host(gitee.com) ... 65535 ms
-pinging the host(gitcode.com) ... 715 ms
+pinging the host(github.com) ... 14 ms
+pinging the host(gitlab.com) ... 20 ms
+pinging the host(gitee.com) ... 991 ms
+pinging the host(gitcode.com) ... 668 ms
 updating repositories .. 
 cloning repository(build-artifacts): https://github.com/xmake-mirror/build-artifacts.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts ..
 Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts'...
-Updating files:  18% (443/2445)
-Updating files:  19% (465/2445)
-Updating files:  20% (489/2445)
+Updating files:  20% (513/2445)
 Updating files:  21% (514/2445)
 Updating files:  22% (538/2445)
 Updating files:  23% (563/2445)
@@ -46,7 +44,6 @@ Updating files:  38% (930/2445)
 Updating files:  39% (954/2445)
 Updating files:  40% (978/2445)
 Updating files:  41% (1003/2445)
-Updating files:  41% (1013/2445)
 Updating files:  42% (1027/2445)
 Updating files:  43% (1052/2445)
 Updating files:  44% (1076/2445)
@@ -57,6 +54,7 @@ Updating files:  48% (1174/2445)
 Updating files:  49% (1199/2445)
 Updating files:  50% (1223/2445)
 Updating files:  51% (1247/2445)
+Updating files:  51% (1264/2445)
 Updating files:  52% (1272/2445)
 Updating files:  53% (1296/2445)
 Updating files:  54% (1321/2445)
@@ -68,7 +66,6 @@ Updating files:  59% (1443/2445)
 Updating files:  60% (1467/2445)
 Updating files:  61% (1492/2445)
 Updating files:  62% (1516/2445)
-Updating files:  62% (1531/2445)
 Updating files:  63% (1541/2445)
 Updating files:  64% (1565/2445)
 Updating files:  65% (1590/2445)
@@ -79,6 +76,7 @@ Updating files:  69% (1688/2445)
 Updating files:  70% (1712/2445)
 Updating files:  71% (1736/2445)
 Updating files:  72% (1761/2445)
+Updating files:  72% (1765/2445)
 Updating files:  73% (1785/2445)
 Updating files:  74% (1810/2445)
 Updating files:  75% (1834/2445)
@@ -90,7 +88,6 @@ Updating files:  80% (1956/2445)
 Updating files:  81% (1981/2445)
 Updating files:  82% (2005/2445)
 Updating files:  83% (2030/2445)
-Updating files:  83% (2033/2445)
 Updating files:  84% (2054/2445)
 Updating files:  85% (2079/2445)
 Updating files:  86% (2103/2445)
@@ -111,7 +108,8 @@ Updating files: 100% (2445/2445)
 Updating files: 100% (2445/2445), done.
 cloning repository(xmake-repo): https://github.com/xmake-io/xmake-repo.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo ..
 Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo'...
-Updating files:  25% (758/2943)
+Updating files:  24% (722/2943)
+Updating files:  25% (736/2943)
 Updating files:  26% (766/2943)
 Updating files:  27% (795/2943)
 Updating files:  28% (825/2943)
@@ -140,11 +138,11 @@ Updating files:  50% (1472/2943)
 Updating files:  51% (1501/2943)
 Updating files:  52% (1531/2943)
 Updating files:  53% (1560/2943)
-Updating files:  53% (1568/2943)
 Updating files:  54% (1590/2943)
 Updating files:  55% (1619/2943)
 Updating files:  56% (1649/2943)
 Updating files:  57% (1678/2943)
+Updating files:  57% (1682/2943)
 Updating files:  58% (1707/2943)
 Updating files:  59% (1737/2943)
 Updating files:  60% (1766/2943)
@@ -158,7 +156,6 @@ Updating files:  67% (1972/2943)
 Updating files:  68% (2002/2943)
 Updating files:  69% (2031/2943)
 Updating files:  70% (2061/2943)
-Updating files:  70% (2088/2943)
 Updating files:  71% (2090/2943)
 Updating files:  72% (2119/2943)
 Updating files:  73% (2149/2943)
@@ -174,6 +171,7 @@ Updating files:  82% (2414/2943)
 Updating files:  83% (2443/2943)
 Updating files:  84% (2473/2943)
 Updating files:  85% (2502/2943)
+Updating files:  85% (2523/2943)
 Updating files:  86% (2531/2943)
 Updating files:  87% (2561/2943)
 Updating files:  88% (2590/2943)
@@ -188,7 +186,6 @@ Updating files:  96% (2826/2943)
 Updating files:  97% (2855/2943)
 Updating files:  98% (2885/2943)
 Updating files:  99% (2914/2943)
-Updating files:  99% (2926/2943)
 Updating files: 100% (2943/2943)
 Updating files: 100% (2943/2943), done.
 [0m[32mok[0m
@@ -262,17 +259,17 @@ finding imgui from xmake ..
 [0mgenerating Code\common\BuildInfo.h.in ... [32;1mok[0m
 configure
 {
-    kind = static
     builddir = build
-    mode = release
+    kind = static
+    ccache = true
+    host = windows
     dotnet_sdkver = 10.0.403
-    plat = windows
     vs = 2022
+    arch = x64
     skyrim_version = 1.6.1170
     ndk_stdcxx = true
-    host = windows
-    arch = x64
-    ccache = true
+    plat = windows
+    mode = release
     dotnet = C:\Program Files\dotnet\sdk\10.0.403
 }
 [0m[1;33;1mwarning: [33;1mplease use add_configs("runtimes") instead of add_configs("vs_runtime").[0m
