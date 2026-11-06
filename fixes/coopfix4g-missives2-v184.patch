@@ -6645,7 +6645,7 @@ index 8d9f2c78..8a5effe4 100644
  
 diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
 new file mode 100644
-index 00000000..45c577f2
+index 00000000..1d8fe018
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
 @@ -0,0 +1,549 @@
@@ -6793,7 +6793,7 @@ index 00000000..45c577f2
 +    state.Personal = m_personal.contains(aQuest) || (apPosting && apPosting->Mine);
 +    state.State = apPosting ? apPosting->State : -1;
 +    state.Reserved = m_reserved.contains(aQuest) || m_personal.contains(aQuest)
-+        || (apPosting && ((apPosting->State > 0 && apPosting->State < 4)
++        || (apPosting && ((!apPosting->Applied && apPosting->State == 0) || (apPosting->State > 0 && apPosting->State < 4)
 +            || (apPosting->State >= 4 && !m_terminal.contains(apPosting->Data.Id))));
 +    state.PostingAlias = acSpec.PostingAlias;
 +    state.BoardAlias = acSpec.BoardAlias;
@@ -6935,7 +6935,7 @@ index 00000000..45c577f2
 +            {
 +                auto* pCurrentQuest = Cast<TESQuest>(TESForm::GetById(cQuest));
 +                const uint32_t cBoard = m_world.GetModSystem().GetGameId(record->second.Data.Board);
-+                if (record->second.State == 0 && m_generators.contains(cBoard)
++                if (record->second.State == 0 && record->second.Applied && m_generators.contains(cBoard)
 +                    && pCurrentQuest && (pCurrentQuest->IsStopped() || pCurrentQuest->currentStage >= 110))
 +                    Send(RequestMissives::Operation::Retire, record->second.Data);
 +                continue;
