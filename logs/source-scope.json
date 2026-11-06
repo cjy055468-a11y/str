@@ -1,0 +1,19 @@
+{
+  "native_changes_from_delivered_loot1": [
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Services/Generic/InventoryService.cpp",
+    "Code/client/Services/Generic/MissivesService.cpp",
+    "Code/client/Services/Generic/ObjectService.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/CorpseLifeState.h",
+    "Code/client/Systems/InterpolationSystem.cpp",
+    "Code/common/BuildInfo.h.in",
+    "Code/tests/corpse_speech_window.cpp"
+  ],
+  "delta_sha256": "1bb33834677892a84f9da637c90375e079ea75b77e58df2f7d3c9e8fd7ca9513",
+  "exact_loot1_recovery": true,
+  "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "game_test": "not run"
+}
+
