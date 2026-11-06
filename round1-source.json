@@ -1,0 +1,41 @@
+{
+  "changed_files": [
+    "Code/client/Components.h",
+    "Code/client/Components/CorpseSpeechComponent.h",
+    "Code/client/Components/RemoteComponent.h",
+    "Code/client/Games/ActorExtension.cpp",
+    "Code/client/Games/ActorExtension.h",
+    "Code/client/Games/Misc/SubtitleManager.cpp",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Games/Skyrim/Actor.h",
+    "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+    "Code/client/ModCompat/NetworkActorSavePolicy.h",
+    "Code/client/Services/CharacterService.h",
+    "Code/client/Services/Generic/ActorValueService.cpp",
+    "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/AnimationSystem.h",
+    "Code/client/Systems/CorpseLifeState.h",
+    "Code/client/Systems/CorpseSpeechWindow.h",
+    "Code/client/Systems/InterpolationSystem.cpp",
+    "Code/tests/corpse_speech_window.cpp"
+  ],
+  "delta_sha256": "1eb67a23cd30b699573849d4250bddfcdeb411f2f7a46656b3c664aa060112fa",
+  "legacy_scope_after_exact_increment_reversal": {
+    "unchanged_files": [
+      "Code/client/Games/Forms.cpp",
+      "Code/client/Games/Skyrim/Actor.h",
+      "Code/client/Services/Generic/CombatService.cpp",
+      "Code/client/Services/Generic/ObjectService.cpp",
+      "Code/client/Components/RemoteAnimationComponent.h",
+      "Code/server/Services/ObjectService.cpp"
+    ],
+    "original_combat_regions": 5,
+    "original_server_inventory_handler": "unchanged"
+  },
+  "new_network_fields": false,
+  "native_actor_storage_added": false,
+  "corpse2_death_actions_and_graph_updates_retained": true,
+  "missives_excluded": true,
+  "native_game_test": "not run"
+}

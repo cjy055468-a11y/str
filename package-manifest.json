@@ -1,0 +1,13 @@
+{
+  "source_revision": "c7c8bb25fda52213ec9fd099448a65cc71219a6e",
+  "run_id": "42141159662",
+  "artifact": "STR-coopfix4g-corpse3-test.zip",
+  "bytes": 6486577,
+  "sha256": "754fc2b78ed1503313cdcc96401c3db1684a3dcaede2bf19ae4f2ad8271488c0",
+  "tests": 83,
+  "required_tests": 56,
+  "purpose": "guest corpse native physical update/root release, life-state/save-policy and dead-NPC subtitle candidate",
+  "protocol": "unchanged coopfix4g",
+  "game_test": "not run; guest must test ragdoll/physical motion, Search on fresh corpses and absence of repeated post-death subtitles",
+  "disconnect_fix": "not implemented; server diagnostics retained"
+}
