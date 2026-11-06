@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="TPTests.exe" errors="0" failures="0" tests="627" hostname="tbd" time="0.012" timestamp="2026-11-06T06:41:59Z">
+  <testsuite name="TPTests.exe" errors="0" failures="0" tests="627" hostname="tbd" time="0.012" timestamp="2026-11-06T06:55:17Z">
     <testcase classname="TPTests.exe.global" name="Temporary actor identity survives discovery unload and ownership changes" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Recycled temporary form IDs and new connections cannot inherit actor identity" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Known temporary actor identity survives real assignment factory round trips" time="0.000" status="run"/>
