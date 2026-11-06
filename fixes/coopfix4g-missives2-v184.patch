@@ -1050,10 +1050,10 @@ index 00000000..8249a4e8
 +}
 diff --git a/Code/client/ModCompat/MissivesContext.cpp b/Code/client/ModCompat/MissivesContext.cpp
 new file mode 100644
-index 00000000..eee50692
+index 00000000..2eaf46d4
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesContext.cpp
-@@ -0,0 +1,283 @@
+@@ -0,0 +1,284 @@
 +#include <TiltedOnlinePCH.h>
 +#include <ModCompat/MissivesContext.h>
 +#include <ModCompat/MissivesCompat.h>
@@ -1332,6 +1332,7 @@ index 00000000..eee50692
 +            }
 +        }
 +        m_pins.clear();
++        m_created.clear();
 +        m_pinned = false;
 +        m_initialized = false;
 +        m_quest->type = static_cast<TESQuest::Type>(m_originalType);
@@ -6645,10 +6646,10 @@ index 8d9f2c78..8a5effe4 100644
  
 diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
 new file mode 100644
-index 00000000..5f54e218
+index 00000000..4529c833
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,563 @@
+@@ -0,0 +1,584 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -7031,13 +7032,17 @@ index 00000000..5f54e218
 +    if (!m_enabled) return;
 +    if (!m_transport.IsOnline())
 +    {
-+        for (auto& [quest, context] : m_contexts)
-+            if (!m_personal.contains(quest) && !context->IsRunning())
++        for (auto it = m_contexts.begin(); it != m_contexts.end();)
++            if (!m_personal.contains(it->first) && !it->second->IsRunning())
 +            {
-+                context->Stop();
-+                context->SetPersonal(true);
-+                MissivesBridge::RemoveQuest(quest);
++                it->second->Stop();
++                it->second->SetPersonal(true);
++                MissivesBridge::RemoveQuest(it->first);
++                m_sources.erase(it->first);
++                m_contextIds.erase(it->first);
++                it = m_contexts.erase(it);
 +            }
++            else ++it;
 +        return;
 +    }
 +    const auto now = std::chrono::steady_clock::now();
@@ -7046,6 +7051,15 @@ index 00000000..5f54e218
 +    const auto& papyrus = m_world.ctx().at<PapyrusService>();
 +    if (!m_hello)
 +    {
++        for (auto it = m_contexts.begin(); it != m_contexts.end();)
++        {
++            if (m_personal.contains(it->first)) { ++it; continue; }
++            if (it->second->IsRunning()) return; // Await queued disconnect cleanup.
++            it->second->Stop();
++            m_sources.erase(it->first);
++            m_contextIds.erase(it->first);
++            it = m_contexts.erase(it);
++        }
 +        if (!m_token || !MissivesBridge::SawScript() || !papyrus.Get("ReferenceAlias", "ForceRefTo")) return;
 +        if (!ActorId(PlayerCharacter::Get())) return;
 +        Send(RequestMissives::Operation::Hello);
@@ -7127,6 +7141,14 @@ index 00000000..5f54e218
 +        }
 +    }
 +    for (uint32_t quest : released) m_personal.erase(quest);
++    for (auto it = m_contexts.begin(); it != m_contexts.end();)
++        if (!m_current.contains(it->first) && !m_personal.contains(it->first) && !it->second->IsRunning())
++        {
++            it->second->Stop();
++            m_contextIds.erase(it->first);
++            it = m_contexts.erase(it);
++        }
++        else ++it;
 +    if (const auto* pMod = Plugin("Missives.esp"))
 +        for (const auto& spec : cMissiveQuestSpecs)
 +        {
