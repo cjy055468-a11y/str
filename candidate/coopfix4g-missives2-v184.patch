@@ -1050,10 +1050,10 @@ index 00000000..8249a4e8
 +}
 diff --git a/Code/client/ModCompat/MissivesContext.cpp b/Code/client/ModCompat/MissivesContext.cpp
 new file mode 100644
-index 00000000..e59f7e5b
+index 00000000..15531b9d
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesContext.cpp
-@@ -0,0 +1,294 @@
+@@ -0,0 +1,288 @@
 +#include <TiltedOnlinePCH.h>
 +#include <ModCompat/MissivesContext.h>
 +#include <ModCompat/MissivesCompat.h>
@@ -1136,16 +1136,10 @@ index 00000000..e59f7e5b
 +{
 +    const auto* pMod = Plugin("STR_Missives_Compat.esp");
 +    auto* pGlobal = pMod ? Cast<TESGlobal>(TESForm::GetById(pMod->GetFormId(m_spec.RecipientFlag))) : nullptr;
-+    if (pGlobal && pGlobal->f != (aPersonal ? 1.f : 0.f))
-+    {
-+        const float cValue = aPersonal ? 1.f : 0.f;
-+        // Use the native setter so the role is included in save-game changes.
-+        // A new process must distinguish background replicas from personal
-+        // missions already running in the save.
-+        const void* pSetter = World::Get().ctx().at<PapyrusService>().Get("GlobalVariable", "SetValue");
-+        if (pSetter) PapyrusFunction<void, TESGlobal, float>{pSetter}(pGlobal, cValue);
-+        else pGlobal->f = cValue;
-+    }
++    // Mutable GLOB values are part of the save's global-variable data. Keep
++    // the existing direct-value path used for the other mission globals;
++    // the connection classifier reads this same role after loading a save.
++    if (pGlobal) pGlobal->f = aPersonal ? 1.f : 0.f;
 +    if (m_quest)
 +    {
 +        m_quest->type = aPersonal ? static_cast<TESQuest::Type>(m_originalType) : TESQuest::Type::None;
