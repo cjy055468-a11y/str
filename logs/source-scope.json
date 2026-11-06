@@ -39,7 +39,7 @@
     "Code/server/World.cpp",
     "Code/tests/missives.cpp"
   ],
-  "delta_sha256": "5c9061d9a34bc33f453c6e01c15929967daa91740d4053b5808966ac3c915bee",
+  "delta_sha256": "3230098cd8420ac8056e742bd36f48fd8aa4d3ea18804c4bd3bc89c79ef2a353",
   "exact_corpse3_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"
