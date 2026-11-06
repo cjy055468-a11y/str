@@ -147,7 +147,8 @@ jobs:
           Copy-Item fixes/README-missives2.zh-CN.md candidate/README.zh-CN.md
           Copy-Item source/LICENSE candidate/LICENSE
           Copy-Item logs candidate/logs -Recurse
-          Get-ChildItem candidate -File -Recurse | Get-FileHash -Algorithm SHA256 | Format-List | Out-File candidate/SHA256.txt
+          $deliveryHashes = Get-ChildItem candidate -File -Recurse | Where-Object { $_.Name -ne 'SHA256.txt' } | Get-FileHash -Algorithm SHA256
+          $deliveryHashes | Format-List | Out-File candidate/SHA256.txt
       - name: Upload candidate after all three checks pass
         uses: actions/upload-artifact@v4
         with:
