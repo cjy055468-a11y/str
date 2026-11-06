@@ -1,0 +1,20 @@
+[
+  {
+    "branch": "dev",
+    "sha": "8b2b1b0cd9fc53ab7518a2c980486d07e5edea97",
+    "inventory_function_found": true,
+    "leveled_marker_in_getinventory": false,
+    "saved_to": "/workspace/str-artifacts/npc-loot-upstream/dev-TESObjectREFR.cpp",
+    "inventory_reading_identical_to_official_v184": true,
+    "upstream_inventory_scope_sha256": "95439c00c165bd4ee8683939e0d60c55bed5a842b88f910daf90ca9c23a6dc8d"
+  },
+  {
+    "branch": "master",
+    "sha": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+    "inventory_function_found": true,
+    "leveled_marker_in_getinventory": false,
+    "saved_to": "/workspace/str-artifacts/npc-loot-upstream/master-TESObjectREFR.cpp",
+    "inventory_reading_identical_to_official_v184": true,
+    "upstream_inventory_scope_sha256": "95439c00c165bd4ee8683939e0d60c55bed5a842b88f910daf90ca9c23a6dc8d"
+  }
+]
