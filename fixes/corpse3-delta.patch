@@ -84,8 +84,23 @@ diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExten
  }
  
  bool ActorExtension::IsLocal() const noexcept
-@@ -14,7 +40,7 @@
+@@ -12,9 +38,22 @@
+     return !IsRemote();
+ }
  
++bool ActorExtension::CanRunNativeCorpseProcess() const noexcept
++{
++    return std::atomic_ref<uint32_t>(onlineFlags).load(std::memory_order_relaxed) & kNativeCorpseProcess;
++}
++
++void ActorExtension::SetNativeCorpseProcess(bool aSet) noexcept
++{
++    if (aSet)
++        std::atomic_ref<uint32_t>(onlineFlags).fetch_or(kNativeCorpseProcess, std::memory_order_relaxed);
++    else
++        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kNativeCorpseProcess, std::memory_order_relaxed);
++}
++
  bool ActorExtension::IsPlayer() const noexcept
  {
 -    return onlineFlags & kPlayer;
@@ -93,7 +108,7 @@ diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExten
  }
  
  bool ActorExtension::IsRemotePlayer() const noexcept
-@@ -30,15 +56,15 @@
+@@ -30,15 +69,15 @@
  void ActorExtension::SetRemote(bool aSet) noexcept
  {
      if (aSet)
@@ -101,7 +116,7 @@ diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExten
 +        std::atomic_ref<uint32_t>(onlineFlags).fetch_or(kRemote, std::memory_order_relaxed);
      else
 -        onlineFlags &= ~kRemote;
-+        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kRemote, std::memory_order_relaxed);
++        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~(kRemote | kNativeCorpseProcess), std::memory_order_relaxed);
  }
  
  void ActorExtension::SetPlayer(bool aSet) noexcept
@@ -116,16 +131,17 @@ diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExten
 diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtension.h
 --- a/Code/client/Games/ActorExtension.h
 +++ b/Code/client/Games/ActorExtension.h
-@@ -8,6 +8,8 @@
+@@ -8,6 +8,9 @@
      {
          kRemote = 1 << 0,
          kPlayer = 1 << 1,
 +        kNetworkNpcReplica = 1 << 2,
 +        kDeadSpeechMuted = 1 << 3,
++        kNativeCorpseProcess = 1 << 4,
      };
  
      enum class ReconciliationStage
-@@ -24,6 +26,10 @@
+@@ -24,6 +27,12 @@
      bool IsLocalPlayer() const noexcept;
      void SetRemote(bool aSet) noexcept;
      void SetPlayer(bool aSet) noexcept;
@@ -133,10 +149,12 @@ diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtensi
 +    void MarkNetworkNpcReplica() noexcept;
 +    bool IsDeadSpeechMuted() const noexcept;
 +    void SetDeadSpeechMuted(bool aSet) noexcept;
++    bool CanRunNativeCorpseProcess() const noexcept;
++    void SetNativeCorpseProcess(bool aSet) noexcept;
  
      ActionEvent LatestAnimation{};
      size_t GraphDescriptorHash = 0;
-@@ -34,5 +40,7 @@
+@@ -34,5 +43,7 @@
      ReconciliationStage Reconciliation{ReconciliationStage::None};
  
  private:
@@ -220,6 +238,19 @@ diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor
      spdlog::debug("a3: {:X}, a4: {}, a5: {}, a6: {}, a7: {}, a8: {:X}, a9: {:X}, a10: {}, a11: {:X}, a12: {}, a13: {}, a14: {}", (uint64_t)a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14);
  
      // The player having the conversation may not own this NPC. Ambient
+@@ -1298,6 +1321,12 @@
+     // Suppress local movement for remote actors, but preserve controller timing.
+     if (apThis->GetExtension()->IsRemote())
+     {
++        // Main-thread state validation enables only completed, confirmed NPC
++        // deaths with attached 3D. Do not query ragdoll/graph/UI on this worker.
++        const auto* pExtension = apThis->GetExtension();
++        if (pExtension->CanRunNativeCorpseProcess() && !pExtension->IsPlayer() && apThis->VirtIsDead(false))
++            return TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
++
+         if (apThis->currentProcess)
+         {
+             if (auto* pController = apThis->currentProcess->GetCharController())
 diff --git a/Code/client/Games/Skyrim/Actor.h b/Code/client/Games/Skyrim/Actor.h
 --- a/Code/client/Games/Skyrim/Actor.h
 +++ b/Code/client/Games/Skyrim/Actor.h
@@ -351,10 +382,24 @@ diff --git a/Code/client/Services/Generic/ActorValueService.cpp b/Code/client/Se
      auto& formIdComponent = view.get<FormIdComponent>(*it);
      Actor* pActor = Cast<Actor>(TESForm::GetById(formIdComponent.Id));
  
+@@ -418,6 +422,7 @@
+     if (pExtension->IsPlayer())
+         return;
+ 
++    pExtension->SetNativeCorpseProcess(false);
+     if (pActor->IsDead() != acMessage.IsDead)
+     {
+         spdlog::info("Applying death state {} to remote actor {:X}, server id: {:X}", acMessage.IsDead, pActor->formID, acMessage.Id);
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
-@@ -10,6 +10,7 @@
+@@ -5,11 +5,13 @@
+ 
+ #include <Services/CharacterService.h>
+ #include <Systems/PendingActorUpdates.h>
++#include <Systems/CorpseLifeState.h>
+ #include <Services/QuestService.h>
+ #include <Services/TransportService.h>
  
  #include <Games/References.h>
  #include <Games/Misc/SubtitleManager.h>
@@ -362,7 +407,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
  
  #include <Forms/TESNPC.h>
  #include <Interface/UI.h>
-@@ -131,6 +132,9 @@
+@@ -131,6 +133,9 @@
  void CharacterService::ReconcileActorData(
      const entt::entity aEntity, Actor* apActor, const uint32_t aOwnershipEpoch, const ActorData& acActorData, const bool aApplyInventory, const bool aIsLocalOwner) noexcept
  {
@@ -372,18 +417,27 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
      if (auto* pWaitingFor3D = m_world.try_get<WaitingFor3D>(aEntity))
      {
          pWaitingFor3D->SpawnRequest.InitialActorValues = acActorData.InitialActorValues;
-@@ -267,7 +271,10 @@
+@@ -143,6 +148,7 @@
+     if (!apActor)
+         return;
+ 
++    apActor->GetExtension()->SetNativeCorpseProcess(false);
+     apActor->SetActorValues(acActorData.InitialActorValues);
+ 
+     if (aApplyInventory)
+@@ -267,7 +273,11 @@
  void CharacterService::OnActorRemoved(const ActorRemovedEvent& acEvent) noexcept
  {
      if (auto* pActor = Cast<Actor>(TESForm::GetById(acEvent.FormId)))
 +    {
          pActor->GetExtension()->Reconciliation = ActorExtension::ReconciliationStage::None;
 +        pActor->GetExtension()->SetDeadSpeechMuted(false);
++        pActor->GetExtension()->SetNativeCorpseProcess(false);
 +    }
  
      m_pendingLeveledConforms.erase(acEvent.FormId);
  
-@@ -286,6 +293,7 @@
+@@ -286,6 +296,7 @@
      CancelServerAssignment(*entityIt, formIdComponent.Id);
  
      m_world.remove<EarlyAnimationBufferComponent>(cId);
@@ -391,7 +445,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
  
      if (m_world.all_of<FormIdComponent>(cId))
          m_world.remove<FormIdComponent>(cId);
-@@ -305,6 +313,7 @@
+@@ -305,6 +316,7 @@
      RunExperienceUpdates();
      ApplyCachedWeaponDraws(acUpdateEvent);
      ProcessLeveledConforms();
@@ -399,7 +453,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
  }
  
  void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const noexcept
-@@ -332,6 +341,10 @@
+@@ -332,6 +344,10 @@
  
  void CharacterService::OnDisconnected(const DisconnectedEvent& acDisconnectedEvent) const noexcept
  {
@@ -410,7 +464,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
      m_actorIdentities.Clear();
      auto remoteView = m_world.view<FormIdComponent, RemoteComponent>();
      for (auto entity : remoteView)
-@@ -585,7 +598,7 @@
+@@ -585,7 +601,7 @@
              FaceGenSystem::Setup(m_world, *entity, acMessage.FaceTints);
          }
  
@@ -419,7 +473,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
      }
      else
      {
-@@ -672,6 +685,7 @@
+@@ -672,6 +688,7 @@
          ApplyLeveledNpcPick(pActor, acMessage.LeveledNpcPickId);
  
      m_world.emplace_or_replace<RemoteComponent>(*entity, acMessage.ServerId, pActor->formID, acMessage.OwnershipEpoch);
@@ -427,7 +481,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
      m_actorIdentities.Remember(pActor->formID, pActor->GetHandle().handle.iBits, acMessage.ServerId);
  
      auto& interpolationComponent = InterpolationSystem::Setup(m_world, *entity);
-@@ -853,6 +867,9 @@
+@@ -853,6 +870,9 @@
              else if (cachedRefId != 0)
                  m_world.emplace<RemoteComponent>(cEntity, acMessage.ServerId, cachedRefId, acMessage.OwnershipEpoch);
  
@@ -437,7 +491,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
              spdlog::warn("Declined ownership of actor {:X} at epoch {} because the actor is not ready", acMessage.ServerId, acMessage.OwnershipEpoch);
              DeclineOwnership(acMessage.ServerId, acMessage.OwnershipEpoch);
              return;
-@@ -1197,6 +1214,67 @@
+@@ -1197,6 +1217,67 @@
      return !IsPhaseStuckOnRemotePackage(pScene, cPhase);
  }
  
@@ -505,7 +559,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
  void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
  {
      if (!m_transport.IsConnected())
-@@ -1206,6 +1284,9 @@
+@@ -1206,6 +1287,9 @@
      auto entityIt = std::find_if(view.begin(), view.end(), [view, formId = acEvent.ActorID](auto entity) { return view.get<FormIdComponent>(entity).Id == formId; });
  
      if (entityIt == view.end())
@@ -515,7 +569,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
          return;
  
      auto serverIdRes = Utils::GetServerId(*entityIt);
-@@ -1231,6 +1312,9 @@
+@@ -1231,6 +1315,9 @@
      if (!pActor)
          return;
  
@@ -525,7 +579,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
      // Every client plays scenes itself, the local copy usually voices the line. Menu and other-scene lines still play.
      if (IsLineVoicedByLocalScene(pActor, acMessage.SceneId, acMessage.ScenePhase))
      {
-@@ -1253,6 +1337,9 @@
+@@ -1253,6 +1340,9 @@
      auto entityIt = std::find_if(view.begin(), view.end(), [view, formId = acEvent.SpeakerID](auto entity) { return view.get<FormIdComponent>(entity).Id == formId; });
  
      if (entityIt == view.end())
@@ -535,7 +589,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
          return;
  
      auto serverIdRes = Utils::GetServerId(*entityIt);
-@@ -1276,6 +1363,9 @@
+@@ -1276,6 +1366,9 @@
  {
      Actor* pActor = Utils::GetByServerId<Actor>(acMessage.ServerId);
      if (!pActor)
@@ -545,7 +599,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
          return;
  
      // The local copy of the scene shows its own subtitle, see OnNotifyDialogue. Only the actor's own voice line ending
-@@ -1667,10 +1757,12 @@
+@@ -1667,10 +1760,12 @@
              FaceGenSystem::Setup(m_world, aEntity, acMessage.FaceTints);
          }
  
@@ -559,7 +613,42 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
  
      if (!pActor)
      {
-@@ -1967,7 +2059,8 @@
+@@ -1949,6 +2044,34 @@
+             pActor = Cast<Actor>(pForm);
+         }
+ 
++        if (pActor)
++        {
++            ActorExtension* pExtension = pActor->GetExtension();
++            const auto& remote = interpolatedEntities.get<RemoteComponent>(entity);
++            const bool cConfirmedDeath = remote.AuthoritativeDeath.value_or(false);
++            const bool cNativeDead = !pExtension->IsPlayer() && pActor->VirtIsDead(false);
++            const bool cCompletedDeath = IsCompletedCorpseLifeState(pActor->actorState.flags1);
++            const bool cHas3D = pActor->GetNiNode() != nullptr;
++            const bool cAttached = pActor->parentCell && pActor->parentCell->IsAttached();
++            const bool cAllowNative = pExtension->IsRemote() && cConfirmedDeath && cNativeDead && cCompletedDeath &&
++                cHas3D && cAttached && pActor->currentProcess && pActor->unk10 != 0xFFFF;
++            const bool cWasAllowed = pExtension->CanRunNativeCorpseProcess();
++            pExtension->SetNativeCorpseProcess(cAllowNative);
++            if (cWasAllowed != cAllowNative)
++            {
++                spdlog::info("STR corpse native process eligibility: actor {:X}, enabled {}, confirmed {}, native_dead {}, completed {}, has_3d {}, attached {}, runtime {:X}",
++                    pActor->formID, cAllowNative, cConfirmedDeath, cNativeDead, cCompletedDeath, cHas3D, cAttached, pActor->unk10);
++                // Read only: distinguish a frozen animation-driven pose from
++                // a corpse whose native physics update is now allowed to run.
++                BSFixedString variable("bAnimationDriven");
++                bool animationDriven = false;
++                const bool cFoundVariable = cHas3D && pActor->animationGraphHolder.IsReady() &&
++                    pActor->animationGraphHolder.GetVariableBool(&variable, &animationDriven);
++                spdlog::info("STR corpse graph probe: actor {:X}, animation_driven_found {}, animation_driven {}",
++                    pActor->formID, cFoundVariable, animationDriven);
++            }
++        }
++
+         InterpolationSystem::Update(pActor, interpolationComponent, cNow);
+     }
+ 
+@@ -1967,7 +2090,8 @@
          // Actions run on the clock the interpolation pass above just advanced, so the body and its animations stay in step
          const auto cTick = InterpolationSystem::GetPlaybackTick(animatedView.get<InterpolationComponent>(entity));
  
@@ -621,7 +710,7 @@ diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseL
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Systems/CorpseLifeState.h
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,21 @@
 +#pragma once
 +
 +#include <cstdint>
@@ -630,11 +719,16 @@ new file mode 100644
 +// kDead is 2. This mask also matches this project's IsBleedingOut implementation.
 +// Preserve only an already completed, authoritatively confirmed death; never
 +// force a dying actor to dead or block an accepted resurrection.
++inline bool IsCompletedCorpseLifeState(uint32_t aNativeState) noexcept
++{
++    return (aNativeState & 0x01E00000) == (2u << 21);
++}
++
 +inline uint32_t PreserveConfirmedCorpseLifeState(uint32_t aNativeState, uint32_t aActionState, bool aConfirmedDeath) noexcept
 +{
 +    constexpr uint32_t kLifeMask = 0x01E00000;
 +    constexpr uint32_t kDead = 2u << 21;
-+    if (aConfirmedDeath && (aNativeState & kLifeMask) == kDead)
++    if (aConfirmedDeath && IsCompletedCorpseLifeState(aNativeState))
 +        return (aActionState & ~kLifeMask) | kDead;
 +    return aActionState;
 +}
@@ -681,7 +775,14 @@ new file mode 100644
 diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/InterpolationSystem.cpp
 --- a/Code/client/Systems/InterpolationSystem.cpp
 +++ b/Code/client/Systems/InterpolationSystem.cpp
-@@ -103,9 +103,10 @@
+@@ -99,18 +99,22 @@
+     const auto* pExtension = apActor->GetExtension();
+     const bool cRemoteCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
+     const bool cPhysicalCorpse = cRemoteCorpse && apActor->IsInRagdollState();
++    // Let a confirmed, completed death reach ragdoll instead of waiting for
++    // ragdoll while repeatedly forcing the living reference transform.
++    const bool cReleaseCorpseRoot = cPhysicalCorpse || (cRemoteCorpse && pExtension->CanRunNativeCorpseProcess());
+     if (aInterpolationComponent.CorpsePlaybackObserved != cRemoteCorpse || aInterpolationComponent.CorpseRagdollObserved != cPhysicalCorpse)
      {
          aInterpolationComponent.CorpsePlaybackObserved = cRemoteCorpse;
          aInterpolationComponent.CorpseRagdollObserved = cPhysicalCorpse;
@@ -693,7 +794,24 @@ diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/I
 +            pExtension && pExtension->IsNetworkNpcReplica(), apActor->GetNiNode() != nullptr);
      }
  
-     // Preserve the full death transition. Only release living root transforms
+-    // Preserve the full death transition. Only release living root transforms
+-    // after the engine reports an actual physical corpse, not merely IsDead.
+-    if (!cPhysicalCorpse)
++    // Preserve the full death transition. Release living root transforms for
++    // physical corpses or the narrowly validated native death-update path.
++    if (!cReleaseCorpseRoot)
+         apActor->ForcePosition(aInterpolationComponent.Position);
+     apActor->LoadAnimationVariables(second.Variables);
+ 
+@@ -133,7 +137,7 @@
+     const auto finalY = TiltedPhoques::Mod(rotA.y + deltaY, float(TiltedPhoques::Pi * 2));
+     const auto finalZ = TiltedPhoques::Mod(rotA.z + deltaZ, float(TiltedPhoques::Pi * 2));
+ 
+-    if (!cPhysicalCorpse)
++    if (!cReleaseCorpseRoot)
+         apActor->SetRotation(finalX, finalY, finalZ);
+ }
+ 
 diff --git a/Code/tests/corpse_speech_window.cpp b/Code/tests/corpse_speech_window.cpp
 new file mode 100644
 --- /dev/null

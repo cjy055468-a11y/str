@@ -8,8 +8,12 @@
 
 字幕候选修复：同步NPC进入死亡状态后保留4秒最后一句时间，随后只清理该NPC的字幕并结束当前语音一次；重复或迟到的声音/字幕不能重启倒计时。收发消息和原生显示/播放入口均受限制。复活、引用句柄变化、断线会解除限制；玩家、正常活人对白、正在运行的脚本场景和实际打开的交谈界面沿用原逻辑。死亡状态来自当前所有权周期已接受的快照，远端动作不能直接覆盖这份记录。4秒只是语音收尾时间，不用它判断尸体倒地或操纵尸体物理。
 
-corpse2恢复的死亡动作队列和动画变量更新全部保留，远端ActorProcess没有再次放行；只在实际布娃娃状态下停止强写位置/旋转的处理保留。仍未实现完整骨骼/布娃娃同步，不能保证所有尸体搜索问题已经解决。新保存策略的引擎效果、StopCurrentDialogue/HideSubtitle调用副作用均仅有源码参考，未经IDA/Ghidra或双人游戏验证。编译/测试结果请查看verification.json和构建日志。
+corpse2恢复的死亡动作队列和动画变量更新全部保留，位置/旋转写入新增下述严格死亡通道放行。仍未实现完整骨骼/布娃娃同步，不能保证所有尸体搜索问题已经解决。新保存策略的引擎效果、StopCurrentDialogue/HideSubtitle调用副作用均仅有源码参考，未经IDA/Ghidra或双人游戏验证。编译/测试结果请查看verification.json和构建日志。
 
 两名玩家退出游戏后，都备份并替换MO2实际加载的STR目录中的SkyrimTogether.exe和EarlyLoad.dll。服务器可保持4g/netdiag1/corpse2，或停服后成对替换STServer.dll和SkyrimTogetherServer.exe。保留STServer.ini、资源、依赖和存档，不覆盖SkyrimSE.exe。网络编码和BUILD_COMMIT不变，true目标70 tick/false60继续保留。
 
 请先击杀新生成的普通强盗：主机/客机都确认倒地，在客机瞄准可见躯干搜索并核对战利品；等待至少5秒，检查呻吟字幕是否消失且不再刷新；再测另一只活人对白、任务场景、复活、离区返回和重新连接。旧客户端已经生成并写入FFFF的副本不保证自动修复。新增日志STR network NPC save policy的filter_supported需要为true，STR corpse life-state guard记录被拦下的过期生命状态，STR corpse speech cleanup只应每次死亡清理一次；原STR corpse death playback和STR corpse action replay继续记录。若静态NPC或支持保存过滤后的新NPC仍无提示，需要结合新日志继续查交互/物理路径，不能直接宣布根因已确定。
+
+针对用户进一步确认的“客机尸体始终僵在原姿势/位置”，本版尝试恢复完成死亡后的原生更新：主线程每帧验证当前周期已确认死亡、原生确为dead且生命字段为完成死亡、非玩家、3D/区域/当前process有效、运行时标志不是FFFF，才设置自身原子开关。原生ActorProcess钩子读取开关并再次确认仍死亡，放行原有函数；不在工作线程查询布娃娃/动画图/UI。复活/重新协调、卸载或失去远端角色立即关闭。满足此通道时不再等待ragdoll=true才释放位置/旋转，使引擎有机会完成物理转换。完整动作/动画变量更新保留，未恢复corpse1的清队列或死亡提前返回。
+
+这依赖“既有原生更新被拦截影响死亡物理”的待验证假设，尚未反汇编确定37356的内部职责。不会宣称布娃娃已修好。STR corpse native process eligibility记录是否允许及各项条件，STR corpse graph probe只读bAnimationDriven，STR corpse death playback记录实际ragdoll变化。若已允许但ragdoll仍不进入，需要进一步核查碰撞/动画图驱动，不能把这一版当作根因已确认。

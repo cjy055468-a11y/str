@@ -11,6 +11,8 @@ data = next(p for p in files if p.name == 'SkyrimTogether.exe').read_bytes()
 assert b'STR corpse death playback:' in data
 for marker in (b'STR network NPC save policy:', b'STR network NPC save filter installed:', b'STR corpse speech cleanup:', b'STR corpse life-state guard:'):
     assert marker in data, marker
+assert b'STR corpse native process eligibility:' in data
+assert b'STR corpse graph probe:' in data
 assert b'STR corpse action replay:' in data
 assert b'STR Missives' not in data
 assert b'STR corpse native motion:' not in data

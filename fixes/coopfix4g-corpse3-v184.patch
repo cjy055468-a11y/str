@@ -77,7 +77,7 @@ index 1dfe4aff..20c63e27 100644
 +    std::optional<uint32_t> KnownServerId{};
  };
 diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExtension.cpp
-index d70627f9..3d0db435 100644
+index d70627f9..2841162a 100644
 --- a/Code/client/Games/ActorExtension.cpp
 +++ b/Code/client/Games/ActorExtension.cpp
 @@ -1,10 +1,36 @@
@@ -118,8 +118,23 @@ index d70627f9..3d0db435 100644
  }
  
  bool ActorExtension::IsLocal() const noexcept
-@@ -14,7 +40,7 @@ bool ActorExtension::IsLocal() const noexcept
+@@ -12,9 +38,22 @@ bool ActorExtension::IsLocal() const noexcept
+     return !IsRemote();
+ }
  
++bool ActorExtension::CanRunNativeCorpseProcess() const noexcept
++{
++    return std::atomic_ref<uint32_t>(onlineFlags).load(std::memory_order_relaxed) & kNativeCorpseProcess;
++}
++
++void ActorExtension::SetNativeCorpseProcess(bool aSet) noexcept
++{
++    if (aSet)
++        std::atomic_ref<uint32_t>(onlineFlags).fetch_or(kNativeCorpseProcess, std::memory_order_relaxed);
++    else
++        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kNativeCorpseProcess, std::memory_order_relaxed);
++}
++
  bool ActorExtension::IsPlayer() const noexcept
  {
 -    return onlineFlags & kPlayer;
@@ -127,7 +142,7 @@ index d70627f9..3d0db435 100644
  }
  
  bool ActorExtension::IsRemotePlayer() const noexcept
-@@ -30,15 +56,15 @@ bool ActorExtension::IsLocalPlayer() const noexcept
+@@ -30,15 +69,15 @@ bool ActorExtension::IsLocalPlayer() const noexcept
  void ActorExtension::SetRemote(bool aSet) noexcept
  {
      if (aSet)
@@ -135,7 +150,7 @@ index d70627f9..3d0db435 100644
 +        std::atomic_ref<uint32_t>(onlineFlags).fetch_or(kRemote, std::memory_order_relaxed);
      else
 -        onlineFlags &= ~kRemote;
-+        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kRemote, std::memory_order_relaxed);
++        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~(kRemote | kNativeCorpseProcess), std::memory_order_relaxed);
  }
  
  void ActorExtension::SetPlayer(bool aSet) noexcept
@@ -148,19 +163,20 @@ index d70627f9..3d0db435 100644
 +        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kPlayer, std::memory_order_relaxed);
  }
 diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtension.h
-index 83f38a6c..a42c51c6 100644
+index 83f38a6c..970d31ee 100644
 --- a/Code/client/Games/ActorExtension.h
 +++ b/Code/client/Games/ActorExtension.h
-@@ -8,6 +8,8 @@ struct ActorExtension
+@@ -8,6 +8,9 @@ struct ActorExtension
      {
          kRemote = 1 << 0,
          kPlayer = 1 << 1,
 +        kNetworkNpcReplica = 1 << 2,
 +        kDeadSpeechMuted = 1 << 3,
++        kNativeCorpseProcess = 1 << 4,
      };
  
      enum class ReconciliationStage
-@@ -24,6 +26,10 @@ struct ActorExtension
+@@ -24,6 +27,12 @@ struct ActorExtension
      bool IsLocalPlayer() const noexcept;
      void SetRemote(bool aSet) noexcept;
      void SetPlayer(bool aSet) noexcept;
@@ -168,10 +184,12 @@ index 83f38a6c..a42c51c6 100644
 +    void MarkNetworkNpcReplica() noexcept;
 +    bool IsDeadSpeechMuted() const noexcept;
 +    void SetDeadSpeechMuted(bool aSet) noexcept;
++    bool CanRunNativeCorpseProcess() const noexcept;
++    void SetNativeCorpseProcess(bool aSet) noexcept;
  
      ActionEvent LatestAnimation{};
      size_t GraphDescriptorHash = 0;
-@@ -34,5 +40,7 @@ struct ActorExtension
+@@ -34,5 +43,7 @@ struct ActorExtension
      ReconciliationStage Reconciliation{ReconciliationStage::None};
  
  private:
@@ -195,7 +213,7 @@ index 99cac10d..d4907375 100644
      const bool isPlayerDialogue = isNpc && MenuTopicManager::IsPlayerDialogueSpeaker(pActor);
      const bool shouldSyncSubtitle = apSubtitleText && isNpc && (pActor->GetExtension()->IsLocal() || isPlayerDialogue);
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
-index 9e1933e8..ebc10191 100644
+index 9e1933e8..bb01f7b1 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
 @@ -24,6 +24,8 @@
@@ -348,6 +366,19 @@ index 9e1933e8..ebc10191 100644
      spdlog::debug("a3: {:X}, a4: {}, a5: {}, a6: {}, a7: {}, a8: {:X}, a9: {:X}, a10: {}, a11: {:X}, a12: {}, a13: {}, a14: {}", (uint64_t)a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14);
  
      // The player having the conversation may not own this NPC. Ambient
+@@ -1250,6 +1321,12 @@ char TP_MAKE_THISCALL(HookActorProcess, Actor, float aDeltaTime)
+     // Suppress local movement for remote actors, but preserve controller timing.
+     if (apThis->GetExtension()->IsRemote())
+     {
++        // Main-thread state validation enables only completed, confirmed NPC
++        // deaths with attached 3D. Do not query ragdoll/graph/UI on this worker.
++        const auto* pExtension = apThis->GetExtension();
++        if (pExtension->CanRunNativeCorpseProcess() && !pExtension->IsPlayer() && apThis->VirtIsDead(false))
++            return TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
++
+         if (apThis->currentProcess)
+         {
+             if (auto* pController = apThis->currentProcess->GetCharController())
 diff --git a/Code/client/Games/Skyrim/Actor.h b/Code/client/Games/Skyrim/Actor.h
 index 4c93c674..f1cd25bf 100644
 --- a/Code/client/Games/Skyrim/Actor.h
@@ -765,7 +796,7 @@ index 00000000..de9a3c0b
 +    entt::scoped_connection m_hitConnection;
 +};
 diff --git a/Code/client/Services/Generic/ActorValueService.cpp b/Code/client/Services/Generic/ActorValueService.cpp
-index b3f309a7..e9273bc5 100644
+index b3f309a7..765a6783 100644
 --- a/Code/client/Services/Generic/ActorValueService.cpp
 +++ b/Code/client/Services/Generic/ActorValueService.cpp
 @@ -1,6 +1,7 @@
@@ -802,15 +833,24 @@ index b3f309a7..e9273bc5 100644
      auto& formIdComponent = view.get<FormIdComponent>(*it);
      Actor* pActor = Cast<Actor>(TESForm::GetById(formIdComponent.Id));
  
+@@ -409,6 +422,7 @@ void ActorValueService::OnDeathStateChange(const NotifyDeathStateChange& acMessa
+     if (pExtension->IsPlayer())
+         return;
+ 
++    pExtension->SetNativeCorpseProcess(false);
+     if (pActor->IsDead() != acMessage.IsDead)
+     {
+         spdlog::info("Applying death state {} to remote actor {:X}, server id: {:X}", acMessage.IsDead, pActor->formID, acMessage.Id);
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 7d3ac21a..aeca2c14 100644
+index 7d3ac21a..2a41ce8c 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
-@@ -4,11 +4,13 @@
+@@ -4,11 +4,14 @@
  #include <Services/PartyService.h>
  
  #include <Services/CharacterService.h>
 +#include <Systems/PendingActorUpdates.h>
++#include <Systems/CorpseLifeState.h>
  #include <Services/QuestService.h>
  #include <Services/TransportService.h>
  
@@ -820,7 +860,7 @@ index 7d3ac21a..aeca2c14 100644
  
  #include <Forms/TESNPC.h>
  #include <Interface/UI.h>
-@@ -130,6 +132,9 @@ void CharacterService::DeclineOwnership(const uint32_t aServerId, const uint32_t
+@@ -130,6 +133,9 @@ void CharacterService::DeclineOwnership(const uint32_t aServerId, const uint32_t
  void CharacterService::ReconcileActorData(
      const entt::entity aEntity, Actor* apActor, const uint32_t aOwnershipEpoch, const ActorData& acActorData, const bool aApplyInventory, const bool aIsLocalOwner) noexcept
  {
@@ -830,18 +870,27 @@ index 7d3ac21a..aeca2c14 100644
      if (auto* pWaitingFor3D = m_world.try_get<WaitingFor3D>(aEntity))
      {
          pWaitingFor3D->SpawnRequest.InitialActorValues = acActorData.InitialActorValues;
-@@ -266,7 +271,10 @@ void CharacterService::OnActorAdded(const ActorAddedEvent& acEvent) noexcept
+@@ -142,6 +148,7 @@ void CharacterService::ReconcileActorData(
+     if (!apActor)
+         return;
+ 
++    apActor->GetExtension()->SetNativeCorpseProcess(false);
+     apActor->SetActorValues(acActorData.InitialActorValues);
+ 
+     if (aApplyInventory)
+@@ -266,7 +273,11 @@ void CharacterService::OnActorAdded(const ActorAddedEvent& acEvent) noexcept
  void CharacterService::OnActorRemoved(const ActorRemovedEvent& acEvent) noexcept
  {
      if (auto* pActor = Cast<Actor>(TESForm::GetById(acEvent.FormId)))
 +    {
          pActor->GetExtension()->Reconciliation = ActorExtension::ReconciliationStage::None;
 +        pActor->GetExtension()->SetDeadSpeechMuted(false);
++        pActor->GetExtension()->SetNativeCorpseProcess(false);
 +    }
  
      m_pendingLeveledConforms.erase(acEvent.FormId);
  
-@@ -285,6 +293,7 @@ void CharacterService::OnActorRemoved(const ActorRemovedEvent& acEvent) noexcept
+@@ -285,6 +296,7 @@ void CharacterService::OnActorRemoved(const ActorRemovedEvent& acEvent) noexcept
      CancelServerAssignment(*entityIt, formIdComponent.Id);
  
      m_world.remove<EarlyAnimationBufferComponent>(cId);
@@ -849,7 +898,7 @@ index 7d3ac21a..aeca2c14 100644
  
      if (m_world.all_of<FormIdComponent>(cId))
          m_world.remove<FormIdComponent>(cId);
-@@ -304,6 +313,7 @@ void CharacterService::OnUpdate(const UpdateEvent& acUpdateEvent) noexcept
+@@ -304,6 +316,7 @@ void CharacterService::OnUpdate(const UpdateEvent& acUpdateEvent) noexcept
      RunExperienceUpdates();
      ApplyCachedWeaponDraws(acUpdateEvent);
      ProcessLeveledConforms();
@@ -857,7 +906,7 @@ index 7d3ac21a..aeca2c14 100644
  }
  
  void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const noexcept
-@@ -331,6 +341,11 @@ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const
+@@ -331,6 +344,11 @@ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const
  
  void CharacterService::OnDisconnected(const DisconnectedEvent& acDisconnectedEvent) const noexcept
  {
@@ -869,7 +918,7 @@ index 7d3ac21a..aeca2c14 100644
      auto remoteView = m_world.view<FormIdComponent, RemoteComponent>();
      for (auto entity : remoteView)
      {
-@@ -378,7 +393,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -378,7 +396,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
      }
  
      const auto cEntity = *itor;
@@ -880,7 +929,7 @@ index 7d3ac21a..aeca2c14 100644
  
      m_world.remove<WaitingForAssignmentComponent>(cEntity);
  #if (!IS_MASTER)
-@@ -428,6 +446,23 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -428,6 +449,23 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
      // TODO: how could this possibly trigger?
      // it's kinda interfering with my WaitingFor3D code
@@ -904,7 +953,7 @@ index 7d3ac21a..aeca2c14 100644
      if (acMessage.PlayerId != 0)
          m_world.emplace_or_replace<PlayerComponent>(cEntity, acMessage.PlayerId);
  
-@@ -441,6 +476,18 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -441,6 +479,18 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
      {
          spdlog::info("Received local actor, form id: {:X}", pActor->formID);
  
@@ -923,7 +972,7 @@ index 7d3ac21a..aeca2c14 100644
          // We are the authority, and the server's data is only an echo of our own request snapshot, which can already be stale.
          // Applying it would e.g. Respawn() (Resurrect + Reset) an actor that was killed while the request was in flight,
          // which re-rolls leveled temporary actors, removes them, and makes them get rediscovered as new entities endlessly.
-@@ -465,12 +512,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -465,12 +515,15 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
          localComponent.IsDead = acMessage.IsDead;
          localComponent.IsWeaponDrawn = acMessage.IsWeaponDrawn;
          pActor->GetExtension()->SetRemote(false);
@@ -940,7 +989,7 @@ index 7d3ac21a..aeca2c14 100644
  
          pActor->GetExtension()->SetRemote(true);
  
-@@ -485,6 +535,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+@@ -485,6 +538,10 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
  
          ReconcileActorData(cEntity, pActor, acMessage.OwnershipEpoch, actorData, true, false);
  
@@ -951,7 +1000,7 @@ index 7d3ac21a..aeca2c14 100644
          MoveActor(pActor, acMessage.WorldSpaceId, acMessage.CellId, acMessage.Position);
  
          // The owner's leveled pick rides the assignment response for actors we discovered ourselves
-@@ -544,7 +598,7 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+@@ -544,7 +601,7 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
              FaceGenSystem::Setup(m_world, *entity, acMessage.FaceTints);
          }
  
@@ -960,7 +1009,7 @@ index 7d3ac21a..aeca2c14 100644
      }
      else
      {
-@@ -631,6 +685,8 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+@@ -631,6 +688,8 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
          ApplyLeveledNpcPick(pActor, acMessage.LeveledNpcPickId);
  
      m_world.emplace_or_replace<RemoteComponent>(*entity, acMessage.ServerId, pActor->formID, acMessage.OwnershipEpoch);
@@ -969,7 +1018,7 @@ index 7d3ac21a..aeca2c14 100644
  
      auto& interpolationComponent = InterpolationSystem::Setup(m_world, *entity);
      interpolationComponent.Position = acMessage.Position;
-@@ -787,10 +843,12 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -787,10 +846,12 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
      const entt::entity cEntity = *entity;
      const auto* pFormIdComponent = m_world.try_get<FormIdComponent>(cEntity);
      Actor* pActor = pFormIdComponent ? Cast<Actor>(TESForm::GetById(pFormIdComponent->Id)) : nullptr;
@@ -983,7 +1032,7 @@ index 7d3ac21a..aeca2c14 100644
  
      if (isLocalOwner)
      {
-@@ -809,6 +867,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -809,6 +870,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
              else if (cachedRefId != 0)
                  m_world.emplace<RemoteComponent>(cEntity, acMessage.ServerId, cachedRefId, acMessage.OwnershipEpoch);
  
@@ -993,7 +1042,7 @@ index 7d3ac21a..aeca2c14 100644
              spdlog::warn("Declined ownership of actor {:X} at epoch {} because the actor is not ready", acMessage.ServerId, acMessage.OwnershipEpoch);
              DeclineOwnership(acMessage.ServerId, acMessage.OwnershipEpoch);
              return;
-@@ -832,6 +893,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
+@@ -832,6 +896,9 @@ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMess
          // LocalComponent is installed only after canonical reconciliation is complete.
          pActor->GetExtension()->SetRemote(false);
          spdlog::info("Gained ownership of actor {:X} at epoch {}", acMessage.ServerId, acMessage.OwnershipEpoch);
@@ -1003,7 +1052,7 @@ index 7d3ac21a..aeca2c14 100644
          return;
      }
  
-@@ -1150,6 +1214,67 @@ static bool IsLineVoicedByLocalScene(Actor* apActor, const GameId& acSceneId, ui
+@@ -1150,6 +1217,67 @@ static bool IsLineVoicedByLocalScene(Actor* apActor, const GameId& acSceneId, ui
      return !IsPhaseStuckOnRemotePackage(pScene, cPhase);
  }
  
@@ -1071,7 +1120,7 @@ index 7d3ac21a..aeca2c14 100644
  void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
  {
      if (!m_transport.IsConnected())
-@@ -1161,6 +1286,9 @@ void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
+@@ -1161,6 +1289,9 @@ void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
      if (entityIt == view.end())
          return;
  
@@ -1081,7 +1130,7 @@ index 7d3ac21a..aeca2c14 100644
      auto serverIdRes = Utils::GetServerId(*entityIt);
      if (!serverIdRes)
      {
-@@ -1184,6 +1312,9 @@ void CharacterService::OnNotifyDialogue(const NotifyDialogue& acMessage) noexcep
+@@ -1184,6 +1315,9 @@ void CharacterService::OnNotifyDialogue(const NotifyDialogue& acMessage) noexcep
      if (!pActor)
          return;
  
@@ -1091,7 +1140,7 @@ index 7d3ac21a..aeca2c14 100644
      // Every client plays scenes itself, the local copy usually voices the line. Menu and other-scene lines still play.
      if (IsLineVoicedByLocalScene(pActor, acMessage.SceneId, acMessage.ScenePhase))
      {
-@@ -1208,6 +1339,9 @@ void CharacterService::OnSubtitleEvent(const SubtitleEvent& acEvent) noexcept
+@@ -1208,6 +1342,9 @@ void CharacterService::OnSubtitleEvent(const SubtitleEvent& acEvent) noexcept
      if (entityIt == view.end())
          return;
  
@@ -1101,7 +1150,7 @@ index 7d3ac21a..aeca2c14 100644
      auto serverIdRes = Utils::GetServerId(*entityIt);
      if (!serverIdRes)
      {
-@@ -1231,6 +1365,9 @@ void CharacterService::OnNotifySubtitle(const NotifySubtitle& acMessage) noexcep
+@@ -1231,6 +1368,9 @@ void CharacterService::OnNotifySubtitle(const NotifySubtitle& acMessage) noexcep
      if (!pActor)
          return;
  
@@ -1111,7 +1160,7 @@ index 7d3ac21a..aeca2c14 100644
      // The local copy of the scene shows its own subtitle, see OnNotifyDialogue. Only the actor's own voice line ending
      // hides a subtitle, so a remote one arriving after the local line has finished would stay on screen.
      if (IsLineVoicedByLocalScene(pActor, acMessage.SceneId, acMessage.ScenePhase))
-@@ -1360,6 +1497,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1360,6 +1500,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
      AssignCharacterRequest message{};
  
      message.Cookie = sCookieSeed;
@@ -1122,7 +1171,7 @@ index 7d3ac21a..aeca2c14 100644
  
      if (!m_world.GetModSystem().GetServerModId(formIdComponent.Id, message.ReferenceId))
      {
-@@ -1490,7 +1631,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1490,7 +1634,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
  
      if (m_transport.Send(message))
      {
@@ -1134,7 +1183,7 @@ index 7d3ac21a..aeca2c14 100644
  
          sCookieSeed++;
      }
-@@ -1613,17 +1757,20 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
+@@ -1613,17 +1760,20 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
              FaceGenSystem::Setup(m_world, aEntity, acMessage.FaceTints);
          }
  
@@ -1156,7 +1205,42 @@ index 7d3ac21a..aeca2c14 100644
      pActor->GetExtension()->SetRemote(true);
      pActor->rotation.x = acMessage.Rotation.x;
      pActor->rotation.z = acMessage.Rotation.y;
-@@ -1912,7 +2059,8 @@ void CharacterService::RunRemoteUpdates() noexcept
+@@ -1894,6 +2044,34 @@ void CharacterService::RunRemoteUpdates() noexcept
+             pActor = Cast<Actor>(pForm);
+         }
+ 
++        if (pActor)
++        {
++            ActorExtension* pExtension = pActor->GetExtension();
++            const auto& remote = interpolatedEntities.get<RemoteComponent>(entity);
++            const bool cConfirmedDeath = remote.AuthoritativeDeath.value_or(false);
++            const bool cNativeDead = !pExtension->IsPlayer() && pActor->VirtIsDead(false);
++            const bool cCompletedDeath = IsCompletedCorpseLifeState(pActor->actorState.flags1);
++            const bool cHas3D = pActor->GetNiNode() != nullptr;
++            const bool cAttached = pActor->parentCell && pActor->parentCell->IsAttached();
++            const bool cAllowNative = pExtension->IsRemote() && cConfirmedDeath && cNativeDead && cCompletedDeath &&
++                cHas3D && cAttached && pActor->currentProcess && pActor->unk10 != 0xFFFF;
++            const bool cWasAllowed = pExtension->CanRunNativeCorpseProcess();
++            pExtension->SetNativeCorpseProcess(cAllowNative);
++            if (cWasAllowed != cAllowNative)
++            {
++                spdlog::info("STR corpse native process eligibility: actor {:X}, enabled {}, confirmed {}, native_dead {}, completed {}, has_3d {}, attached {}, runtime {:X}",
++                    pActor->formID, cAllowNative, cConfirmedDeath, cNativeDead, cCompletedDeath, cHas3D, cAttached, pActor->unk10);
++                // Read only: distinguish a frozen animation-driven pose from
++                // a corpse whose native physics update is now allowed to run.
++                BSFixedString variable("bAnimationDriven");
++                bool animationDriven = false;
++                const bool cFoundVariable = cHas3D && pActor->animationGraphHolder.IsReady() &&
++                    pActor->animationGraphHolder.GetVariableBool(&variable, &animationDriven);
++                spdlog::info("STR corpse graph probe: actor {:X}, animation_driven_found {}, animation_driven {}",
++                    pActor->formID, cFoundVariable, animationDriven);
++            }
++        }
++
+         InterpolationSystem::Update(pActor, interpolationComponent, cNow);
+     }
+ 
+@@ -1912,7 +2090,8 @@ void CharacterService::RunRemoteUpdates() noexcept
          // Actions run on the clock the interpolation pass above just advanced, so the body and its animations stay in step
          const auto cTick = InterpolationSystem::GetPlaybackTick(animatedView.get<InterpolationComponent>(entity));
  
@@ -2431,10 +2515,10 @@ index 94b920d4..30ece9da 100644
       * @param aWorld The registry where the actor in question lives.
 diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseLifeState.h
 new file mode 100644
-index 00000000..a91bbedc
+index 00000000..266c6bec
 --- /dev/null
 +++ b/Code/client/Systems/CorpseLifeState.h
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,21 @@
 +#pragma once
 +
 +#include <cstdint>
@@ -2443,11 +2527,16 @@ index 00000000..a91bbedc
 +// kDead is 2. This mask also matches this project's IsBleedingOut implementation.
 +// Preserve only an already completed, authoritatively confirmed death; never
 +// force a dying actor to dead or block an accepted resurrection.
++inline bool IsCompletedCorpseLifeState(uint32_t aNativeState) noexcept
++{
++    return (aNativeState & 0x01E00000) == (2u << 21);
++}
++
 +inline uint32_t PreserveConfirmedCorpseLifeState(uint32_t aNativeState, uint32_t aActionState, bool aConfirmedDeath) noexcept
 +{
 +    constexpr uint32_t kLifeMask = 0x01E00000;
 +    constexpr uint32_t kDead = 2u << 21;
-+    if (aConfirmedDeath && (aNativeState & kLifeMask) == kDead)
++    if (aConfirmedDeath && IsCompletedCorpseLifeState(aNativeState))
 +        return (aActionState & ~kLifeMask) | kDead;
 +    return aActionState;
 +}
@@ -2663,10 +2752,10 @@ index 00000000..c7f06f6c
 +    uint64_t m_reevaluatedAt{};
 +};
 diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/InterpolationSystem.cpp
-index e5fdb7e3..1fa9eff0 100644
+index e5fdb7e3..94040eb1 100644
 --- a/Code/client/Systems/InterpolationSystem.cpp
 +++ b/Code/client/Systems/InterpolationSystem.cpp
-@@ -96,7 +96,23 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
+@@ -96,7 +96,26 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
      if (!apActor)
          return;
  
@@ -2674,6 +2763,9 @@ index e5fdb7e3..1fa9eff0 100644
 +    const auto* pExtension = apActor->GetExtension();
 +    const bool cRemoteCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
 +    const bool cPhysicalCorpse = cRemoteCorpse && apActor->IsInRagdollState();
++    // Let a confirmed, completed death reach ragdoll instead of waiting for
++    // ragdoll while repeatedly forcing the living reference transform.
++    const bool cReleaseCorpseRoot = cPhysicalCorpse || (cRemoteCorpse && pExtension->CanRunNativeCorpseProcess());
 +    if (aInterpolationComponent.CorpsePlaybackObserved != cRemoteCorpse || aInterpolationComponent.CorpseRagdollObserved != cPhysicalCorpse)
 +    {
 +        aInterpolationComponent.CorpsePlaybackObserved = cRemoteCorpse;
@@ -2684,19 +2776,19 @@ index e5fdb7e3..1fa9eff0 100644
 +            pExtension && pExtension->IsNetworkNpcReplica(), apActor->GetNiNode() != nullptr);
 +    }
 +
-+    // Preserve the full death transition. Only release living root transforms
-+    // after the engine reports an actual physical corpse, not merely IsDead.
-+    if (!cPhysicalCorpse)
++    // Preserve the full death transition. Release living root transforms for
++    // physical corpses or the narrowly validated native death-update path.
++    if (!cReleaseCorpseRoot)
 +        apActor->ForcePosition(aInterpolationComponent.Position);
      apActor->LoadAnimationVariables(second.Variables);
  
      if (apActor->currentProcess && apActor->currentProcess->middleProcess)
-@@ -118,7 +134,8 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
+@@ -118,7 +137,8 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
      const auto finalY = TiltedPhoques::Mod(rotA.y + deltaY, float(TiltedPhoques::Pi * 2));
      const auto finalZ = TiltedPhoques::Mod(rotA.z + deltaZ, float(TiltedPhoques::Pi * 2));
  
 -    apActor->SetRotation(finalX, finalY, finalZ);
-+    if (!cPhysicalCorpse)
++    if (!cReleaseCorpseRoot)
 +        apActor->SetRotation(finalX, finalY, finalZ);
  }
  
