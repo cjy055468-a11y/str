@@ -1050,10 +1050,10 @@ index 00000000..8249a4e8
 +}
 diff --git a/Code/client/ModCompat/MissivesContext.cpp b/Code/client/ModCompat/MissivesContext.cpp
 new file mode 100644
-index 00000000..488bf79b
+index 00000000..e59f7e5b
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesContext.cpp
-@@ -0,0 +1,285 @@
+@@ -0,0 +1,294 @@
 +#include <TiltedOnlinePCH.h>
 +#include <ModCompat/MissivesContext.h>
 +#include <ModCompat/MissivesCompat.h>
@@ -1136,7 +1136,16 @@ index 00000000..488bf79b
 +{
 +    const auto* pMod = Plugin("STR_Missives_Compat.esp");
 +    auto* pGlobal = pMod ? Cast<TESGlobal>(TESForm::GetById(pMod->GetFormId(m_spec.RecipientFlag))) : nullptr;
-+    if (pGlobal) pGlobal->f = aPersonal ? 1.f : 0.f;
++    if (pGlobal && pGlobal->f != (aPersonal ? 1.f : 0.f))
++    {
++        const float cValue = aPersonal ? 1.f : 0.f;
++        // Use the native setter so the role is included in save-game changes.
++        // A new process must distinguish background replicas from personal
++        // missions already running in the save.
++        const void* pSetter = World::Get().ctx().at<PapyrusService>().Get("GlobalVariable", "SetValue");
++        if (pSetter) PapyrusFunction<void, TESGlobal, float>{pSetter}(pGlobal, cValue);
++        else pGlobal->f = cValue;
++    }
 +    if (m_quest)
 +    {
 +        m_quest->type = aPersonal ? static_cast<TESQuest::Type>(m_originalType) : TESQuest::Type::None;
@@ -6647,10 +6656,10 @@ index 8d9f2c78..8a5effe4 100644
  
 diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
 new file mode 100644
-index 00000000..4529c833
+index 00000000..907d20cc
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,584 @@
+@@ -0,0 +1,598 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -6756,7 +6765,21 @@ index 00000000..4529c833
 +        // Existing offline missions stay personal and reserve their reusable
 +        // quest slot. Available stage-zero quests are safe to canonicalize.
 +        if (pQuest && !pQuest->IsStopped() && pQuest->currentStage >= 20 && pQuest->currentStage < 110 && !m_current.contains(cQuest))
-+            m_personal.insert(cQuest);
++        {
++            const auto* pPatch = Plugin("STR_Missives_Compat.esp");
++            const auto* pRole = pPatch ? Cast<TESGlobal>(TESForm::GetById(pPatch->GetFormId(spec.RecipientFlag))) : nullptr;
++            if (!pRole || pRole->f > 0.5f) m_personal.insert(cQuest);
++            else
++            {
++                // This stage came from another player's saved world shadow.
++                // Clean it before hello instead of adopting it as a new local
++                // personal mission and exposing its turn-in/reward dialogue.
++                auto& context = m_contexts[cQuest];
++                if (!context) context = std::make_unique<MissivesContext>(spec);
++                context->SetPersonal(false);
++                context->SetStage(110);
++            }
++        }
 +        Cache(cQuest, spec, nullptr);
 +    }
 +}
