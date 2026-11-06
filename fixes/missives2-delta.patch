@@ -129,10 +129,11 @@ diff --git a/Code/client/ModCompat/MissivesBridge.cpp b/Code/client/ModCompat/Mi
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesBridge.cpp
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,140 @@
 +#include <TiltedOnlinePCH.h>
 +#include <ModCompat/MissivesBridge.h>
 +#include <Misc/BSScript.h>
++#include <set>
 +
 +namespace
 +{
@@ -143,6 +144,7 @@ new file mode 100644
 +bool s_sawScript{};
 +std::map<uint32_t, MissivesBridge::QuestState> s_quests;
 +std::vector<MissivesBridge::Event> s_events;
++std::set<uint32_t> s_boards;
 +}
 +
 +void MissivesBridge::SetConnection(bool aConnected, bool aReady, bool aAuthority) noexcept
@@ -151,6 +153,13 @@ new file mode 100644
 +    s_connected = aConnected;
 +    s_ready = aReady;
 +    s_authority = aAuthority;
++    if (!aConnected) s_boards.clear();
++}
++void MissivesBridge::SetBoardAuthority(uint32_t aBoard, bool aAuthority) noexcept
++{
++    std::lock_guard lock(s_lock);
++    if (aAuthority) s_boards.insert(aBoard);
++    else s_boards.erase(aBoard);
 +}
 +void MissivesBridge::SetQuest(uint32_t aId, const QuestState& acState) noexcept
 +{
@@ -182,8 +191,8 @@ new file mode 100644
 +    switch (aOperation)
 +    {
 +    case Operation::Connected: return s_connected;
-+    case Operation::Authority: return s_ready && s_authority;
-+    case Operation::CanGenerate: return s_ready && s_authority && (it == s_quests.end() || !it->second.Reserved);
++    case Operation::Authority: return s_ready && !s_boards.empty();
++    case Operation::CanGenerate: return s_ready && s_boards.contains(aValue) && (it == s_quests.end() || !it->second.Reserved);
 +    case Operation::Personal: return it == s_quests.end() ? !s_connected : it->second.Personal;
 +    case Operation::State: return it == s_quests.end() ? -1 : it->second.State;
 +    case Operation::PostingAlias: return it == s_quests.end() ? -1 : static_cast<int32_t>(it->second.PostingAlias);
@@ -251,7 +260,7 @@ new file mode 100644
 +    struct Binding { const char* Name; O Operation; uint32_t Arguments; V::Type Result; };
 +    const Binding bindings[] = {
 +        {"IsConnected",O::Connected,0,V::kBoolean},{"IsAuthority",O::Authority,0,V::kBoolean},
-+        {"CanGenerate",O::CanGenerate,1,V::kBoolean},{"IsPersonalQuest",O::Personal,1,V::kBoolean},
++        {"CanGenerate",O::CanGenerate,2,V::kBoolean},{"IsPersonalQuest",O::Personal,1,V::kBoolean},
 +        {"Claim",O::Claim,1,V::kBoolean},{"StageChanged",O::Stage,2,V::kEmpty},
 +        {"OpenBoard",O::Open,2,V::kEmpty},{"CloseBoard",O::Close,1,V::kEmpty},
 +        {"GetState",O::State,1,V::kInteger},{"GetPostingAlias",O::PostingAlias,1,V::kInteger},
@@ -265,7 +274,7 @@ diff --git a/Code/client/ModCompat/MissivesBridge.h b/Code/client/ModCompat/Miss
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesBridge.h
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,28 @@
 +#pragma once
 +#include <cstdint>
 +#include <map>
@@ -289,6 +298,7 @@ new file mode 100644
 +void SetConnection(bool aConnected, bool aReady, bool aAuthority) noexcept;
 +void SetQuest(uint32_t aId, const QuestState& acState) noexcept;
 +void RemoveQuest(uint32_t aId) noexcept;
++void SetBoardAuthority(uint32_t aBoard, bool aAuthority) noexcept;
 +bool SawScript() noexcept;
 +std::vector<Event> Drain() noexcept;
 +int32_t Call(Operation aOperation, uint32_t aId, uint32_t aValue) noexcept;
@@ -4250,7 +4260,7 @@ diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Serv
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,479 @@
+@@ -0,0 +1,516 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -4336,6 +4346,8 @@ new file mode 100644
 +    m_enabled = Plugin("Missives.esp") && Plugin("STR_Missives_Compat.esp");
 +    m_hello = m_ready = m_authority = m_snapshot = false;
 +    m_boards.clear();
++    m_boardQueries.clear();
++    m_generators.clear();
 +    m_assigning.clear();
 +    m_actorRequests.clear();
 +    m_reserved.clear();
@@ -4368,7 +4380,7 @@ new file mode 100644
 +    }
 +    // Stop background replicas without running claimant reward fragments.
 +    for (auto& [quest, context] : m_contexts)
-+        if (!m_personal.contains(quest)) context->Stop();
++        if (!m_personal.contains(quest)) context->SetStage(110);
 +    m_boards.clear();
 +    m_claims.clear();
 +}
@@ -4411,7 +4423,7 @@ new file mode 100644
 +    for (const auto entity : remote)
 +        if (remote.get<RemoteComponent>(entity).CachedRefId == apReference->formID) return remote.get<RemoteComponent>(entity).Id;
 +    auto* pActor = Cast<Actor>(apReference);
-+    if (pActor && !pActor->IsStillLoading() && pActor->GetParentCellEx())
++    if (pActor && !pActor->IsStillLoading() && pActor->parentCell)
 +    {
 +        const auto key = std::make_pair(pActor->formID, pActor->GetHandle().handle.iBits);
 +        if (key.second && !m_assigning.contains(key))
@@ -4465,6 +4477,7 @@ new file mode 100644
 +    if (!mods.GetServerModId(apQuest->formID, aData.Quest) || !mods.GetServerModId(pBoard->formID, aData.Board)
 +        || !mods.GetServerModId(pPost->baseForm->formID, aData.Book)) return false;
 +    const uint32_t cHandle = pPost->GetHandle().handle.iBits;
++    if (!cHandle) return false;
 +    auto& source = m_sources[apQuest->formID];
 +    if (!source.second || source.first != cHandle) source = {cHandle, ++m_nonce};
 +    aData.SourceNonce = source.second;
@@ -4518,7 +4531,7 @@ new file mode 100644
 +void MissivesService::PublishBoards() noexcept
 +{
 +    const auto* pMod = Plugin("Missives.esp");
-+    if (!pMod || !m_ready || m_snapshot || !m_authority) return;
++    if (!pMod || !m_ready || m_snapshot || m_generators.empty()) return;
 +    for (const auto& spec : cMissiveQuestSpecs)
 +    {
 +        const uint32_t cQuest = pMod->GetFormId(spec.Quest);
@@ -4528,10 +4541,9 @@ new file mode 100644
 +            const auto record = m_postings.find(current->second);
 +            if (record != m_postings.end() && record->second.State < 4)
 +            {
-+                const auto source = m_sources.find(cQuest);
 +                auto* pCurrentQuest = Cast<TESQuest>(TESForm::GetById(cQuest));
-+                if (record->second.State == 0 && source != m_sources.end()
-+                    && source->second.second == record->second.Data.SourceNonce
++                const uint32_t cBoard = m_world.GetModSystem().GetGameId(record->second.Data.Board);
++                if (record->second.State == 0 && m_generators.contains(cBoard)
 +                    && pCurrentQuest && (pCurrentQuest->IsStopped() || pCurrentQuest->currentStage >= 110))
 +                    Send(RequestMissives::Operation::Retire, record->second.Data);
 +                continue;
@@ -4541,7 +4553,8 @@ new file mode 100644
 +        auto* pQuest = Cast<TESQuest>(TESForm::GetById(cQuest));
 +        if (!pQuest || pQuest->IsStopped() || pQuest->currentStage >= 20) continue;
 +        MissivesData data;
-+        if (Capture(spec, pQuest, data)) Send(RequestMissives::Operation::Publish, data);
++        if (Capture(spec, pQuest, data) && m_generators.contains(m_world.GetModSystem().GetGameId(data.Board)))
++            Send(RequestMissives::Operation::Publish, data);
 +    }
 +}
 +
@@ -4555,6 +4568,9 @@ new file mode 100644
 +        if (!spec || record == m_postings.end()) continue;
 +        auto& post = record->second;
 +        Cache(quest, *spec, &post);
++        if (m_personal.contains(quest) && !post.Mine) continue;
++        if (post.State == 0 && !m_boards.contains(m_world.GetModSystem().GetGameId(post.Data.Board)) && !m_contexts.contains(quest))
++            continue;
 +        auto& context = m_contexts[quest];
 +        if (context && m_contextIds[quest] != id)
 +        {
@@ -4613,7 +4629,13 @@ new file mode 100644
 +
 +void MissivesService::OnUpdate(const UpdateEvent&) noexcept
 +{
-+    if (!m_enabled || !m_transport.IsOnline()) return;
++    if (!m_enabled) return;
++    if (!m_transport.IsOnline())
++    {
++        for (auto& [quest, context] : m_contexts)
++            if (!m_personal.contains(quest) && !context->IsRunning()) context->Stop();
++        return;
++    }
 +    const auto now = std::chrono::steady_clock::now();
 +    if (now < m_next) return;
 +    m_next = now + 200ms;
@@ -4633,7 +4655,14 @@ new file mode 100644
 +            if (MissivesCompat::IsBoard(Cast<TESObjectREFR>(TESForm::GetById(event.Id)))) m_boards.insert(event.Id);
 +            continue;
 +        }
-+        if (event.Action == O::Close) { m_boards.erase(event.Id); continue; }
++        if (event.Action == O::Close)
++        {
++            m_boards.erase(event.Id);
++            m_boardQueries.erase(event.Id);
++            MissivesData data;
++            if (m_ready && m_world.GetModSystem().GetServerModId(event.Id, data.Board)) Send(RequestMissives::Operation::CloseBoard, data);
++            continue;
++        }
 +        if (event.Action == O::Changed) continue;
 +        const auto* pSpec = Spec(event.Id);
 +        if (!pSpec) continue;
@@ -4651,6 +4680,16 @@ new file mode 100644
 +        }
 +    }
 +    if (!m_ready || m_snapshot) return;
++    for (uint32_t board : m_boards)
++        if (!m_boardQueries.contains(board))
++        {
++            MissivesData data;
++            if (m_world.GetModSystem().GetServerModId(board, data.Board))
++            {
++                Send(RequestMissives::Operation::OpenBoard, data);
++                m_boardQueries.insert(board);
++            }
++        }
 +    std::vector<uint32_t> released;
 +    for (const uint32_t quest : m_personal)
 +    {
@@ -4700,6 +4739,14 @@ new file mode 100644
 +        m_ready = true;
 +    }
 +    if (acMessage.ServerSession != m_server) return;
++    if (acMessage.Action == O::BoardControl)
++    {
++        const uint32_t cBoard = m_world.GetModSystem().GetGameId(acMessage.Data.Board);
++        if (acMessage.Authority) m_generators.insert(cBoard);
++        else m_generators.erase(cBoard);
++        MissivesBridge::SetBoardAuthority(cBoard, acMessage.Authority);
++        return;
++    }
 +    if (acMessage.Action == O::Ready || acMessage.Action == O::SnapshotBegin)
 +        m_authority = acMessage.Authority;
 +    MissivesBridge::SetConnection(true, m_ready, m_authority);
@@ -4819,7 +4866,7 @@ diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/Missi
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/MissivesService.h
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,75 @@
 +#pragma once
 +#include <Messages/NotifyMissives.h>
 +#include <Messages/RequestMissives.h>
@@ -4882,6 +4929,8 @@ new file mode 100644
 +    std::map<uint32_t, std::chrono::steady_clock::time_point> m_actorRequests;
 +    std::set<std::pair<uint32_t, uint32_t>> m_assigning;
 +    std::set<uint32_t> m_boards;
++    std::set<uint32_t> m_boardQueries;
++    std::set<uint32_t> m_generators;
 +    std::set<uint32_t> m_reserved;
 +    std::set<uint32_t> m_personal;
 +    std::set<uint32_t> m_sentReservations;
@@ -5019,7 +5068,7 @@ new file mode 100644
 +struct NotifyMissives final : ServerMessage
 +{
 +    static constexpr ServerOpcode Opcode = kNotifyMissives;
-+    enum class Operation : uint8_t { Ready, SnapshotBegin, Posting, Taken, Grant, Retired, Progress, Complete, Reserved, Unreserved, Rejected, SnapshotEnd };
++    enum class Operation : uint8_t { Ready, SnapshotBegin, Posting, Taken, Grant, Retired, Progress, Complete, Reserved, Unreserved, Rejected, SnapshotEnd, BoardControl };
 +    NotifyMissives() : ServerMessage(Opcode) {}
 +    void SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept override;
 +    void DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept override;
@@ -5069,7 +5118,7 @@ new file mode 100644
 +struct RequestMissives final : ClientMessage
 +{
 +    static constexpr ClientOpcode Opcode = kRequestMissives;
-+    enum class Operation : uint8_t { Hello, Snapshot, Publish, Retire, Claim, Progress, Complete, Reserve, ReleaseReserve, Actor };
++    enum class Operation : uint8_t { Hello, Snapshot, Publish, Retire, Claim, Progress, Complete, Reserve, ReleaseReserve, Actor, OpenBoard, CloseBoard };
 +    RequestMissives() : ClientMessage(Opcode) {}
 +    void SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept override;
 +    void DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept override;
@@ -5294,7 +5343,7 @@ diff --git a/Code/server/Game/Inventory/MissivesLedger.h b/Code/server/Game/Inve
 new file mode 100644
 --- /dev/null
 +++ b/Code/server/Game/Inventory/MissivesLedger.h
-@@ -0,0 +1,173 @@
+@@ -0,0 +1,191 @@
 +#pragma once
 +#include <Structs/MissivesData.h>
 +#include <map>
@@ -5322,6 +5371,18 @@ new file mode 100644
 +    };
 +    enum class ClaimResult { Won, AlreadyOwned, Unavailable };
 +
++    void SetBoardAuthority(uint64_t aScope, const GameId& acBoard, uint64_t aToken) noexcept
++    {
++        std::lock_guard lock(m_lock);
++        m_boardAuthorities[{aScope, acBoard.LogFormat()}] = aToken;
++    }
++    uint64_t GetBoardAuthority(uint64_t aScope, const GameId& acBoard) const noexcept
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_boardAuthorities.find({aScope, acBoard.LogFormat()});
++        return it == m_boardAuthorities.end() ? 0 : it->second;
++    }
++
 +    void SetAuthority(uint64_t aScope, uint64_t aToken) noexcept
 +    {
 +        std::lock_guard lock(m_lock);
@@ -5336,7 +5397,9 @@ new file mode 100644
 +    std::optional<Record> Publish(uint64_t aScope, uint64_t aToken, const MissivesData& acData) noexcept
 +    {
 +        std::lock_guard lock(m_lock);
-+        if (!aToken || m_authorities[aScope] != aToken || !acData.Valid || !acData.SourceNonce || !acData.Board || !acData.Quest || !acData.Book)
++        const auto board = m_boardAuthorities.find({aScope, acData.Board.LogFormat()});
++        const uint64_t cAuthority = board != m_boardAuthorities.end() ? board->second : m_authorities[aScope];
++        if (!aToken || cAuthority != aToken || !acData.Valid || !acData.SourceNonce || !acData.Board || !acData.Quest || !acData.Book)
 +            return std::nullopt;
 +        const auto creation = std::make_tuple(aScope, aToken, acData.SourceNonce);
 +        if (const auto old = m_creations.find(creation); old != m_creations.end())
@@ -5385,7 +5448,10 @@ new file mode 100644
 +    {
 +        std::lock_guard lock(m_lock);
 +        auto it = m_records.find(aId);
-+        if (m_authorities[aScope] != aToken || it == m_records.end() || it->second.Scope != aScope || it->second.Status != State::Available)
++        if (it == m_records.end()) return false;
++        const auto board = m_boardAuthorities.find({aScope, it->second.Data.Board.LogFormat()});
++        const uint64_t cAuthority = board != m_boardAuthorities.end() ? board->second : m_authorities[aScope];
++        if (cAuthority != aToken || it->second.Scope != aScope || it->second.Status != State::Available)
 +            return false;
 +        it->second.Status = State::Retired;
 +        m_slots.erase({aScope, it->second.Data.Quest.LogFormat()});
@@ -5463,6 +5529,7 @@ new file mode 100644
 +    mutable std::mutex m_lock;
 +    uint64_t m_nextId{};
 +    std::map<uint64_t, uint64_t> m_authorities;
++    std::map<std::pair<uint64_t, uint64_t>, uint64_t> m_boardAuthorities;
 +    std::map<uint64_t, Record> m_records;
 +    std::map<std::tuple<uint64_t, uint64_t, uint64_t>, uint64_t> m_creations;
 +    std::map<std::pair<uint64_t, uint64_t>, uint64_t> m_slots;
@@ -5472,7 +5539,7 @@ diff --git a/Code/server/Services/MissivesService.cpp b/Code/server/Services/Mis
 new file mode 100644
 --- /dev/null
 +++ b/Code/server/Services/MissivesService.cpp
-@@ -0,0 +1,231 @@
+@@ -0,0 +1,278 @@
 +#include <Services/MissivesService.h>
 +#include <Services/CharacterService.h>
 +#include <Services/PartyService.h>
@@ -5545,6 +5612,42 @@ new file mode 100644
 +    notify.Action = NotifyMissives::Operation::SnapshotEnd;
 +    notify.Data = {};
 +    apPlayer->Send(notify);
++    for (const auto& [board, visitors] : m_visitors)
++    {
++        notify.Action = NotifyMissives::Operation::BoardControl;
++        notify.Authority = m_ledger.GetBoardAuthority(aScope, board) == aToken;
++        notify.Data = {};
++        notify.Data.Board = board;
++        apPlayer->Send(notify);
++    }
++}
++
++void MissivesService::BoardControl(uint64_t aScope, const GameId& acBoard) const noexcept
++{
++    for (const auto& [token, binding] : m_bindings)
++        if (binding.Scope == aScope)
++            if (auto* pPlayer = m_world.GetPlayerManager().GetById(binding.PlayerId))
++            {
++                NotifyMissives notify;
++                notify.Action = NotifyMissives::Operation::BoardControl;
++                notify.ServerSession = m_session;
++                notify.Scope = aScope;
++                notify.Authority = m_ledger.GetBoardAuthority(aScope, acBoard) == token;
++                notify.Data.Board = acBoard;
++                pPlayer->Send(notify);
++            }
++}
++void MissivesService::ElectBoard(uint64_t aScope, const GameId& acBoard) noexcept
++{
++    const auto found = m_visitors.find(acBoard);
++    uint64_t token{};
++    if (found != m_visitors.end() && !found->second.empty())
++    {
++        token = m_ledger.GetBoardAuthority(aScope, acBoard);
++        if (!found->second.contains(token)) token = *found->second.begin();
++    }
++    m_ledger.SetBoardAuthority(aScope, acBoard, token);
++    BoardControl(aScope, acBoard);
 +}
 +
 +void MissivesService::SendActor(Player* apPlayer, uint32_t aActorId) const noexcept
@@ -5567,6 +5670,8 @@ new file mode 100644
 +        const uint64_t cScope = it->second.Scope;
 +        const uint64_t cToken = it->first;
 +        it = m_bindings.erase(it);
++        for (auto& [board, visitors] : m_visitors)
++            if (visitors.erase(cToken)) ElectBoard(cScope, board);
 +        if (m_ledger.GetAuthority(cScope) == cToken)
 +        {
 +            m_ledger.SetAuthority(cScope, 0);
@@ -5589,7 +5694,7 @@ new file mode 100644
 +{
 +    const auto& request = acEvent.Packet;
 +    Player* pPlayer = acEvent.pPlayer;
-+    if (!request.ClientSession || request.Revision != 2 || !request.Data.Valid || request.Action > RequestMissives::Operation::Actor)
++    if (!request.ClientSession || request.Revision != 2 || !request.Data.Valid || request.Action > RequestMissives::Operation::CloseBoard)
 +        return;
 +    const uint64_t cToken = request.ClientSession;
 +    const uint64_t cScope = GetScope(pPlayer);
@@ -5629,6 +5734,15 @@ new file mode 100644
 +    if (request.Action == RequestMissives::Operation::Snapshot)
 +    {
 +        Snapshot(pPlayer, cToken, cScope);
++        return;
++    }
++    if (request.Action == RequestMissives::Operation::OpenBoard || request.Action == RequestMissives::Operation::CloseBoard)
++    {
++        if (!request.Data.Board) return;
++        auto& visitors = m_visitors[request.Data.Board];
++        if (request.Action == RequestMissives::Operation::OpenBoard) visitors.insert(cToken);
++        else visitors.erase(cToken);
++        ElectBoard(cScope, request.Data.Board);
 +        return;
 +    }
 +    if (request.Action == RequestMissives::Operation::Reserve || request.Action == RequestMissives::Operation::ReleaseReserve)
@@ -5708,12 +5822,13 @@ diff --git a/Code/server/Services/MissivesService.h b/Code/server/Services/Missi
 new file mode 100644
 --- /dev/null
 +++ b/Code/server/Services/MissivesService.h
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,31 @@
 +#pragma once
 +#include <Events/PacketEvent.h>
 +#include <Game/Inventory/MissivesLedger.h>
 +#include <Messages/NotifyMissives.h>
 +#include <Messages/RequestMissives.h>
++#include <unordered_map>
 +
 +struct World;
 +struct PlayerLeaveEvent;
@@ -5729,10 +5844,13 @@ new file mode 100644
 +    void Broadcast(const MissivesLedger::Record& acRecord, NotifyMissives::Operation aOperation) const noexcept;
 +    void Snapshot(Player* apPlayer, uint64_t aToken, uint64_t aScope) const noexcept;
 +    void SendActor(Player* apPlayer, uint32_t aActorId) const noexcept;
++    void BoardControl(uint64_t aScope, const GameId& acBoard) const noexcept;
++    void ElectBoard(uint64_t aScope, const GameId& acBoard) noexcept;
 +    World& m_world;
 +    uint64_t m_session;
 +    MissivesLedger m_ledger;
 +    std::map<uint64_t, Binding> m_bindings;
++    std::unordered_map<GameId, std::set<uint64_t>> m_visitors;
 +    entt::scoped_connection m_requestConnection;
 +    entt::scoped_connection m_leaveConnection;
 +};
@@ -5759,7 +5877,7 @@ diff --git a/Code/tests/missives.cpp b/Code/tests/missives.cpp
 new file mode 100644
 --- /dev/null
 +++ b/Code/tests/missives.cpp
-@@ -0,0 +1,193 @@
+@@ -0,0 +1,213 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
@@ -5952,4 +6070,24 @@ new file mode 100644
 +    REQUIRE(result->IsQuestReference);
 +    REQUIRE(result->QuestWorldSpace == spawn.QuestWorldSpace);
 +    REQUIRE(result->InventoryContent.Entries[0].IsPersonalQuestItem);
++}
++
++TEST_CASE("Different Missives boards elect independent generators without sharing quest ownership", "[missives]")
++{
++    MissivesLedger ledger;
++    ledger.SetAuthority(1, 10);
++    auto first = Notice();
++    auto second = Notice(2);
++    second.Board = GameId(3, 0x1001);
++    second.Quest = GameId(3, 0x2001);
++    ledger.SetBoardAuthority(1, first.Board, 10);
++    ledger.SetBoardAuthority(1, second.Board, 20);
++    REQUIRE(ledger.Publish(1, 10, first));
++    REQUIRE_FALSE(ledger.Publish(1, 10, second));
++    const auto other = ledger.Publish(1, 20, second);
++    REQUIRE(other);
++    REQUIRE_FALSE(ledger.Retire(1, other->Data.Id, 10));
++    ledger.SetBoardAuthority(1, second.Board, 30);
++    REQUIRE(ledger.Retire(1, other->Data.Id, 30));
++    REQUIRE(ledger.GetBoardAuthority(1, first.Board) == 10);
 +}

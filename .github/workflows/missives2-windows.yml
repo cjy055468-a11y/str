@@ -56,6 +56,27 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Missives source scope verification failed' }
           git -C source switch -c master
           if ($LASTEXITCODE -ne 0) { throw 'Cannot set release build branch' }
+      - name: Compile all patched Papyrus scripts for Skyrim
+        run: |
+          Invoke-WebRequest 'https://github.com/Orvid/Caprica/releases/download/v0.3.0/Caprica.v0.3.0.7z' -OutFile Caprica.7z
+          if ((Get-FileHash Caprica.7z -Algorithm SHA256).Hash.ToLowerInvariant() -ne '0037e54cf3a1021e976278d9a637e8ae541aaf9ebeb8d274b6c2cfe32f4ee559') { throw 'Compiler hash mismatch' }
+          7z x Caprica.7z -ocaprica -y
+          if ($LASTEXITCODE -ne 0) { throw 'Compiler extraction failed' }
+          $compiler = (Get-ChildItem caprica -Recurse -Filter Caprica.exe | Select-Object -First 1).FullName
+          if (-not $compiler) { throw 'Compiler executable missing' }
+          & $compiler --help 2>&1 | Tee-Object logs/papyrus-help.txt
+          git clone https://github.com/ianpatt/skse64.git papyrus-api
+          if ($LASTEXITCODE -ne 0) { throw 'Native Papyrus declarations unavailable' }
+          git -C papyrus-api checkout 25b72352adb6543fa6d0bd3795780672b2e238e0
+          if ($LASTEXITCODE -ne 0) { throw 'Wrong interface revision' }
+          New-Item -ItemType Directory -Force papyrus-imports, compiled-pex | Out-Null
+          Copy-Item papyrus-api/scripts/vanilla/* papyrus-imports/
+          Copy-Item tools/papyrus-interfaces/* papyrus-imports/
+          $imports = "$env:GITHUB_WORKSPACE/mods/missives2/Scripts/Source;$env:GITHUB_WORKSPACE/papyrus-imports"
+          & $compiler --game=skyrim --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/missives2/Scripts/Source" 2>&1 | Tee-Object logs/papyrus-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Papyrus compilation failed' }
+          python tools/check-missives2-pex.py mods/missives2/Scripts/Source compiled-pex | Tee-Object logs/papyrus-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'PEX output validation failed' }
       - name: Configure Windows x64 for Skyrim 1.6.1170
         working-directory: source
         run: |
@@ -88,7 +109,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Unit test build failed' }
           & ./build/windows/x64/release/TPTests.exe -r junit -o "$env:GITHUB_WORKSPACE/logs/tests.xml"
           if ($LASTEXITCODE -ne 0) { throw 'Unit test execution failed' }
-          python ../tools/check-replay-tests.py "$env:GITHUB_WORKSPACE/logs/tests.xml" | Tee-Object ../logs/test-summary.txt
+          python ../tools/check-missives2-tests.py "$env:GITHUB_WORKSPACE/logs/tests.xml" | Tee-Object ../logs/test-summary.txt
           if ($LASTEXITCODE -ne 0) { throw 'Required replay tests did not complete successfully' }
       - name: Check 2 - architecture, version, fix marker and imports
         run: |
@@ -106,27 +127,6 @@ jobs:
             if ((Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) { throw "Delivery hash mismatch: $file" }
           }
           'PASS: all four delivery hashes match the PE report; one build round was requested.' | Out-File logs/check3.txt
-      - name: Compile all patched Papyrus scripts for Skyrim
-        run: |
-          Invoke-WebRequest 'https://github.com/Orvid/Caprica/releases/download/v0.3.0/Caprica.v0.3.0.7z' -OutFile Caprica.7z
-          if ((Get-FileHash Caprica.7z -Algorithm SHA256).Hash.ToLowerInvariant() -ne '0037e54cf3a1021e976278d9a637e8ae541aaf9ebeb8d274b6c2cfe32f4ee559') { throw 'Compiler hash mismatch' }
-          7z x Caprica.7z -ocaprica -y
-          if ($LASTEXITCODE -ne 0) { throw 'Compiler extraction failed' }
-          $compiler = (Get-ChildItem caprica -Recurse -Filter Caprica.exe | Select-Object -First 1).FullName
-          if (-not $compiler) { throw 'Compiler executable missing' }
-          & $compiler --help 2>&1 | Tee-Object logs/papyrus-help.txt
-          git clone https://github.com/ianpatt/skse64.git papyrus-api
-          if ($LASTEXITCODE -ne 0) { throw 'Native Papyrus declarations unavailable' }
-          git -C papyrus-api checkout 25b72352adb6543fa6d0bd3795780672b2e238e0
-          if ($LASTEXITCODE -ne 0) { throw 'Wrong interface revision' }
-          New-Item -ItemType Directory -Force papyrus-imports, compiled-pex | Out-Null
-          Copy-Item papyrus-api/scripts/vanilla/* papyrus-imports/
-          Copy-Item tools/papyrus-interfaces/* papyrus-imports/
-          $imports = "$env:GITHUB_WORKSPACE/mods/missives2/Scripts/Source;$env:GITHUB_WORKSPACE/papyrus-imports"
-          & $compiler --game=skyrim --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/missives2/Scripts/Source" 2>&1 | Tee-Object logs/papyrus-build.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Papyrus compilation failed' }
-          python tools/check-missives2-pex.py mods/missives2/Scripts/Source compiled-pex | Tee-Object logs/papyrus-check.json
-          if ($LASTEXITCODE -ne 0) { throw 'PEX output validation failed' }
       - name: Package only verified candidate files
         run: |
           New-Item -ItemType Directory -Force candidate/SkyrimTogetherReborn, candidate/MissivesCompat/Scripts | Out-Null

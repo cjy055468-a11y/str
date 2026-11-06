@@ -86,7 +86,7 @@ Function UpdateQuests(float QuestChance, FormList QuestList)
 	while(QuestIndex < QuestList.GetSize())
 		if(Utility.RandomInt() < QuestChance)
 			Quest MissiveQuest = QuestList.GetAt(QuestIndex) as Quest
-            If !STRMissivesBridge.IsConnected() || STRMissivesBridge.CanGenerate(MissiveQuest.GetFormID())
+            If !STRMissivesBridge.IsConnected() || STRMissivesBridge.CanGenerate(MissiveQuest.GetFormID(), MissiveBoard.GetFormID())
 
 			;If the quest isn't running, start it up
 			;If the quest is running, but hasn't been picked up by the player, reset it

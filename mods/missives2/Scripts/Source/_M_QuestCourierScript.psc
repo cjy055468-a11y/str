@@ -96,7 +96,9 @@ Function Fragment_15()
     STRMissivesBridge.StageChanged(GetFormID(), GetStage())
 ;BEGIN CODE
 Alias_Item.GetRef().SetActorOwner(Alias_QuestGiver.GetActorRef().GetActorBase())
-CrimeFaction.ModCrimeGold(GoldReward.GetValue() as int + Alias_Item.GetRef().GetGoldValue())
+If STRMissivesBridge.IsPersonalQuest(GetFormID())
+    CrimeFaction.ModCrimeGold(GoldReward.GetValue() as int + Alias_Item.GetRef().GetGoldValue())
+EndIf
 ;Alias_QuestGiver.GetActorRef().SetRelationShipRank(Game.GetPlayer(), -1)
 SetStage(105)
 ;END CODE

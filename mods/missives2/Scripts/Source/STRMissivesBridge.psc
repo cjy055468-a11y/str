@@ -1,7 +1,7 @@
 Scriptname STRMissivesBridge Hidden
 Bool Function IsConnected() Global Native
 Bool Function IsAuthority() Global Native
-Bool Function CanGenerate(Int questId) Global Native
+Bool Function CanGenerate(Int questId, Int boardId) Global Native
 Bool Function IsPersonalQuest(Int questId) Global Native
 Bool Function Claim(Int questId) Global Native
 Function StageChanged(Int questId, Int stageId) Global Native
