@@ -1,0 +1,14 @@
+{
+  "quests": 264,
+  "alias_bindings": 2010,
+  "global_bindings": 813,
+  "personal_dialogue_infos": 228,
+  "topics": 228,
+  "masters": [
+    "Skyrim.esm",
+    "Update.esm",
+    "Missives.esp"
+  ],
+  "plugin_sha256": "b94fb557d7c7ccf4f2a0aa24798b4fb84e0d128abd3b470b1c5ea887de908e26",
+  "runtime_game_validation": "not run; condition layout and alias APIs source-referenced only"
+}

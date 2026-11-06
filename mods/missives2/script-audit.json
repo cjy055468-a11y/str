@@ -1,0 +1,27 @@
+{
+  "scripts": [
+    "STRMissivesBridge.psc",
+    "_M_ActivatorScript.psc",
+    "_M_AliasDeliveryScript.psc",
+    "_M_AliasItemScript.psc",
+    "_M_AliasMissiveDeliverScript.psc",
+    "_M_AliasMissiveScript.psc",
+    "_M_AliasPlayerCourier.psc",
+    "_M_AliasPlayerGather.psc",
+    "_M_QuestCourierScript.psc",
+    "_M_QuestDialogue100.psc",
+    "_M_QuestDialogue30.psc",
+    "_M_QuestGatherInnScript.psc",
+    "_M_QuestGatherScript.psc",
+    "_M_QuestKillScript.psc",
+    "_M_QuestRetrieveScript.psc",
+    "_M_QuestTrackFugitiveScript.psc",
+    "_M_QuestTrackThiefScript.psc",
+    "_M_QuestTrackVampire.psc"
+  ],
+  "count": 18,
+  "compiled": false,
+  "requires": "matching STR native bridge; holder events use vanilla Papyrus",
+  "player_rewards_and_objectives": "guarded by personal quest ownership",
+  "world_fragments": "preserved"
+}

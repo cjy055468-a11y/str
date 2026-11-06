@@ -1,0 +1,5912 @@
+diff --git a/Code/client/Games/Misc/BSScript.cpp b/Code/client/Games/Misc/BSScript.cpp
+--- a/Code/client/Games/Misc/BSScript.cpp
++++ b/Code/client/Games/Misc/BSScript.cpp
+@@ -9,6 +9,7 @@
+ #include <PlayerCharacter.h>
+ #include <Games/ActorExtension.h>
+ #include <Games/PapyrusFunctions.h>
++void RegisterMissivesBridge(BSScript::IVirtualMachine* apVm) noexcept;
+ 
+ TP_THIS_FUNCTION(TRegisterPapyrusFunction, void, BSScript::IVirtualMachine, NativeFunction*);
+ TP_THIS_FUNCTION(TBindEverythingToScript, void, BSScript::IVirtualMachine*);
+@@ -36,6 +37,7 @@
+     (*apThis)->BindNativeMethod(new BSScript::IsRemotePlayerFunc("IsRemotePlayer", "SkyrimTogetherUtils", PapyrusFunctions::IsRemotePlayer, BSScript::Variable::kBoolean));
+     (*apThis)->BindNativeMethod(new BSScript::IsPlayerFunc("IsPlayer", "SkyrimTogetherUtils", PapyrusFunctions::IsPlayer, BSScript::Variable::kBoolean));
+     (*apThis)->BindNativeMethod(new BSScript::DidLaunchSkyrimTogetherFunc("DidLaunchSkyrimTogether", "SkyrimTogetherVerifyLaunchScript", PapyrusFunctions::DidLaunchSkyrimTogether, BSScript::Variable::kBoolean));
++    RegisterMissivesBridge(*apThis);
+ 
+     TiltedPhoques::ThisCall(RealBindEverythingToScript, apThis);
+ }
+diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
+--- a/Code/client/Games/Skyrim/Actor.cpp
++++ b/Code/client/Games/Skyrim/Actor.cpp
+@@ -223,7 +223,7 @@
+     pSetting->data = originalValue;
+ }
+ 
+-GamePtr<Actor> Actor::Create(TESNPC* apBaseForm, bool aUseNetworkNpcSaveFilter) noexcept
++GamePtr<Actor> Actor::Create(TESNPC* apBaseForm, bool aUseNetworkNpcSaveFilter, const ActorSpawnLocation* apInitialLocation) noexcept
+ {
+     auto pActor = New();
+     const uint16_t cConstructorRuntimeFlags = pActor->unk10;
+@@ -239,16 +239,16 @@
+     pActor->GetExtension()->SetRemote(true);
+ 
+     const auto pPlayer = static_cast<Actor*>(GetById(0x14));
+-    auto pCell = pPlayer->parentCell;
+-    const auto pWorldSpace = pPlayer->GetWorldSpace();
++    auto pCell = apInitialLocation ? apInitialLocation->Cell : pPlayer->parentCell;
++    const auto pWorldSpace = apInitialLocation ? apInitialLocation->WorldSpace : pPlayer->GetWorldSpace();
+ 
+     pActor->SetLevelMod(4);
+     pActor->MarkChanged(0x40000000);
+-    pActor->SetParentCell(pCell);
++    pActor->SetParentCell(pCell ? pCell : pPlayer->parentCell);
+     pActor->SetObjectReference(apBaseForm);
+ 
+-    auto position = pPlayer->position;
+-    auto rotation = pPlayer->rotation;
++    auto position = apInitialLocation ? apInitialLocation->Position : pPlayer->position;
++    auto rotation = apInitialLocation ? apInitialLocation->Rotation : pPlayer->rotation;
+ 
+     if (pCell && !(pCell->cellFlags & 1))
+         pCell = nullptr;
+diff --git a/Code/client/Games/Skyrim/Actor.h b/Code/client/Games/Skyrim/Actor.h
+--- a/Code/client/Games/Skyrim/Actor.h
++++ b/Code/client/Games/Skyrim/Actor.h
+@@ -23,6 +23,16 @@
+ struct CombatController;
+ struct TESIdleForm;
+ 
++// Our creation arguments, not a game layout. Quest references can be created
++// at their actual cell/world position without appearing beside the player.
++struct ActorSpawnLocation
++{
++    TESObjectCELL* Cell{};
++    TESWorldSpace* WorldSpace{};
++    NiPoint3 Position{};
++    NiPoint3 Rotation{};
++};
++
+ struct Actor : TESObjectREFR
+ {
+     static constexpr FormType Type = FormType::Character;
+@@ -30,7 +40,7 @@
+     // Allocs and calls constructor
+     static GamePtr<Actor> New() noexcept;
+     // Places a brand new actor in the world
+-    static GamePtr<Actor> Create(TESNPC* apBaseForm, bool aUseNetworkNpcSaveFilter = false) noexcept;
++    static GamePtr<Actor> Create(TESNPC* apBaseForm, bool aUseNetworkNpcSaveFilter = false, const ActorSpawnLocation* apInitialLocation = nullptr) noexcept;
+     static GamePtr<Actor> Spawn(uint32_t aBaseFormId) noexcept;
+ 
+     virtual void sub_9C();
+diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+--- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
++++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+@@ -28,6 +28,7 @@
+ #include <DefaultObjectManager.h>
+ #include <BSAnimationGraphManager.h>
+ #include <Havok/BShkbAnimationGraph.h>
++#include <ModCompat/MissivesCompat.h>
+ #include <Havok/hkbBehaviorGraph.h>
+ #include <Havok/hkbVariableValueSet.h>
+ #include <Havok/hkbStateMachine.h>
+@@ -593,6 +594,7 @@
+     arEntry.ExtraWornLeft = apExtraDataList->Contains(ExtraDataType::WornLeft);
+ 
+     arEntry.IsQuestItem = apExtraDataList->HasQuestObjectAlias();
++    arEntry.IsPersonalQuestItem = arEntry.IsQuestItem && MissivesCompat::IsPersonalQuestData(apExtraDataList);
+ }
+ 
+ ExtraDataList* TESObjectREFR::GetExtraDataFromItem(const Inventory::Entry& arEntry) noexcept
+@@ -885,6 +887,11 @@
+ 
+ void TESObjectREFR::AddOrRemoveItem(const Inventory::Entry& arEntry, bool aIsSettingInventory) noexcept
+ {
++    // Personal letters and delivery artifacts are supplied only by the local
++    // mission context. Keep worn equipment visible on remote actors.
++    if (arEntry.IsPersonalQuestItem && arEntry.Count > 0 && !arEntry.IsWorn() && this != PlayerCharacter::Get())
++        return;
++
+     ModSystem& modSystem = World::Get().GetModSystem();
+ 
+     uint32_t objectId = modSystem.GetGameId(arEntry.BaseId);
+@@ -932,7 +939,12 @@
+         {
+             Actor* pActor = Cast<Actor>(this);
+             if (pActor && pActor->GetExtension()->IsRemotePlayer())
+-                pPlayer->AddOrRemoveItem(arEntry);
++            {
++                if (arEntry.IsPersonalQuestItem || MissivesCompat::IsPosting(pObject))
++                    spdlog::info("STR Missives posting copy suppressed: source {:X}, posting {:X}, count {}", formID, objectId, arEntry.Count);
++                else
++                    pPlayer->AddOrRemoveItem(arEntry);
++            }
+         }
+     }
+ 
+diff --git a/Code/client/ModCompat/MissivesBridge.cpp b/Code/client/ModCompat/MissivesBridge.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesBridge.cpp
+@@ -0,0 +1,131 @@
++#include <TiltedOnlinePCH.h>
++#include <ModCompat/MissivesBridge.h>
++#include <Misc/BSScript.h>
++
++namespace
++{
++std::mutex s_lock;
++bool s_connected{};
++bool s_ready{};
++bool s_authority{};
++bool s_sawScript{};
++std::map<uint32_t, MissivesBridge::QuestState> s_quests;
++std::vector<MissivesBridge::Event> s_events;
++}
++
++void MissivesBridge::SetConnection(bool aConnected, bool aReady, bool aAuthority) noexcept
++{
++    std::lock_guard lock(s_lock);
++    s_connected = aConnected;
++    s_ready = aReady;
++    s_authority = aAuthority;
++}
++void MissivesBridge::SetQuest(uint32_t aId, const QuestState& acState) noexcept
++{
++    std::lock_guard lock(s_lock);
++    s_quests[aId] = acState;
++}
++void MissivesBridge::RemoveQuest(uint32_t aId) noexcept
++{
++    std::lock_guard lock(s_lock);
++    s_quests.erase(aId);
++}
++bool MissivesBridge::SawScript() noexcept
++{
++    std::lock_guard lock(s_lock);
++    return s_sawScript;
++}
++std::vector<MissivesBridge::Event> MissivesBridge::Drain() noexcept
++{
++    std::lock_guard lock(s_lock);
++    std::vector<Event> result;
++    result.swap(s_events);
++    return result;
++}
++int32_t MissivesBridge::Call(Operation aOperation, uint32_t aId, uint32_t aValue) noexcept
++{
++    std::lock_guard lock(s_lock);
++    s_sawScript = true;
++    const auto it = s_quests.find(aId);
++    switch (aOperation)
++    {
++    case Operation::Connected: return s_connected;
++    case Operation::Authority: return s_ready && s_authority;
++    case Operation::CanGenerate: return s_ready && s_authority && (it == s_quests.end() || !it->second.Reserved);
++    case Operation::Personal: return it == s_quests.end() ? !s_connected : it->second.Personal;
++    case Operation::State: return it == s_quests.end() ? -1 : it->second.State;
++    case Operation::PostingAlias: return it == s_quests.end() ? -1 : static_cast<int32_t>(it->second.PostingAlias);
++    case Operation::BoardAlias: return it == s_quests.end() ? -1 : static_cast<int32_t>(it->second.BoardAlias);
++    case Operation::Recipient: return it == s_quests.end() ? 0 : static_cast<int32_t>(it->second.Recipient);
++    default: break;
++    }
++    if (!s_connected) return 0;
++    if (aOperation == Operation::Claim)
++    {
++        if (it == s_quests.end()) { s_events.push_back({aOperation, aId, aValue}); return 1; }
++        if (it->second.State == 0) it->second.State = 1;
++    }
++    if (aOperation == Operation::Stage && (it == s_quests.end() || !it->second.Personal)) return 0;
++    s_events.push_back({aOperation, aId, aValue});
++    return 1;
++}
++
++namespace
++{
++void NativeCallbackMarker() {}
++class BridgeFunction final : public BSScript::NativeFunction
++{
++public:
++    BridgeFunction(const char* apName, MissivesBridge::Operation aOperation, uint32_t aArguments, BSScript::Variable::Type aResult)
++        : NativeFunction(apName, "STRMissivesBridge", true, aArguments), m_operation(aOperation), m_arguments(aArguments), m_result(aResult)
++    {
++        pFunction = reinterpret_cast<void*>(&NativeCallbackMarker);
++        returnType = aResult;
++        for (uint32_t i = 0; i < aArguments; ++i) parameters.data[i].type = BSScript::Variable::kInteger;
++        SetCallableFromTasklets(false);
++    }
++    bool MarshallAndDispatch(BSScript::Variable*, BSScript::IVirtualMachine*, uint32_t, BSScript::Variable* apResult, BSScript::StackFrame* apFrame) override
++    {
++        uint32_t values[2]{};
++        if (m_arguments)
++        {
++            const uint32_t cPage = apFrame->GetPageForFrame();
++            for (uint32_t i = 0; i < m_arguments; ++i)
++            {
++                auto* pArgument = apFrame->GetStackFrameVariable(i, cPage);
++                if (!pArgument || pArgument->type != BSScript::Variable::kInteger) return false;
++                values[i] = static_cast<uint32_t>(pArgument->data.i);
++            }
++        }
++        const int32_t cResult = MissivesBridge::Call(m_operation, values[0], values[1]);
++        if (m_result == BSScript::Variable::kBoolean) apResult->Set<bool>(cResult != 0);
++        else if (m_result == BSScript::Variable::kInteger) apResult->Set<int32_t>(cResult);
++        else apResult->Clear();
++        return true;
++    }
++private:
++    MissivesBridge::Operation m_operation;
++    uint32_t m_arguments;
++    BSScript::Variable::Type m_result;
++};
++}
++
++// Called from the existing native-registration hook. VM callbacks only read
++// the mutex-protected cache or enqueue IDs; all engine work stays on Update.
++void RegisterMissivesBridge(BSScript::IVirtualMachine* apVm) noexcept
++{
++    using O = MissivesBridge::Operation;
++    using V = BSScript::Variable;
++    struct Binding { const char* Name; O Operation; uint32_t Arguments; V::Type Result; };
++    const Binding bindings[] = {
++        {"IsConnected",O::Connected,0,V::kBoolean},{"IsAuthority",O::Authority,0,V::kBoolean},
++        {"CanGenerate",O::CanGenerate,1,V::kBoolean},{"IsPersonalQuest",O::Personal,1,V::kBoolean},
++        {"Claim",O::Claim,1,V::kBoolean},{"StageChanged",O::Stage,2,V::kEmpty},
++        {"OpenBoard",O::Open,2,V::kEmpty},{"CloseBoard",O::Close,1,V::kEmpty},
++        {"GetState",O::State,1,V::kInteger},{"GetPostingAlias",O::PostingAlias,1,V::kInteger},
++        {"GetBoardAlias",O::BoardAlias,1,V::kInteger},{"GetRecipient",O::Recipient,1,V::kInteger},
++        {"Released",O::Released,1,V::kEmpty},{"BoardChanged",O::Changed,1,V::kEmpty}
++    };
++    for (const auto& binding : bindings)
++        apVm->BindNativeMethod(new BridgeFunction(binding.Name, binding.Operation, binding.Arguments, binding.Result));
++}
+diff --git a/Code/client/ModCompat/MissivesBridge.h b/Code/client/ModCompat/MissivesBridge.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesBridge.h
+@@ -0,0 +1,27 @@
++#pragma once
++#include <cstdint>
++#include <map>
++#include <mutex>
++#include <vector>
++
++struct BSScript;
++namespace MissivesBridge
++{
++enum class Operation { Connected, Authority, CanGenerate, Personal, Claim, Stage, Open, Close, State, PostingAlias, BoardAlias, Recipient, Released, Changed };
++struct Event { Operation Action; uint32_t Id; uint32_t Value; };
++struct QuestState
++{
++    int32_t State{-1};
++    bool Personal{true};
++    bool Reserved{};
++    uint32_t PostingAlias{};
++    uint32_t BoardAlias{};
++    uint32_t Recipient{};
++};
++void SetConnection(bool aConnected, bool aReady, bool aAuthority) noexcept;
++void SetQuest(uint32_t aId, const QuestState& acState) noexcept;
++void RemoveQuest(uint32_t aId) noexcept;
++bool SawScript() noexcept;
++std::vector<Event> Drain() noexcept;
++int32_t Call(Operation aOperation, uint32_t aId, uint32_t aValue) noexcept;
++}
+diff --git a/Code/client/ModCompat/MissivesCompat.cpp b/Code/client/ModCompat/MissivesCompat.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesCompat.cpp
+@@ -0,0 +1,94 @@
++#include <TiltedOnlinePCH.h>
++#include <ModCompat/MissivesCompat.h>
++#include <ModCompat/MissivesPostingAliases.h>
++#include <Forms/TESQuest.h>
++#include <ExtraData/ExtraTextDisplayData.h>
++#include <ExtraData/ExtraDataList.h>
++
++namespace
++{
++// CommonLibSSE-NG ExtraAliasInstanceArray/BGSRefAliasInstanceData source
++// layouts. Read only, under the engine's own alias-array read lock.
++struct AliasOwnerView
++{
++    TESQuest* pQuest;
++    const void* pAlias;
++    const void* pPackages;
++};
++struct AliasArrayView : BSExtraData
++{
++    GameArray<AliasOwnerView*> Aliases;
++    BSReadWriteLock Lock;
++};
++static_assert(sizeof(AliasOwnerView) == 0x18);
++static_assert(offsetof(AliasArrayView, Aliases) == 0x10);
++static_assert(offsetof(AliasArrayView, Lock) == 0x28);
++static_assert(sizeof(AliasArrayView) == 0x30);
++
++struct AliasReadGuard
++{
++    explicit AliasReadGuard(BSReadWriteLock& aLock) noexcept : Lock(aLock)
++    {
++        TP_THIS_FUNCTION(TLock, void, BSReadWriteLock);
++        POINTER_SKYRIMSE(TLock, s_lock, 68233);
++        TiltedPhoques::ThisCall(s_lock, &Lock);
++    }
++    ~AliasReadGuard() noexcept
++    {
++        TP_THIS_FUNCTION(TUnlock, void, BSReadWriteLock);
++        POINTER_SKYRIMSE(TUnlock, s_unlock, 68239);
++        TiltedPhoques::ThisCall(s_unlock, &Lock);
++    }
++    BSReadWriteLock& Lock;
++};
++}
++
++bool MissivesCompat::IsPersonalQuestData(ExtraDataList* apExtraData) noexcept
++{
++    if (!apExtraData)
++        return false;
++    const auto* pText = Cast<ExtraTextDisplayData>(apExtraData->GetByType(ExtraDataType::TextDisplayData));
++    if (pText && IsPluginForm(pText->pOwnerQuest))
++        return true;
++    auto* pAliases = reinterpret_cast<AliasArrayView*>(apExtraData->GetByType(ExtraDataType::AliasInstanceArray));
++    if (!pAliases)
++        return false;
++    AliasReadGuard guard(pAliases->Lock);
++    for (const auto* pOwner : pAliases->Aliases)
++        if (pOwner && IsPluginForm(pOwner->pQuest))
++            return true;
++    return false;
++}
++
++void MissivesCompat::AuditBoard(TESObjectREFR* apBoard, const char* apReason) noexcept
++{
++    if (!IsBoard(apBoard))
++        return;
++
++    const auto inventory = apBoard->GetInventory();
++    spdlog::info("STR Missives board audit: reason {}, board {:X}, entries {}", apReason, apBoard->formID, inventory.Entries.size());
++    for (const auto& item : inventory.Entries)
++        spdlog::info("STR Missives board entry: board {:X}, base {:X}:{:X}, count {}, quest {}",
++            apBoard->formID, item.BaseId.ModId, item.BaseId.BaseId, item.Count, item.IsQuestItem);
++
++    const Mod* pMod = ModManager::Get()->GetByName("Missives.esp");
++    if (!pMod)
++        return;
++
++    for (const auto& entry : cPostingAliases)
++    {
++        auto* pQuest = Cast<TESQuest>(TESForm::GetById(pMod->GetFormId(entry.QuestId)));
++        if (!pQuest || pQuest->IsStopped())
++            continue;
++        const auto* pQuestBoard = pQuest->GetAliasedRef(entry.BoardAlias);
++        if (!pQuestBoard || pQuestBoard->formID != apBoard->formID)
++            continue;
++
++        auto* pPosting = pQuest->GetAliasedRef(entry.PostingAlias);
++        const auto* pText = pPosting ? Cast<ExtraTextDisplayData>(pPosting->extraData.GetByType(ExtraDataType::TextDisplayData)) : nullptr;
++        spdlog::info("STR Missives local posting: board {:X}, quest {:X}, instance {}, stage {}, alias {}, reference {:X}, base {:X}, text_context {}, text_quest_matches {}, text_instance {}",
++            apBoard->formID, pQuest->formID, pQuest->currentInstanceID, pQuest->currentStage, entry.PostingAlias,
++            pPosting ? pPosting->formID : 0, pPosting && pPosting->baseForm ? pPosting->baseForm->formID : 0,
++            pText != nullptr, pText && pText->pOwnerQuest == pQuest, pText ? pText->iOwnerInstance : -1);
++    }
++}
+diff --git a/Code/client/ModCompat/MissivesCompat.h b/Code/client/ModCompat/MissivesCompat.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesCompat.h
+@@ -0,0 +1,72 @@
++#pragma once
++
++#include <Games/TES.h>
++#include <Forms/TESForm.h>
++#include <TESObjectREFR.h>
++#include <algorithm>
++#include <array>
++
++// Records verified against the supplied original and CHS Missives 2.03 ESPs.
++// These helpers do not alter ordinary books, containers or quest loot.
++namespace MissivesCompat
++{
++void AuditBoard(TESObjectREFR* apBoard, const char* apReason) noexcept;
++bool IsPersonalQuestData(ExtraDataList* apExtraData) noexcept;
++inline bool HasBoardPatch() noexcept
++{
++    ModManager* pManager = ModManager::Get();
++    const Mod* pMod = pManager ? pManager->GetByName("STR_Missives_Compat.esp") : nullptr;
++    return pMod && pMod->IsLoaded();
++}
++
++inline bool IsPluginForm(const TESForm* apForm) noexcept
++{
++    if (!apForm)
++        return false;
++    ModManager* pManager = ModManager::Get();
++    const Mod* pMod = pManager ? pManager->GetByName("Missives.esp") : nullptr;
++    return pMod && pMod->IsLoaded() && !pMod->IsLite()
++        && pMod->GetFormId(apForm->formID & 0xFFFFFFu) == apForm->formID;
++}
++
++inline bool IsPosting(const TESForm* apForm) noexcept
++{
++    if (!apForm || apForm->formType != FormType::Book)
++        return false;
++    static constexpr std::array<uint32_t, 26> cPostingIds = {
++        0x001D98u, // _M_MissiveKillAnimal
++        0x00332Fu, // _M_MissiveGatherIngrLow
++        0x003330u, // _M_MissiveGatherIngrMed
++        0x003331u, // _M_MissiveGatherIngrHigh
++        0x006E74u, // _M_MissiveRetrieveWilderness
++        0x008ED4u, // _M_MissiveGatherOreLow
++        0x008ED5u, // _M_MissiveGatherOreMed
++        0x008ED6u, // _M_MissiveGatherOreHigh
++        0x009A16u, // _M_MissiveGatherInn
++        0x009F90u, // _M_MissiveGatherSoulGemLow
++        0x009F91u, // _M_MissiveGatherSoulGemMed
++        0x009F92u, // _M_MissiveGatherSoulGemHigh
++        0x00B533u, // _M_MissiveRetrieveHideout
++        0x00B534u, // _M_MissiveRetrieveRuins
++        0x00B537u, // _M_MissiveGatherOreVeryHigh
++        0x00BA9Cu, // _M_MissiveCourierLetter
++        0x00BA9Du, // _M_MissiveCourierWeapon
++        0x00F0C5u, // _M_MissiveKillBandit
++        0x00F0C6u, // _M_MissiveKillGiant
++        0x00F0C7u, // _M_MissiveKillDragon
++        0x00F0D0u, // _M_MissiveKillForsworn
++        0x0331A6u, // _M_MissiveTrackThief
++        0x0331A7u, // _M_MissiveTrackVampire
++        0x0331A8u, // _M_MissiveTrackFugitive
++        0x0331A9u, // _M_MissiveKillWerewolves
++        0x0398A4u, // _M_MissiveCourierPotion
++    };
++    return std::find(cPostingIds.begin(), cPostingIds.end(), apForm->formID & 0xFFFFFFu) != cPostingIds.end() && IsPluginForm(apForm);
++}
++
++inline bool IsBoard(const TESObjectREFR* apReference) noexcept
++{
++    return apReference && apReference->baseForm && apReference->baseForm->formType == FormType::Container
++        && (apReference->baseForm->formID & 0xFFFFFFu) == 0x12CBu && IsPluginForm(apReference->baseForm);
++}
++}
+diff --git a/Code/client/ModCompat/MissivesContext.cpp b/Code/client/ModCompat/MissivesContext.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesContext.cpp
+@@ -0,0 +1,273 @@
++#include <TiltedOnlinePCH.h>
++#include <ModCompat/MissivesContext.h>
++#include <ModCompat/MissivesCompat.h>
++#include <Services/PapyrusService.h>
++#include <Services/TransportService.h>
++#include <World.h>
++#include <PlayerCharacter.h>
++#include <Forms/TESQuest.h>
++#include <Forms/TESGlobal.h>
++#include <ExtraData/ExtraDataList.h>
++#include <ExtraData/ExtraTextDisplayData.h>
++#include <Games/Overrides.h>
++
++namespace
++{
++// Prefixes from CommonLibSSE-NG BGSBaseAlias/BGSRefAlias. No virtual slots are
++// installed or replaced. Locations use their existing native ForceLocationTo.
++struct AliasView
++{
++    void* Vtable;
++    BSFixedString Name;
++    TESQuest* Quest;
++    uint32_t Id;
++    uint32_t Flags;
++    uint16_t FillType;
++    uint16_t Pad22;
++    uint32_t Pad24;
++    std::array<uint64_t, 3> FillData;
++    void* Conditions;
++};
++static_assert(offsetof(AliasView, Id) == 0x18);
++static_assert(offsetof(AliasView, FillType) == 0x20);
++static_assert(offsetof(AliasView, FillData) == 0x28);
++static_assert(sizeof(AliasView) == 0x48);
++
++struct TextView
++{
++    uintptr_t Vtable{};
++    BSExtraData* Next{};
++    BSFixedString Name{};
++    BGSMessage* Message{};
++    TESQuest* Quest{};
++    int32_t Instance{-1};
++    float Temper{1.f};
++    uint16_t Length{};
++    uint16_t Pad32{};
++    uint32_t Pad34{};
++};
++static_assert(sizeof(TextView) == sizeof(ExtraTextDisplayData));
++static_assert(offsetof(TextView, Quest) == 0x20);
++
++const Mod* Plugin(const char* apName) noexcept
++{
++    auto* pManager = ModManager::Get();
++    const Mod* pMod = pManager ? pManager->GetByName(apName) : nullptr;
++    return pMod && pMod->IsLoaded() ? pMod : nullptr;
++}
++}
++
++MissivesContext::MissivesContext(const MissiveQuestSpec& acSpec) noexcept : m_spec(acSpec)
++{
++    if (const auto* pMod = Plugin("Missives.esp"))
++        m_quest = Cast<TESQuest>(TESForm::GetById(pMod->GetFormId(m_spec.Quest)));
++    if (m_quest) m_originalType = static_cast<uint8_t>(m_quest->type);
++}
++
++void* MissivesContext::GetAlias(uint32_t aId) const noexcept
++{
++    if (m_quest)
++        for (void* pAlias : m_quest->aliases)
++            if (pAlias && static_cast<AliasView*>(pAlias)->Id == aId) return pAlias;
++    return nullptr;
++}
++
++bool MissivesContext::IsRunning() const noexcept { return m_quest && !m_quest->IsStopped(); }
++uint16_t MissivesContext::GetStage() const noexcept { return m_quest ? m_quest->currentStage : 0; }
++TESObjectREFR* MissivesContext::GetPosting() const noexcept { return m_quest ? m_quest->GetAliasedRef(m_spec.PostingAlias) : nullptr; }
++
++void MissivesContext::SetPersonal(bool aPersonal) noexcept
++{
++    const auto* pMod = Plugin("STR_Missives_Compat.esp");
++    auto* pGlobal = pMod ? Cast<TESGlobal>(TESForm::GetById(pMod->GetFormId(m_spec.RecipientFlag))) : nullptr;
++    if (pGlobal) pGlobal->f = aPersonal ? 1.f : 0.f;
++    if (m_quest)
++    {
++        m_quest->type = aPersonal ? static_cast<TESQuest::Type>(m_originalType) : TESQuest::Type::None;
++        if (!aPersonal) m_quest->SetActive(false);
++    }
++}
++
++void MissivesContext::ForceReference(uint32_t aAlias, TESObjectREFR* apReference) noexcept
++{
++    void* pAlias = GetAlias(aAlias);
++    const void* pFunction = World::Get().ctx().at<PapyrusService>().Get("ReferenceAlias", "ForceRefTo");
++    if (pAlias && pFunction)
++        PapyrusFunction<void, void, TESObjectREFR*>(pFunction)(pAlias, apReference);
++}
++void MissivesContext::ForceLocation(uint32_t aAlias, TESForm* apLocation) noexcept
++{
++    void* pAlias = GetAlias(aAlias);
++    const void* pFunction = World::Get().ctx().at<PapyrusService>().Get("LocationAlias", "ForceLocationTo");
++    if (pAlias && pFunction)
++        PapyrusFunction<void, void, TESForm*>(pFunction)(pAlias, apLocation);
++}
++
++TESObjectREFR* MissivesContext::MakeItem(const MissivesAlias& acAlias) noexcept
++{
++    if (const auto found = m_created.find(acAlias.Id); found != m_created.end()) return found->second.get();
++    auto& world = World::Get();
++    const void* pFunction = world.ctx().at<PapyrusService>().Get("ObjectReference", "PlaceAtMe");
++    auto* pBase = TESForm::GetById(world.GetModSystem().GetGameId(acAlias.Base));
++    if (!pFunction || !pBase || pBase->formType == FormType::Npc || pBase->formType == FormType::Character || pBase->formType == FormType::LeveledCharacter)
++        return nullptr;
++    auto* pReference = PapyrusFunction<TESObjectREFR*, TESObjectREFR, TESForm*, int32_t, bool, bool>(pFunction)(PlayerCharacter::Get(), pBase, 1, true, true);
++    if (!pReference) return nullptr;
++    m_created.emplace(acAlias.Id, GamePtr<TESObjectREFR>{pReference});
++    return pReference;
++}
++
++void MissivesContext::BindText() noexcept
++{
++    auto* pPosting = GetPosting();
++    if (!pPosting || !m_quest) return;
++    auto* pText = Cast<ExtraTextDisplayData>(pPosting->extraData.GetByType(ExtraDataType::TextDisplayData));
++    if (!pText)
++    {
++        // Construct the existing game extra-data type with its AE Address
++        // Library vtable. Never reuse the old commented raw address helper.
++        void* pMemory = Memory::Allocate(sizeof(TextView));
++        if (!pMemory) return;
++        auto* pView = new (pMemory) TextView{};
++        const VersionDbPtr<uintptr_t> cVtable(186855);
++        pView->Vtable = reinterpret_cast<uintptr_t>(cVtable.Get());
++        pText = reinterpret_cast<ExtraTextDisplayData*>(pView);
++        pPosting->extraData.Add(ExtraDataType::TextDisplayData, pText);
++    }
++    if (pText->pOwnerQuest != m_quest)
++    {
++        pText->DisplayName.Set("");
++        pText->pOwnerQuest = m_quest;
++        pText->iOwnerInstance = static_cast<int32_t>(m_quest->currentInstanceID);
++    }
++}
++
++bool MissivesContext::Apply(const MissivesData& acData, bool aSource, uint32_t aRecipientActor, const ActorResolver& acResolveActor) noexcept
++{
++    if (!m_quest || !acData.Valid) return false;
++    auto& world = World::Get();
++    m_board = Cast<TESObjectREFR>(TESForm::GetById(world.GetModSystem().GetGameId(acData.Board)));
++    if (!MissivesCompat::IsBoard(m_board)) return false;
++    m_source = aSource;
++    if (!m_initialized && !aSource)
++    {
++        if (IsRunning() && !m_pinned)
++        {
++            if (!m_stopRequested) { m_quest->ScriptSetStage(110); m_stopRequested = true; }
++            return false;
++        }
++        std::map<uint32_t, TESObjectREFR*> references;
++        for (const auto& alias : acData.Aliases)
++        {
++            if (!GetAlias(alias.Id)) return false;
++            if (alias.Type == MissivesAlias::Kind::Location) continue;
++            TESObjectREFR* pReference = nullptr;
++            if (alias.Type == MissivesAlias::Kind::Item) pReference = MakeItem(alias);
++            else if (alias.Type == MissivesAlias::Kind::Player)
++                pReference = aRecipientActor ? acResolveActor(aRecipientActor) : PlayerCharacter::Get();
++            else if (alias.Type == MissivesAlias::Kind::Actor) pReference = acResolveActor(alias.ActorId);
++            else pReference = Cast<TESObjectREFR>(TESForm::GetById(world.GetModSystem().GetGameId(alias.Form)));
++            if (!pReference) return false;
++            references.emplace(alias.Id, pReference);
++        }
++        if (!m_pinned)
++        {
++            for (uint32_t i = 0; i < m_spec.AliasCount; ++i)
++            {
++                const auto& spec = cMissiveAliasSpecs[m_spec.AliasBegin+i];
++                auto* pAlias = static_cast<AliasView*>(GetAlias(spec.Id));
++                if (!pAlias) return false;
++                Pin pin;
++                pin.Alias = pAlias;
++                pin.Flags = pAlias->Flags;
++                pin.Location = spec.Location;
++                if (!spec.Location)
++                {
++                    pin.FillType = pAlias->FillType;
++                    pin.Data = pAlias->FillData;
++                    pin.Conditions = pAlias->Conditions;
++                    pAlias->FillType = 1; // Forced reference, no local random spawn.
++                    pAlias->FillData = {};
++                    const auto ref = references.find(spec.Id);
++                    if (ref != references.end()) pAlias->FillData[0] = ref->second->GetHandle().handle.iBits;
++                    pAlias->Conditions = nullptr;
++                }
++                pAlias->Flags |= (1u<<1) | (1u<<3) | (1u<<4) | (1u<<7) | (1u<<9);
++                m_pins.push_back(pin);
++            }
++            m_pinned = true;
++        }
++        if (!IsRunning())
++        {
++            bool success = false;
++            m_quest->EnsureQuestStarted(success, true);
++            return false; // Startup/alias fill may finish after this frame.
++        }
++        for (const auto& alias : acData.Aliases)
++        {
++            if (alias.Type == MissivesAlias::Kind::Location)
++                ForceLocation(alias.Id, TESForm::GetById(world.GetModSystem().GetGameId(alias.Form)));
++            else if (const auto ref = references.find(alias.Id); ref != references.end()) ForceReference(alias.Id, ref->second);
++        }
++    }
++    const void* pUpdate = world.ctx().at<PapyrusService>().Get("Quest", "UpdateCurrentInstanceGlobal");
++    for (const auto& entry : acData.Globals)
++        if (auto* pGlobal = Cast<TESGlobal>(TESForm::GetById(world.GetModSystem().GetGameId(entry.Id))))
++        {
++            pGlobal->f = entry.Value;
++            if (pUpdate) PapyrusFunction<bool, TESQuest, TESGlobal*>(pUpdate)(m_quest, pGlobal);
++        }
++    RebindPlayer(aRecipientActor, acResolveActor);
++    BindText();
++    m_initialized = true;
++    return IsRunning();
++}
++
++void MissivesContext::RebindPlayer(uint32_t aRecipientActor, const ActorResolver& acResolveActor) noexcept
++{
++    auto* pPlayer = aRecipientActor ? acResolveActor(aRecipientActor) : PlayerCharacter::Get();
++    if (!pPlayer) return;
++    for (uint32_t i = 0; i < m_spec.AliasCount; ++i)
++    {
++        const auto& spec = cMissiveAliasSpecs[m_spec.AliasBegin+i];
++        const auto* pAlias = static_cast<const AliasView*>(GetAlias(spec.Id));
++        if (!spec.Location && pAlias && pAlias->Name && !_stricmp(pAlias->Name.AsAscii(), "Player"))
++            ForceReference(spec.Id, pPlayer);
++    }
++}
++
++void MissivesContext::PutLetter(bool, bool) noexcept
++{
++    // Inventory transfer runs through compiled Papyrus. Its VM supplies the
++    // exact ref/inventory argument ABI and preserves the alias-bound instance.
++}
++
++void MissivesContext::SetStage(uint16_t aStage) noexcept
++{
++    if (m_quest && IsRunning() && aStage && !m_quest->IsStageReached(aStage)) m_quest->ScriptSetStage(aStage);
++}
++
++void MissivesContext::Stop() noexcept
++{
++    if (!m_quest) return;
++    const void* pStop = World::Get().ctx().at<PapyrusService>().Get("Quest", "Stop");
++    if (pStop && IsRunning()) PapyrusFunction<void, TESQuest>(pStop)(m_quest);
++    if (!IsRunning())
++    {
++        for (const auto& pin : m_pins)
++        {
++            auto* pAlias = static_cast<AliasView*>(pin.Alias);
++            pAlias->Flags = pin.Flags;
++            if (!pin.Location)
++            {
++                pAlias->FillType = pin.FillType;
++                pAlias->FillData = pin.Data;
++                pAlias->Conditions = pin.Conditions;
++            }
++        }
++        m_pins.clear();
++        m_pinned = false;
++        m_initialized = false;
++        m_quest->type = static_cast<TESQuest::Type>(m_originalType);
++    }
++}
+diff --git a/Code/client/ModCompat/MissivesContext.h b/Code/client/ModCompat/MissivesContext.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesContext.h
+@@ -0,0 +1,51 @@
++#pragma once
++#include <Structs/MissivesData.h>
++#include <ModCompat/MissivesMissionCatalog.h>
++#include <Games/References.h>
++#include <array>
++#include <functional>
++#include <map>
++#include <vector>
++
++// Own bookkeeping only. All native alias changes are made on the game thread.
++class MissivesContext
++{
++public:
++    using ActorResolver = std::function<TESObjectREFR*(uint32_t)>;
++    explicit MissivesContext(const MissiveQuestSpec& acSpec) noexcept;
++    bool Apply(const MissivesData& acData, bool aSource, uint32_t aRecipientActor, const ActorResolver& acResolveActor) noexcept;
++    void RebindPlayer(uint32_t aRecipientActor, const ActorResolver& acResolveActor) noexcept;
++    void SetPersonal(bool aPersonal) noexcept;
++    void PutLetter(bool aInBoard, bool aInPlayer) noexcept;
++    void SetStage(uint16_t aStage) noexcept;
++    void Stop() noexcept;
++    bool IsRunning() const noexcept;
++    uint16_t GetStage() const noexcept;
++    TESQuest* GetQuest() const noexcept { return m_quest; }
++    TESObjectREFR* GetPosting() const noexcept;
++private:
++    struct Pin
++    {
++        void* Alias{};
++        uint32_t Flags{};
++        uint16_t FillType{};
++        std::array<uint64_t, 3> Data{};
++        void* Conditions{};
++        bool Location{};
++    };
++    void* GetAlias(uint32_t aId) const noexcept;
++    TESObjectREFR* MakeItem(const MissivesAlias& acAlias) noexcept;
++    void ForceReference(uint32_t aAlias, TESObjectREFR* apReference) noexcept;
++    void ForceLocation(uint32_t aAlias, TESForm* apLocation) noexcept;
++    void BindText() noexcept;
++    const MissiveQuestSpec& m_spec;
++    TESQuest* m_quest{};
++    TESObjectREFR* m_board{};
++    bool m_pinned{};
++    bool m_initialized{};
++    bool m_source{};
++    bool m_stopRequested{};
++    uint8_t m_originalType{};
++    std::vector<Pin> m_pins;
++    std::map<uint32_t, GamePtr<TESObjectREFR>> m_created;
++};
+diff --git a/Code/client/ModCompat/MissivesMissionCatalog.h b/Code/client/ModCompat/MissivesMissionCatalog.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesMissionCatalog.h
+@@ -0,0 +1,3098 @@
++#pragma once
++#include <array>
++#include <cstdint>
++struct MissiveAliasSpec { uint32_t Id; bool Location; };
++struct MissiveQuestSpec { uint32_t Quest; uint32_t Book; uint32_t PostingAlias; uint32_t BoardAlias; uint32_t RecipientFlag; uint32_t AliasBegin; uint32_t AliasCount; uint32_t GlobalBegin; uint32_t GlobalCount; };
++inline constexpr std::array<MissiveAliasSpec, 2010> cMissiveAliasSpecs{{
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {9u, true},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {0u, true},
++    {1u, true},
++    {2u, false},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {1u, true},
++    {2u, true},
++    {3u, false},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, true},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {10u, false},
++    {11u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {0u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++    {1u, true},
++    {2u, true},
++    {3u, true},
++    {4u, false},
++    {5u, false},
++    {6u, false},
++    {7u, false},
++    {8u, false},
++    {9u, false},
++}};
++inline constexpr std::array<uint32_t, 813> cMissiveGlobalSpecs{{
++    0x00285Fu,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x003332u,
++    0x003333u,
++    0x006E75u,
++    0x00332Bu,
++    0x00332Cu,
++    0x00793Eu,
++    0x007940u,
++    0x008409u,
++    0x00332Du,
++    0x00332Eu,
++    0x00793Fu,
++    0x007941u,
++    0x008EE0u,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x009A1Du,
++    0x009A1Eu,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x009F9Au,
++    0x009F9Du,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x009F9Bu,
++    0x009F9Eu,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x009F9Cu,
++    0x009F9Fu,
++    0x00BAA4u,
++    0x00BAA7u,
++    0x00BAA8u,
++    0x00D598u,
++    0x00D59Eu,
++    0x00D59Fu,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x008EE4u,
++    0x008EE8u,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x008EE5u,
++    0x008EE9u,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x008EE6u,
++    0x008EE7u,
++    0x00BA9Fu,
++    0x00BAA0u,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x00BAA5u,
++    0x00D599u,
++    0x00E07Cu,
++    0x00BAA6u,
++    0x00D59Au,
++    0x00E07Du,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x00E07Eu,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x00E07Fu,
++    0x009F96u,
++    0x009F97u,
++    0x009F98u,
++    0x00F0D5u,
++    0x00F0D6u,
++    0x00BAA6u,
++    0x00D59Au,
++    0x00F642u,
++    0x00BAA4u,
++    0x00BAA8u,
++    0x00F643u,
++    0x00BAA5u,
++    0x00D599u,
++    0x00F644u,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x00F645u,
++    0x00D598u,
++    0x00D59Fu,
++    0x00F646u,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x00F647u,
++    0x00332Du,
++    0x00332Eu,
++    0x008EE0u,
++    0x00F641u,
++    0x01013Du,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x01013Bu,
++    0x01013Eu,
++    0x00332Bu,
++    0x00332Cu,
++    0x008409u,
++    0x01013Cu,
++    0x01013Fu,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x0106AFu,
++    0x0106B0u,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x0106B5u,
++    0x0106B9u,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x0106B7u,
++    0x0106BCu,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x0106B6u,
++    0x0106BBu,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x0106B8u,
++    0x0106BAu,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x010C2Fu,
++    0x010C32u,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x010C30u,
++    0x010C33u,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x010C31u,
++    0x010C34u,
++    0x00285Fu,
++    0x009F96u,
++    0x009F98u,
++    0x009F97u,
++    0x00F0D5u,
++    0x00F0D6u,
++    0x006E75u,
++    0x00BAA6u,
++    0x00D59Au,
++    0x011C83u,
++    0x00BAA6u,
++    0x00D59Au,
++    0x011C8Eu,
++    0x00BAA6u,
++    0x00D59Au,
++    0x011C95u,
++    0x00BAA6u,
++    0x00D59Au,
++    0x011C9Du,
++    0x00BAA6u,
++    0x00D59Au,
++    0x011CA5u,
++    0x00BAA6u,
++    0x00D59Au,
++    0x011CA6u,
++    0x00BAA6u,
++    0x00D59Au,
++    0x011CA7u,
++    0x00BAA4u,
++    0x00BAA8u,
++    0x011C85u,
++    0x00BAA4u,
++    0x00BAA8u,
++    0x011CC6u,
++    0x00BAA4u,
++    0x00BAA8u,
++    0x011CCEu,
++    0x00BAA4u,
++    0x00BAA8u,
++    0x011CD6u,
++    0x00BAA4u,
++    0x00BAA8u,
++    0x011CDEu,
++    0x00BAA4u,
++    0x00BAA8u,
++    0x011CE6u,
++    0x00BAA4u,
++    0x00BAA8u,
++    0x011CE7u,
++    0x00BAA5u,
++    0x00D599u,
++    0x011C84u,
++    0x00BAA5u,
++    0x00D599u,
++    0x011CFCu,
++    0x00BAA5u,
++    0x00D599u,
++    0x011D05u,
++    0x00BAA5u,
++    0x00D599u,
++    0x011D0Du,
++    0x00BAA5u,
++    0x00D599u,
++    0x011D16u,
++    0x00BAA5u,
++    0x00D599u,
++    0x011D15u,
++    0x00BAA5u,
++    0x00D599u,
++    0x011D25u,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x01228Eu,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x012296u,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x01229Eu,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x0122A7u,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x0122AFu,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x0122B7u,
++    0x00D59Cu,
++    0x00D5A1u,
++    0x0122BEu,
++    0x00D598u,
++    0x00D59Fu,
++    0x012829u,
++    0x00D598u,
++    0x00D59Fu,
++    0x012831u,
++    0x00D598u,
++    0x00D59Fu,
++    0x012839u,
++    0x00D598u,
++    0x00D59Fu,
++    0x012841u,
++    0x00D598u,
++    0x00D59Fu,
++    0x012849u,
++    0x00D598u,
++    0x00D59Fu,
++    0x012850u,
++    0x00D598u,
++    0x00D59Fu,
++    0x012858u,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x012DC2u,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x012DCBu,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x012DD3u,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x012DDBu,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x012DE3u,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x012DEBu,
++    0x00D59Bu,
++    0x00D5A0u,
++    0x012DF9u,
++    0x00332Du,
++    0x00332Eu,
++    0x008EE0u,
++    0x01335Cu,
++    0x01335Eu,
++    0x00332Du,
++    0x00332Eu,
++    0x008EE0u,
++    0x013363u,
++    0x013364u,
++    0x00332Du,
++    0x00332Eu,
++    0x008EE0u,
++    0x013365u,
++    0x01336Au,
++    0x00332Du,
++    0x00332Eu,
++    0x008EE0u,
++    0x013366u,
++    0x01336Bu,
++    0x00332Du,
++    0x00332Eu,
++    0x008EE0u,
++    0x013367u,
++    0x01336Cu,
++    0x00332Du,
++    0x00332Eu,
++    0x008EE0u,
++    0x013368u,
++    0x01336Du,
++    0x00332Du,
++    0x00332Eu,
++    0x008EE0u,
++    0x013369u,
++    0x01336Eu,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x013386u,
++    0x013394u,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x013388u,
++    0x013396u,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x01338Au,
++    0x013398u,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x01338Cu,
++    0x01339Au,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x01338Eu,
++    0x01339Cu,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x013390u,
++    0x01339Eu,
++    0x003328u,
++    0x003329u,
++    0x00332Au,
++    0x013392u,
++    0x0133A0u,
++    0x00332Bu,
++    0x00332Cu,
++    0x008409u,
++    0x013387u,
++    0x013395u,
++    0x00332Bu,
++    0x00332Cu,
++    0x008409u,
++    0x013389u,
++    0x013397u,
++    0x00332Bu,
++    0x00332Cu,
++    0x008409u,
++    0x01338Bu,
++    0x013399u,
++    0x00332Bu,
++    0x00332Cu,
++    0x008409u,
++    0x01338Du,
++    0x01339Bu,
++    0x00332Bu,
++    0x00332Cu,
++    0x008409u,
++    0x01338Fu,
++    0x01339Du,
++    0x00332Bu,
++    0x00332Cu,
++    0x008409u,
++    0x013391u,
++    0x01339Fu,
++    0x00332Bu,
++    0x00332Cu,
++    0x008409u,
++    0x013393u,
++    0x0133A1u,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x013E9Fu,
++    0x013EA6u,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x013EA0u,
++    0x013EA7u,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x013EA1u,
++    0x013EA8u,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x013EA2u,
++    0x013EA9u,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x013EA3u,
++    0x013EAAu,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x013EA4u,
++    0x013EABu,
++    0x009A17u,
++    0x009A18u,
++    0x009A19u,
++    0x013EA5u,
++    0x013EACu,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x01442Bu,
++    0x014432u,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x01442Cu,
++    0x014433u,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x01442Du,
++    0x014434u,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x01442Eu,
++    0x014435u,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x01442Fu,
++    0x014436u,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x014430u,
++    0x014437u,
++    0x008EDAu,
++    0x008EDBu,
++    0x008EE2u,
++    0x014431u,
++    0x014438u,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x0149B8u,
++    0x0149BFu,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x0149B9u,
++    0x0149C0u,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x0149BAu,
++    0x0149C1u,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x0149BBu,
++    0x0149C2u,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x0149BCu,
++    0x0149C3u,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x0149BDu,
++    0x0149C4u,
++    0x008EDEu,
++    0x008EDFu,
++    0x008EE1u,
++    0x0149BEu,
++    0x0149C5u,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x014F43u,
++    0x014F4Au,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x014F44u,
++    0x014F4Bu,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x014F49u,
++    0x014F50u,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x014F45u,
++    0x014F4Cu,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x014F46u,
++    0x014F4Du,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x014F47u,
++    0x014F4Eu,
++    0x008EDCu,
++    0x008EDDu,
++    0x008EE3u,
++    0x014F48u,
++    0x014F4Fu,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x0154CFu,
++    0x0154D6u,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x0154D0u,
++    0x0154D7u,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x0154D1u,
++    0x0154D8u,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x0154D2u,
++    0x0154D9u,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x0154D3u,
++    0x0154DAu,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x0154D4u,
++    0x0154DBu,
++    0x00BAA1u,
++    0x00BAA2u,
++    0x00BAA3u,
++    0x0154D5u,
++    0x0154DCu,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x015A5Bu,
++    0x015A64u,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x015A5Cu,
++    0x015A65u,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x015A5Du,
++    0x015A66u,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x015A5Eu,
++    0x015A67u,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x015A5Fu,
++    0x015A68u,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x015A60u,
++    0x015A69u,
++    0x009F8Eu,
++    0x009F8Fu,
++    0x009F95u,
++    0x015A61u,
++    0x015A6Au,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x015FE8u,
++    0x015FEFu,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x015FE9u,
++    0x015FF2u,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x015FEAu,
++    0x015FF1u,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x015FEBu,
++    0x015FF3u,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x015FECu,
++    0x015FF4u,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x015FEDu,
++    0x015FF5u,
++    0x009F8Au,
++    0x009F8Bu,
++    0x009F93u,
++    0x015FEEu,
++    0x015FF6u,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x016575u,
++    0x01657Cu,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x015FF0u,
++    0x016576u,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x016577u,
++    0x01657Du,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x016578u,
++    0x01657Eu,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x016579u,
++    0x01657Fu,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x01657Au,
++    0x016580u,
++    0x009F8Cu,
++    0x009F8Du,
++    0x009F94u,
++    0x01657Bu,
++    0x016581u,
++    0x00285Fu,
++    0x00285Fu,
++    0x00285Fu,
++    0x00285Fu,
++    0x00285Fu,
++    0x00285Fu,
++    0x00285Fu,
++    0x009F96u,
++    0x009F96u,
++    0x009F96u,
++    0x009F96u,
++    0x009F96u,
++    0x009F96u,
++    0x009F96u,
++    0x009F97u,
++    0x009F98u,
++    0x009F98u,
++    0x009F98u,
++    0x009F98u,
++    0x009F98u,
++    0x009F98u,
++    0x009F98u,
++    0x00F0D5u,
++    0x00F0D5u,
++    0x00F0D5u,
++    0x00F0D5u,
++    0x00F0D5u,
++    0x00F0D5u,
++    0x00F0D5u,
++    0x00F0D6u,
++    0x00F0D6u,
++    0x00F0D6u,
++    0x00F0D6u,
++    0x00F0D6u,
++    0x00F0D6u,
++    0x00F0D6u,
++    0x006E75u,
++    0x006E75u,
++    0x006E75u,
++    0x006E75u,
++    0x006E75u,
++    0x006E75u,
++    0x006E75u,
++    0x03370Cu,
++    0x034C9Cu,
++    0x03370Cu,
++    0x03370Cu,
++    0x03370Cu,
++    0x03370Cu,
++    0x03370Cu,
++    0x03370Cu,
++    0x03370Cu,
++    0x03370Cu,
++    0x034C9Cu,
++    0x034C9Cu,
++    0x034C9Cu,
++    0x034C9Cu,
++    0x034C9Cu,
++    0x034C9Cu,
++    0x034C9Cu,
++    0x034C9Cu,
++    0x03931Fu,
++    0x039322u,
++    0x039887u,
++    0x03931Fu,
++    0x039322u,
++    0x03988Au,
++    0x03931Fu,
++    0x039322u,
++    0x03988Du,
++    0x03931Fu,
++    0x039322u,
++    0x039890u,
++    0x03931Fu,
++    0x039322u,
++    0x039893u,
++    0x03931Fu,
++    0x039322u,
++    0x039896u,
++    0x03931Fu,
++    0x039322u,
++    0x039899u,
++    0x03931Fu,
++    0x039322u,
++    0x03989Cu,
++    0x03931Fu,
++    0x039322u,
++    0x03989Fu,
++    0x039320u,
++    0x039323u,
++    0x039888u,
++    0x039320u,
++    0x039323u,
++    0x03988Bu,
++    0x039320u,
++    0x039323u,
++    0x03988Eu,
++    0x039320u,
++    0x039323u,
++    0x039891u,
++    0x039320u,
++    0x039323u,
++    0x039894u,
++    0x039320u,
++    0x039323u,
++    0x039897u,
++    0x039320u,
++    0x039323u,
++    0x03989Au,
++    0x039320u,
++    0x039323u,
++    0x03989Du,
++    0x039320u,
++    0x039323u,
++    0x0398A0u,
++    0x039321u,
++    0x039324u,
++    0x039889u,
++    0x039321u,
++    0x039324u,
++    0x03988Cu,
++    0x039321u,
++    0x039324u,
++    0x03988Fu,
++    0x039321u,
++    0x039324u,
++    0x039892u,
++    0x039321u,
++    0x039324u,
++    0x039895u,
++    0x039321u,
++    0x039324u,
++    0x039898u,
++    0x039321u,
++    0x039324u,
++    0x03989Bu,
++    0x039321u,
++    0x039324u,
++    0x03989Eu,
++    0x039321u,
++    0x039324u,
++    0x0398A1u,
++}};
++inline constexpr std::array<MissiveQuestSpec, 264> cMissiveQuestSpecs{{
++    {0x0058E4u, 0x001D98u, 6u, 5u, 0x800u, 0u, 7u, 0u, 1u},
++    {0x0063ABu, 0x00332Fu, 7u, 6u, 0x801u, 7u, 6u, 1u, 5u},
++    {0x006E72u, 0x006E74u, 7u, 6u, 0x802u, 13u, 7u, 6u, 1u},
++    {0x008408u, 0x003330u, 7u, 6u, 0x803u, 20u, 6u, 7u, 5u},
++    {0x008EEAu, 0x003331u, 7u, 6u, 0x804u, 26u, 6u, 12u, 5u},
++    {0x009A1Cu, 0x009A16u, 7u, 6u, 0x805u, 32u, 7u, 17u, 5u},
++    {0x009F99u, 0x009F90u, 7u, 6u, 0x806u, 39u, 6u, 22u, 5u},
++    {0x00AA67u, 0x009F91u, 7u, 6u, 0x807u, 45u, 6u, 27u, 5u},
++    {0x00AA6Bu, 0x009F92u, 7u, 6u, 0x808u, 51u, 6u, 32u, 5u},
++    {0x00BA9Eu, 0x00BA9Cu, 8u, 7u, 0x809u, 57u, 9u, 37u, 3u},
++    {0x00D59Du, 0x00BA9Du, 8u, 7u, 0x80Au, 66u, 9u, 40u, 3u},
++    {0x00DB0Au, 0x008ED4u, 7u, 6u, 0x80Bu, 75u, 6u, 43u, 5u},
++    {0x00DB0Eu, 0x008ED5u, 7u, 6u, 0x80Cu, 81u, 6u, 48u, 5u},
++    {0x00DB12u, 0x008ED6u, 7u, 6u, 0x80Du, 87u, 6u, 53u, 5u},
++    {0x00DB16u, 0x00B537u, 7u, 6u, 0x80Eu, 93u, 6u, 58u, 5u},
++    {0x00E080u, 0x00BA9Cu, 8u, 7u, 0x80Fu, 99u, 9u, 63u, 3u},
++    {0x00E5EBu, 0x00BA9Cu, 8u, 7u, 0x810u, 108u, 9u, 66u, 3u},
++    {0x00EB55u, 0x00BA9Du, 8u, 7u, 0x811u, 117u, 9u, 69u, 3u},
++    {0x00EB5Cu, 0x00BA9Du, 8u, 7u, 0x812u, 126u, 9u, 72u, 3u},
++    {0x00F0C8u, 0x00F0C5u, 6u, 5u, 0x813u, 135u, 7u, 75u, 1u},
++    {0x00F0CCu, 0x00F0C6u, 6u, 5u, 0x814u, 142u, 7u, 76u, 1u},
++    {0x00F0D1u, 0x00F0C7u, 6u, 5u, 0x815u, 149u, 7u, 77u, 1u},
++    {0x00F0D7u, 0x00B533u, 7u, 6u, 0x816u, 156u, 7u, 78u, 1u},
++    {0x00F0DBu, 0x00B534u, 7u, 6u, 0x817u, 163u, 7u, 79u, 1u},
++    {0x00F64Eu, 0x00BA9Cu, 8u, 7u, 0x818u, 170u, 9u, 80u, 3u},
++    {0x00F655u, 0x00BA9Cu, 8u, 7u, 0x819u, 179u, 9u, 83u, 3u},
++    {0x00F65Cu, 0x00BA9Cu, 8u, 7u, 0x81Au, 188u, 9u, 86u, 3u},
++    {0x00FBC4u, 0x00BA9Du, 8u, 7u, 0x81Bu, 197u, 9u, 89u, 3u},
++    {0x00FBCBu, 0x00BA9Du, 8u, 7u, 0x81Cu, 206u, 9u, 92u, 3u},
++    {0x00FBD2u, 0x00BA9Du, 8u, 7u, 0x81Du, 215u, 9u, 95u, 3u},
++    {0x010140u, 0x003331u, 7u, 6u, 0x81Eu, 224u, 6u, 98u, 5u},
++    {0x010145u, 0x00332Fu, 7u, 6u, 0x81Fu, 230u, 6u, 103u, 5u},
++    {0x010149u, 0x003330u, 7u, 6u, 0x820u, 236u, 6u, 108u, 5u},
++    {0x0106B1u, 0x009A16u, 7u, 6u, 0x821u, 242u, 7u, 113u, 5u},
++    {0x0106BDu, 0x008ED6u, 7u, 6u, 0x822u, 249u, 6u, 118u, 5u},
++    {0x0106C1u, 0x008ED4u, 7u, 6u, 0x823u, 255u, 6u, 123u, 5u},
++    {0x0106C5u, 0x008ED5u, 7u, 6u, 0x824u, 261u, 6u, 128u, 5u},
++    {0x0106C9u, 0x00B537u, 7u, 6u, 0x825u, 267u, 6u, 133u, 5u},
++    {0x010C35u, 0x009F92u, 7u, 6u, 0x826u, 273u, 6u, 138u, 5u},
++    {0x010C39u, 0x009F90u, 7u, 6u, 0x827u, 279u, 6u, 143u, 5u},
++    {0x010C3Du, 0x009F91u, 7u, 6u, 0x828u, 285u, 6u, 148u, 5u},
++    {0x0111A3u, 0x001D98u, 6u, 5u, 0x829u, 291u, 7u, 153u, 1u},
++    {0x0111A7u, 0x00F0C5u, 6u, 5u, 0x82Au, 298u, 7u, 154u, 1u},
++    {0x0111ABu, 0x00F0C7u, 6u, 5u, 0x82Bu, 305u, 7u, 155u, 1u},
++    {0x0111AFu, 0x00F0C6u, 6u, 5u, 0x82Cu, 312u, 7u, 156u, 1u},
++    {0x011715u, 0x00B533u, 7u, 6u, 0x82Du, 319u, 7u, 157u, 1u},
++    {0x011719u, 0x00B534u, 7u, 6u, 0x82Eu, 326u, 7u, 158u, 1u},
++    {0x01171Du, 0x006E74u, 7u, 6u, 0x82Fu, 333u, 7u, 159u, 1u},
++    {0x011C86u, 0x00BA9Cu, 8u, 7u, 0x830u, 340u, 9u, 160u, 3u},
++    {0x011C8Du, 0x00BA9Cu, 8u, 7u, 0x831u, 349u, 9u, 163u, 3u},
++    {0x011C96u, 0x00BA9Cu, 8u, 7u, 0x832u, 358u, 9u, 166u, 3u},
++    {0x011C9Eu, 0x00BA9Cu, 8u, 7u, 0x833u, 367u, 9u, 169u, 3u},
++    {0x011CA8u, 0x00BA9Cu, 8u, 7u, 0x834u, 376u, 9u, 172u, 3u},
++    {0x011CAFu, 0x00BA9Cu, 8u, 7u, 0x835u, 385u, 9u, 175u, 3u},
++    {0x011CB6u, 0x00BA9Cu, 8u, 7u, 0x836u, 394u, 9u, 178u, 3u},
++    {0x011CBEu, 0x00BA9Cu, 8u, 7u, 0x837u, 403u, 9u, 181u, 3u},
++    {0x011CC5u, 0x00BA9Cu, 8u, 7u, 0x838u, 412u, 9u, 184u, 3u},
++    {0x011CCDu, 0x00BA9Cu, 8u, 7u, 0x839u, 421u, 9u, 187u, 3u},
++    {0x011CD5u, 0x00BA9Cu, 8u, 7u, 0x83Au, 430u, 9u, 190u, 3u},
++    {0x011CDDu, 0x00BA9Cu, 8u, 7u, 0x83Bu, 439u, 9u, 193u, 3u},
++    {0x011CE5u, 0x00BA9Cu, 8u, 7u, 0x83Cu, 448u, 9u, 196u, 3u},
++    {0x011CEEu, 0x00BA9Cu, 8u, 7u, 0x83Du, 457u, 9u, 199u, 3u},
++    {0x011CF5u, 0x00BA9Cu, 8u, 7u, 0x83Eu, 466u, 9u, 202u, 3u},
++    {0x011CFDu, 0x00BA9Cu, 8u, 7u, 0x83Fu, 475u, 9u, 205u, 3u},
++    {0x011D04u, 0x00BA9Cu, 8u, 7u, 0x840u, 484u, 9u, 208u, 3u},
++    {0x011D0Cu, 0x00BA9Cu, 8u, 7u, 0x841u, 493u, 9u, 211u, 3u},
++    {0x011D14u, 0x00BA9Cu, 8u, 7u, 0x842u, 502u, 9u, 214u, 3u},
++    {0x011D1Du, 0x00BA9Cu, 8u, 7u, 0x843u, 511u, 9u, 217u, 3u},
++    {0x011D24u, 0x00BA9Cu, 8u, 7u, 0x844u, 520u, 9u, 220u, 3u},
++    {0x01228Fu, 0x00BA9Du, 8u, 7u, 0x845u, 529u, 9u, 223u, 3u},
++    {0x012297u, 0x00BA9Du, 8u, 7u, 0x846u, 538u, 9u, 226u, 3u},
++    {0x01229Fu, 0x00BA9Du, 8u, 7u, 0x847u, 547u, 9u, 229u, 3u},
++    {0x0122A6u, 0x00BA9Du, 8u, 7u, 0x848u, 556u, 9u, 232u, 3u},
++    {0x0122AEu, 0x00BA9Du, 8u, 7u, 0x849u, 565u, 9u, 235u, 3u},
++    {0x0122B6u, 0x00BA9Du, 8u, 7u, 0x84Au, 574u, 9u, 238u, 3u},
++    {0x0122BFu, 0x00BA9Du, 8u, 7u, 0x84Bu, 583u, 9u, 241u, 3u},
++    {0x012828u, 0x00BA9Du, 8u, 7u, 0x84Cu, 592u, 9u, 244u, 3u},
++    {0x012830u, 0x00BA9Du, 8u, 7u, 0x84Du, 601u, 9u, 247u, 3u},
++    {0x012838u, 0x00BA9Du, 8u, 7u, 0x84Eu, 610u, 9u, 250u, 3u},
++    {0x012840u, 0x00BA9Du, 8u, 7u, 0x84Fu, 619u, 9u, 253u, 3u},
++    {0x012848u, 0x00BA9Du, 8u, 7u, 0x850u, 628u, 9u, 256u, 3u},
++    {0x012851u, 0x00BA9Du, 8u, 7u, 0x851u, 637u, 9u, 259u, 3u},
++    {0x012859u, 0x00BA9Du, 8u, 7u, 0x852u, 646u, 9u, 262u, 3u},
++    {0x012DC3u, 0x00BA9Du, 8u, 7u, 0x853u, 655u, 9u, 265u, 3u},
++    {0x012DCAu, 0x00BA9Du, 8u, 7u, 0x854u, 664u, 9u, 268u, 3u},
++    {0x012DD2u, 0x00BA9Du, 8u, 7u, 0x855u, 673u, 9u, 271u, 3u},
++    {0x012DDAu, 0x00BA9Du, 8u, 7u, 0x856u, 682u, 9u, 274u, 3u},
++    {0x012DE2u, 0x00BA9Du, 8u, 7u, 0x857u, 691u, 9u, 277u, 3u},
++    {0x012DEAu, 0x00BA9Du, 8u, 7u, 0x858u, 700u, 9u, 280u, 3u},
++    {0x012DF2u, 0x00BA9Du, 8u, 7u, 0x859u, 709u, 9u, 283u, 3u},
++    {0x01335Du, 0x003331u, 7u, 6u, 0x85Au, 718u, 6u, 286u, 5u},
++    {0x013362u, 0x003331u, 7u, 6u, 0x85Bu, 724u, 6u, 291u, 5u},
++    {0x013372u, 0x003331u, 7u, 6u, 0x85Cu, 730u, 6u, 296u, 5u},
++    {0x013376u, 0x003331u, 7u, 6u, 0x85Du, 736u, 6u, 301u, 5u},
++    {0x01337Au, 0x003331u, 7u, 6u, 0x85Eu, 742u, 6u, 306u, 5u},
++    {0x01337Eu, 0x003331u, 7u, 6u, 0x85Fu, 748u, 6u, 311u, 5u},
++    {0x013382u, 0x003331u, 7u, 6u, 0x860u, 754u, 6u, 316u, 5u},
++    {0x0133A2u, 0x00332Fu, 7u, 6u, 0x861u, 760u, 6u, 321u, 5u},
++    {0x0133A6u, 0x00332Fu, 7u, 6u, 0x862u, 766u, 6u, 326u, 5u},
++    {0x0133AAu, 0x00332Fu, 7u, 6u, 0x863u, 772u, 6u, 331u, 5u},
++    {0x0133AEu, 0x00332Fu, 7u, 6u, 0x864u, 778u, 6u, 336u, 5u},
++    {0x0133B2u, 0x00332Fu, 7u, 6u, 0x865u, 784u, 6u, 341u, 5u},
++    {0x0133B6u, 0x00332Fu, 7u, 6u, 0x866u, 790u, 6u, 346u, 5u},
++    {0x0133BAu, 0x00332Fu, 7u, 6u, 0x867u, 796u, 6u, 351u, 5u},
++    {0x0133BEu, 0x003330u, 7u, 6u, 0x868u, 802u, 6u, 356u, 5u},
++    {0x0133C2u, 0x003330u, 7u, 6u, 0x869u, 808u, 6u, 361u, 5u},
++    {0x0133C6u, 0x003330u, 7u, 6u, 0x86Au, 814u, 6u, 366u, 5u},
++    {0x0133CAu, 0x003330u, 7u, 6u, 0x86Bu, 820u, 6u, 371u, 5u},
++    {0x0133CEu, 0x003330u, 7u, 6u, 0x86Cu, 826u, 6u, 376u, 5u},
++    {0x013935u, 0x003330u, 7u, 6u, 0x86Du, 832u, 6u, 381u, 5u},
++    {0x013939u, 0x003330u, 7u, 6u, 0x86Eu, 838u, 6u, 386u, 5u},
++    {0x013EADu, 0x009A16u, 7u, 6u, 0x86Fu, 844u, 7u, 391u, 5u},
++    {0x013EB1u, 0x009A16u, 7u, 6u, 0x870u, 851u, 7u, 396u, 5u},
++    {0x013EB5u, 0x009A16u, 7u, 6u, 0x871u, 858u, 7u, 401u, 5u},
++    {0x013EB9u, 0x009A16u, 7u, 6u, 0x872u, 865u, 7u, 406u, 5u},
++    {0x013EBDu, 0x009A16u, 7u, 6u, 0x873u, 872u, 7u, 411u, 5u},
++    {0x013EC1u, 0x009A16u, 7u, 6u, 0x874u, 879u, 7u, 416u, 5u},
++    {0x013EC5u, 0x009A16u, 7u, 6u, 0x875u, 886u, 7u, 421u, 5u},
++    {0x014439u, 0x008ED6u, 7u, 6u, 0x876u, 893u, 6u, 426u, 5u},
++    {0x01443Du, 0x008ED6u, 7u, 6u, 0x877u, 899u, 6u, 431u, 5u},
++    {0x014441u, 0x008ED6u, 7u, 6u, 0x878u, 905u, 6u, 436u, 5u},
++    {0x014445u, 0x008ED6u, 7u, 6u, 0x879u, 911u, 6u, 441u, 5u},
++    {0x014449u, 0x008ED6u, 7u, 6u, 0x87Au, 917u, 6u, 446u, 5u},
++    {0x01444Du, 0x008ED6u, 7u, 6u, 0x87Bu, 923u, 6u, 451u, 5u},
++    {0x014451u, 0x008ED6u, 7u, 6u, 0x87Cu, 929u, 6u, 456u, 5u},
++    {0x0149B7u, 0x008ED4u, 7u, 6u, 0x87Du, 935u, 6u, 461u, 5u},
++    {0x0149C9u, 0x008ED4u, 7u, 6u, 0x87Eu, 941u, 6u, 466u, 5u},
++    {0x0149CDu, 0x008ED4u, 7u, 6u, 0x87Fu, 947u, 6u, 471u, 5u},
++    {0x0149D1u, 0x008ED4u, 7u, 6u, 0x880u, 953u, 6u, 476u, 5u},
++    {0x0149D5u, 0x008ED4u, 7u, 6u, 0x881u, 959u, 6u, 481u, 5u},
++    {0x0149D9u, 0x008ED4u, 7u, 6u, 0x882u, 965u, 6u, 486u, 5u},
++    {0x0149DDu, 0x008ED4u, 7u, 6u, 0x883u, 971u, 6u, 491u, 5u},
++    {0x014F51u, 0x008ED5u, 7u, 6u, 0x884u, 977u, 6u, 496u, 5u},
++    {0x014F55u, 0x008ED5u, 7u, 6u, 0x885u, 983u, 6u, 501u, 5u},
++    {0x014F59u, 0x008ED5u, 7u, 6u, 0x886u, 989u, 6u, 506u, 5u},
++    {0x014F5Du, 0x008ED5u, 7u, 6u, 0x887u, 995u, 6u, 511u, 5u},
++    {0x014F61u, 0x008ED5u, 7u, 6u, 0x888u, 1001u, 6u, 516u, 5u},
++    {0x014F65u, 0x008ED5u, 7u, 6u, 0x889u, 1007u, 6u, 521u, 5u},
++    {0x014F69u, 0x008ED5u, 7u, 6u, 0x88Au, 1013u, 6u, 526u, 5u},
++    {0x0154DDu, 0x00B537u, 7u, 6u, 0x88Bu, 1019u, 6u, 531u, 5u},
++    {0x0154E1u, 0x00B537u, 7u, 6u, 0x88Cu, 1025u, 6u, 536u, 5u},
++    {0x0154E5u, 0x00B537u, 7u, 6u, 0x88Du, 1031u, 6u, 541u, 5u},
++    {0x0154E9u, 0x00B537u, 7u, 6u, 0x88Eu, 1037u, 6u, 546u, 5u},
++    {0x0154EDu, 0x00B537u, 7u, 6u, 0x88Fu, 1043u, 6u, 551u, 5u},
++    {0x0154F1u, 0x00B537u, 7u, 6u, 0x890u, 1049u, 6u, 556u, 5u},
++    {0x0154F5u, 0x00B537u, 7u, 6u, 0x891u, 1055u, 6u, 561u, 5u},
++    {0x015A63u, 0x009F92u, 7u, 6u, 0x892u, 1061u, 6u, 566u, 5u},
++    {0x015A6Eu, 0x009F92u, 7u, 6u, 0x893u, 1067u, 6u, 571u, 5u},
++    {0x015A72u, 0x009F92u, 7u, 6u, 0x894u, 1073u, 6u, 576u, 5u},
++    {0x015A76u, 0x009F92u, 7u, 6u, 0x895u, 1079u, 6u, 581u, 5u},
++    {0x015A7Au, 0x009F92u, 7u, 6u, 0x896u, 1085u, 6u, 586u, 5u},
++    {0x015A7Eu, 0x009F92u, 7u, 6u, 0x897u, 1091u, 6u, 591u, 5u},
++    {0x015A82u, 0x009F92u, 7u, 6u, 0x898u, 1097u, 6u, 596u, 5u},
++    {0x015FF7u, 0x009F90u, 7u, 6u, 0x899u, 1103u, 6u, 601u, 5u},
++    {0x015FFBu, 0x009F90u, 7u, 6u, 0x89Au, 1109u, 6u, 606u, 5u},
++    {0x015FFFu, 0x009F90u, 7u, 6u, 0x89Bu, 1115u, 6u, 611u, 5u},
++    {0x016003u, 0x009F90u, 7u, 6u, 0x89Cu, 1121u, 6u, 616u, 5u},
++    {0x016007u, 0x009F90u, 7u, 6u, 0x89Du, 1127u, 6u, 621u, 5u},
++    {0x01600Bu, 0x009F90u, 7u, 6u, 0x89Eu, 1133u, 6u, 626u, 5u},
++    {0x01600Fu, 0x009F90u, 7u, 6u, 0x89Fu, 1139u, 6u, 631u, 5u},
++    {0x016582u, 0x009F91u, 7u, 6u, 0x8A0u, 1145u, 6u, 636u, 5u},
++    {0x016586u, 0x009F91u, 7u, 6u, 0x8A1u, 1151u, 6u, 641u, 5u},
++    {0x01658Au, 0x009F91u, 7u, 6u, 0x8A2u, 1157u, 6u, 646u, 5u},
++    {0x01658Eu, 0x009F91u, 7u, 6u, 0x8A3u, 1163u, 6u, 651u, 5u},
++    {0x016592u, 0x009F91u, 7u, 6u, 0x8A4u, 1169u, 6u, 656u, 5u},
++    {0x016596u, 0x009F91u, 7u, 6u, 0x8A5u, 1175u, 6u, 661u, 5u},
++    {0x01659Au, 0x009F91u, 7u, 6u, 0x8A6u, 1181u, 6u, 666u, 5u},
++    {0x016B00u, 0x001D98u, 6u, 5u, 0x8A7u, 1187u, 7u, 671u, 1u},
++    {0x016B04u, 0x001D98u, 6u, 5u, 0x8A8u, 1194u, 7u, 672u, 1u},
++    {0x016B08u, 0x001D98u, 6u, 5u, 0x8A9u, 1201u, 7u, 673u, 1u},
++    {0x016B0Cu, 0x001D98u, 6u, 5u, 0x8AAu, 1208u, 7u, 674u, 1u},
++    {0x016B10u, 0x001D98u, 6u, 5u, 0x8ABu, 1215u, 7u, 675u, 1u},
++    {0x016B14u, 0x001D98u, 6u, 5u, 0x8ACu, 1222u, 7u, 676u, 1u},
++    {0x016B18u, 0x001D98u, 6u, 5u, 0x8ADu, 1229u, 7u, 677u, 1u},
++    {0x01707Eu, 0x00F0C5u, 6u, 5u, 0x8AEu, 1236u, 7u, 678u, 1u},
++    {0x017082u, 0x00F0C5u, 6u, 5u, 0x8AFu, 1243u, 7u, 679u, 1u},
++    {0x017086u, 0x00F0C5u, 6u, 5u, 0x8B0u, 1250u, 7u, 680u, 1u},
++    {0x01708Au, 0x00F0C5u, 6u, 5u, 0x8B1u, 1257u, 7u, 681u, 1u},
++    {0x01708Eu, 0x00F0D0u, 6u, 5u, 0x8B2u, 1264u, 7u, 682u, 1u},
++    {0x017092u, 0x00F0C5u, 6u, 5u, 0x8B3u, 1271u, 7u, 683u, 1u},
++    {0x017096u, 0x00F0C5u, 6u, 5u, 0x8B4u, 1278u, 7u, 684u, 1u},
++    {0x01709Au, 0x00F0C6u, 6u, 5u, 0x8B5u, 1285u, 7u, 685u, 1u},
++    {0x01709Eu, 0x00F0C7u, 6u, 5u, 0x8B6u, 1292u, 7u, 686u, 1u},
++    {0x0170A2u, 0x00F0C7u, 6u, 5u, 0x8B7u, 1299u, 7u, 687u, 1u},
++    {0x0170A6u, 0x00F0C7u, 6u, 5u, 0x8B8u, 1306u, 7u, 688u, 1u},
++    {0x0170AAu, 0x00F0C7u, 6u, 5u, 0x8B9u, 1313u, 7u, 689u, 1u},
++    {0x0170AEu, 0x00F0C7u, 6u, 5u, 0x8BAu, 1320u, 7u, 690u, 1u},
++    {0x0170B2u, 0x00F0C7u, 6u, 5u, 0x8BBu, 1327u, 7u, 691u, 1u},
++    {0x0170B6u, 0x00F0C7u, 6u, 5u, 0x8BCu, 1334u, 7u, 692u, 1u},
++    {0x01761Cu, 0x00B533u, 7u, 6u, 0x8BDu, 1341u, 7u, 693u, 1u},
++    {0x017620u, 0x00B533u, 7u, 6u, 0x8BEu, 1348u, 7u, 694u, 1u},
++    {0x017624u, 0x00B533u, 7u, 6u, 0x8BFu, 1355u, 7u, 695u, 1u},
++    {0x017628u, 0x00B533u, 7u, 6u, 0x8C0u, 1362u, 7u, 696u, 1u},
++    {0x01762Cu, 0x00B533u, 7u, 6u, 0x8C1u, 1369u, 7u, 697u, 1u},
++    {0x017630u, 0x00B533u, 7u, 6u, 0x8C2u, 1376u, 7u, 698u, 1u},
++    {0x017634u, 0x00B533u, 7u, 6u, 0x8C3u, 1383u, 7u, 699u, 1u},
++    {0x017638u, 0x00B534u, 7u, 6u, 0x8C4u, 1390u, 7u, 700u, 1u},
++    {0x01763Cu, 0x00B534u, 7u, 6u, 0x8C5u, 1397u, 7u, 701u, 1u},
++    {0x017640u, 0x00B534u, 7u, 6u, 0x8C6u, 1404u, 7u, 702u, 1u},
++    {0x017644u, 0x00B534u, 7u, 6u, 0x8C7u, 1411u, 7u, 703u, 1u},
++    {0x017648u, 0x00B534u, 7u, 6u, 0x8C8u, 1418u, 7u, 704u, 1u},
++    {0x01764Cu, 0x00B534u, 7u, 6u, 0x8C9u, 1425u, 7u, 705u, 1u},
++    {0x017650u, 0x00B534u, 7u, 6u, 0x8CAu, 1432u, 7u, 706u, 1u},
++    {0x017654u, 0x006E74u, 7u, 6u, 0x8CBu, 1439u, 7u, 707u, 1u},
++    {0x017658u, 0x006E74u, 7u, 6u, 0x8CCu, 1446u, 7u, 708u, 1u},
++    {0x01765Cu, 0x006E74u, 7u, 6u, 0x8CDu, 1453u, 7u, 709u, 1u},
++    {0x017660u, 0x006E74u, 7u, 6u, 0x8CEu, 1460u, 7u, 710u, 1u},
++    {0x017664u, 0x006E74u, 7u, 6u, 0x8CFu, 1467u, 7u, 711u, 1u},
++    {0x017668u, 0x006E74u, 7u, 6u, 0x8D0u, 1474u, 7u, 712u, 1u},
++    {0x01766Cu, 0x006E74u, 7u, 6u, 0x8D1u, 1481u, 7u, 713u, 1u},
++    {0x032C3Du, 0x0331A6u, 11u, 10u, 0x8D2u, 1488u, 11u, 714u, 1u},
++    {0x034737u, 0x0331A8u, 11u, 10u, 0x8D3u, 1499u, 11u, 715u, 1u},
++    {0x035764u, 0x0331A7u, 8u, 7u, 0x8D4u, 1510u, 9u, 716u, 0u},
++    {0x036CF8u, 0x0331A6u, 11u, 10u, 0x8D5u, 1519u, 11u, 716u, 1u},
++    {0x036CFCu, 0x0331A6u, 11u, 10u, 0x8D6u, 1530u, 11u, 717u, 1u},
++    {0x036D02u, 0x0331A6u, 11u, 10u, 0x8D7u, 1541u, 11u, 718u, 1u},
++    {0x036D07u, 0x0331A6u, 11u, 10u, 0x8D8u, 1552u, 11u, 719u, 1u},
++    {0x036D0Cu, 0x0331A6u, 11u, 10u, 0x8D9u, 1563u, 11u, 720u, 1u},
++    {0x037273u, 0x0331A6u, 11u, 10u, 0x8DAu, 1574u, 11u, 721u, 1u},
++    {0x037278u, 0x0331A6u, 11u, 10u, 0x8DBu, 1585u, 11u, 722u, 1u},
++    {0x03727Du, 0x0331A6u, 11u, 10u, 0x8DCu, 1596u, 11u, 723u, 1u},
++    {0x0377E4u, 0x0331A8u, 11u, 10u, 0x8DDu, 1607u, 11u, 724u, 1u},
++    {0x0377E9u, 0x0331A8u, 11u, 10u, 0x8DEu, 1618u, 11u, 725u, 1u},
++    {0x0377EEu, 0x0331A8u, 11u, 10u, 0x8DFu, 1629u, 11u, 726u, 1u},
++    {0x0377F3u, 0x0331A8u, 11u, 10u, 0x8E0u, 1640u, 11u, 727u, 1u},
++    {0x0377F8u, 0x0331A8u, 11u, 10u, 0x8E1u, 1651u, 11u, 728u, 1u},
++    {0x0377FDu, 0x0331A8u, 11u, 10u, 0x8E2u, 1662u, 11u, 729u, 1u},
++    {0x037D64u, 0x0331A8u, 11u, 10u, 0x8E3u, 1673u, 11u, 730u, 1u},
++    {0x037D69u, 0x0331A8u, 11u, 10u, 0x8E4u, 1684u, 11u, 731u, 1u},
++    {0x0382D0u, 0x0331A7u, 8u, 7u, 0x8E5u, 1695u, 9u, 732u, 0u},
++    {0x0382D5u, 0x0331A7u, 8u, 7u, 0x8E6u, 1704u, 9u, 732u, 0u},
++    {0x0382DAu, 0x0331A7u, 8u, 7u, 0x8E7u, 1713u, 9u, 732u, 0u},
++    {0x0382DFu, 0x0331A7u, 8u, 7u, 0x8E8u, 1722u, 9u, 732u, 0u},
++    {0x0382E4u, 0x0331A7u, 8u, 7u, 0x8E9u, 1731u, 9u, 732u, 0u},
++    {0x0382E9u, 0x0331A7u, 8u, 7u, 0x8EAu, 1740u, 9u, 732u, 0u},
++    {0x0382EBu, 0x0331A7u, 8u, 7u, 0x8EBu, 1749u, 9u, 732u, 0u},
++    {0x0382F0u, 0x0331A7u, 8u, 7u, 0x8ECu, 1758u, 9u, 732u, 0u},
++    {0x038DBCu, 0x0398A4u, 8u, 7u, 0x8EDu, 1767u, 9u, 732u, 3u},
++    {0x03A372u, 0x0398A4u, 8u, 7u, 0x8EEu, 1776u, 9u, 735u, 3u},
++    {0x03A37Cu, 0x0398A4u, 8u, 7u, 0x8EFu, 1785u, 9u, 738u, 3u},
++    {0x03A386u, 0x0398A4u, 8u, 7u, 0x8F0u, 1794u, 9u, 741u, 3u},
++    {0x03A8F2u, 0x0398A4u, 8u, 7u, 0x8F1u, 1803u, 9u, 744u, 3u},
++    {0x03A8F3u, 0x0398A4u, 8u, 7u, 0x8F2u, 1812u, 9u, 747u, 3u},
++    {0x03A8F4u, 0x0398A4u, 8u, 7u, 0x8F3u, 1821u, 9u, 750u, 3u},
++    {0x03AE58u, 0x0398A4u, 8u, 7u, 0x8F4u, 1830u, 9u, 753u, 3u},
++    {0x03AE59u, 0x0398A4u, 8u, 7u, 0x8F5u, 1839u, 9u, 756u, 3u},
++    {0x03C40Fu, 0x0398A4u, 8u, 7u, 0x8F6u, 1848u, 9u, 759u, 3u},
++    {0x03C973u, 0x0398A4u, 8u, 7u, 0x8F7u, 1857u, 9u, 762u, 3u},
++    {0x03C974u, 0x0398A4u, 8u, 7u, 0x8F8u, 1866u, 9u, 765u, 3u},
++    {0x03C975u, 0x0398A4u, 8u, 7u, 0x8F9u, 1875u, 9u, 768u, 3u},
++    {0x03C976u, 0x0398A4u, 8u, 7u, 0x8FAu, 1884u, 9u, 771u, 3u},
++    {0x03C977u, 0x0398A4u, 8u, 7u, 0x8FBu, 1893u, 9u, 774u, 3u},
++    {0x03CEDBu, 0x0398A4u, 8u, 7u, 0x8FCu, 1902u, 9u, 777u, 3u},
++    {0x03CEDCu, 0x0398A4u, 8u, 7u, 0x8FDu, 1911u, 9u, 780u, 3u},
++    {0x03CEDDu, 0x0398A4u, 8u, 7u, 0x8FEu, 1920u, 9u, 783u, 3u},
++    {0x03CEDEu, 0x0398A4u, 8u, 7u, 0x8FFu, 1929u, 9u, 786u, 3u},
++    {0x03CEDFu, 0x0398A4u, 8u, 7u, 0x900u, 1938u, 9u, 789u, 3u},
++    {0x03CEE0u, 0x0398A4u, 8u, 7u, 0x901u, 1947u, 9u, 792u, 3u},
++    {0x03CEE1u, 0x0398A4u, 8u, 7u, 0x902u, 1956u, 9u, 795u, 3u},
++    {0x03CEE2u, 0x0398A4u, 8u, 7u, 0x903u, 1965u, 9u, 798u, 3u},
++    {0x03D448u, 0x0398A4u, 8u, 7u, 0x904u, 1974u, 9u, 801u, 3u},
++    {0x03D44Au, 0x0398A4u, 8u, 7u, 0x905u, 1983u, 9u, 804u, 3u},
++    {0x03D44Bu, 0x0398A4u, 8u, 7u, 0x906u, 1992u, 9u, 807u, 3u},
++    {0x03D44Cu, 0x0398A4u, 8u, 7u, 0x907u, 2001u, 9u, 810u, 3u},
++}};
+diff --git a/Code/client/ModCompat/MissivesPostingAliases.h b/Code/client/ModCompat/MissivesPostingAliases.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesPostingAliases.h
+@@ -0,0 +1,275 @@
++#pragma once
++#include <array>
++#include <cstdint>
++
++namespace MissivesCompat
++{
++struct PostingAliases { uint32_t QuestId; uint32_t PostingAlias; uint32_t BoardAlias; };
++// Metadata extracted from both matching Missives 2.03 ESPs; no script code.
++inline constexpr std::array<PostingAliases, 264> cPostingAliases = {{
++    {0x0058E4u, 6u, 5u},
++    {0x0063ABu, 7u, 6u},
++    {0x006E72u, 7u, 6u},
++    {0x008408u, 7u, 6u},
++    {0x008EEAu, 7u, 6u},
++    {0x009A1Cu, 7u, 6u},
++    {0x009F99u, 7u, 6u},
++    {0x00AA67u, 7u, 6u},
++    {0x00AA6Bu, 7u, 6u},
++    {0x00BA9Eu, 8u, 7u},
++    {0x00D59Du, 8u, 7u},
++    {0x00DB0Au, 7u, 6u},
++    {0x00DB0Eu, 7u, 6u},
++    {0x00DB12u, 7u, 6u},
++    {0x00DB16u, 7u, 6u},
++    {0x00E080u, 8u, 7u},
++    {0x00E5EBu, 8u, 7u},
++    {0x00EB55u, 8u, 7u},
++    {0x00EB5Cu, 8u, 7u},
++    {0x00F0C8u, 6u, 5u},
++    {0x00F0CCu, 6u, 5u},
++    {0x00F0D1u, 6u, 5u},
++    {0x00F0D7u, 7u, 6u},
++    {0x00F0DBu, 7u, 6u},
++    {0x00F64Eu, 8u, 7u},
++    {0x00F655u, 8u, 7u},
++    {0x00F65Cu, 8u, 7u},
++    {0x00FBC4u, 8u, 7u},
++    {0x00FBCBu, 8u, 7u},
++    {0x00FBD2u, 8u, 7u},
++    {0x010140u, 7u, 6u},
++    {0x010145u, 7u, 6u},
++    {0x010149u, 7u, 6u},
++    {0x0106B1u, 7u, 6u},
++    {0x0106BDu, 7u, 6u},
++    {0x0106C1u, 7u, 6u},
++    {0x0106C5u, 7u, 6u},
++    {0x0106C9u, 7u, 6u},
++    {0x010C35u, 7u, 6u},
++    {0x010C39u, 7u, 6u},
++    {0x010C3Du, 7u, 6u},
++    {0x0111A3u, 6u, 5u},
++    {0x0111A7u, 6u, 5u},
++    {0x0111ABu, 6u, 5u},
++    {0x0111AFu, 6u, 5u},
++    {0x011715u, 7u, 6u},
++    {0x011719u, 7u, 6u},
++    {0x01171Du, 7u, 6u},
++    {0x011C86u, 8u, 7u},
++    {0x011C8Du, 8u, 7u},
++    {0x011C96u, 8u, 7u},
++    {0x011C9Eu, 8u, 7u},
++    {0x011CA8u, 8u, 7u},
++    {0x011CAFu, 8u, 7u},
++    {0x011CB6u, 8u, 7u},
++    {0x011CBEu, 8u, 7u},
++    {0x011CC5u, 8u, 7u},
++    {0x011CCDu, 8u, 7u},
++    {0x011CD5u, 8u, 7u},
++    {0x011CDDu, 8u, 7u},
++    {0x011CE5u, 8u, 7u},
++    {0x011CEEu, 8u, 7u},
++    {0x011CF5u, 8u, 7u},
++    {0x011CFDu, 8u, 7u},
++    {0x011D04u, 8u, 7u},
++    {0x011D0Cu, 8u, 7u},
++    {0x011D14u, 8u, 7u},
++    {0x011D1Du, 8u, 7u},
++    {0x011D24u, 8u, 7u},
++    {0x01228Fu, 8u, 7u},
++    {0x012297u, 8u, 7u},
++    {0x01229Fu, 8u, 7u},
++    {0x0122A6u, 8u, 7u},
++    {0x0122AEu, 8u, 7u},
++    {0x0122B6u, 8u, 7u},
++    {0x0122BFu, 8u, 7u},
++    {0x012828u, 8u, 7u},
++    {0x012830u, 8u, 7u},
++    {0x012838u, 8u, 7u},
++    {0x012840u, 8u, 7u},
++    {0x012848u, 8u, 7u},
++    {0x012851u, 8u, 7u},
++    {0x012859u, 8u, 7u},
++    {0x012DC3u, 8u, 7u},
++    {0x012DCAu, 8u, 7u},
++    {0x012DD2u, 8u, 7u},
++    {0x012DDAu, 8u, 7u},
++    {0x012DE2u, 8u, 7u},
++    {0x012DEAu, 8u, 7u},
++    {0x012DF2u, 8u, 7u},
++    {0x01335Du, 7u, 6u},
++    {0x013362u, 7u, 6u},
++    {0x013372u, 7u, 6u},
++    {0x013376u, 7u, 6u},
++    {0x01337Au, 7u, 6u},
++    {0x01337Eu, 7u, 6u},
++    {0x013382u, 7u, 6u},
++    {0x0133A2u, 7u, 6u},
++    {0x0133A6u, 7u, 6u},
++    {0x0133AAu, 7u, 6u},
++    {0x0133AEu, 7u, 6u},
++    {0x0133B2u, 7u, 6u},
++    {0x0133B6u, 7u, 6u},
++    {0x0133BAu, 7u, 6u},
++    {0x0133BEu, 7u, 6u},
++    {0x0133C2u, 7u, 6u},
++    {0x0133C6u, 7u, 6u},
++    {0x0133CAu, 7u, 6u},
++    {0x0133CEu, 7u, 6u},
++    {0x013935u, 7u, 6u},
++    {0x013939u, 7u, 6u},
++    {0x013EADu, 7u, 6u},
++    {0x013EB1u, 7u, 6u},
++    {0x013EB5u, 7u, 6u},
++    {0x013EB9u, 7u, 6u},
++    {0x013EBDu, 7u, 6u},
++    {0x013EC1u, 7u, 6u},
++    {0x013EC5u, 7u, 6u},
++    {0x014439u, 7u, 6u},
++    {0x01443Du, 7u, 6u},
++    {0x014441u, 7u, 6u},
++    {0x014445u, 7u, 6u},
++    {0x014449u, 7u, 6u},
++    {0x01444Du, 7u, 6u},
++    {0x014451u, 7u, 6u},
++    {0x0149B7u, 7u, 6u},
++    {0x0149C9u, 7u, 6u},
++    {0x0149CDu, 7u, 6u},
++    {0x0149D1u, 7u, 6u},
++    {0x0149D5u, 7u, 6u},
++    {0x0149D9u, 7u, 6u},
++    {0x0149DDu, 7u, 6u},
++    {0x014F51u, 7u, 6u},
++    {0x014F55u, 7u, 6u},
++    {0x014F59u, 7u, 6u},
++    {0x014F5Du, 7u, 6u},
++    {0x014F61u, 7u, 6u},
++    {0x014F65u, 7u, 6u},
++    {0x014F69u, 7u, 6u},
++    {0x0154DDu, 7u, 6u},
++    {0x0154E1u, 7u, 6u},
++    {0x0154E5u, 7u, 6u},
++    {0x0154E9u, 7u, 6u},
++    {0x0154EDu, 7u, 6u},
++    {0x0154F1u, 7u, 6u},
++    {0x0154F5u, 7u, 6u},
++    {0x015A63u, 7u, 6u},
++    {0x015A6Eu, 7u, 6u},
++    {0x015A72u, 7u, 6u},
++    {0x015A76u, 7u, 6u},
++    {0x015A7Au, 7u, 6u},
++    {0x015A7Eu, 7u, 6u},
++    {0x015A82u, 7u, 6u},
++    {0x015FF7u, 7u, 6u},
++    {0x015FFBu, 7u, 6u},
++    {0x015FFFu, 7u, 6u},
++    {0x016003u, 7u, 6u},
++    {0x016007u, 7u, 6u},
++    {0x01600Bu, 7u, 6u},
++    {0x01600Fu, 7u, 6u},
++    {0x016582u, 7u, 6u},
++    {0x016586u, 7u, 6u},
++    {0x01658Au, 7u, 6u},
++    {0x01658Eu, 7u, 6u},
++    {0x016592u, 7u, 6u},
++    {0x016596u, 7u, 6u},
++    {0x01659Au, 7u, 6u},
++    {0x016B00u, 6u, 5u},
++    {0x016B04u, 6u, 5u},
++    {0x016B08u, 6u, 5u},
++    {0x016B0Cu, 6u, 5u},
++    {0x016B10u, 6u, 5u},
++    {0x016B14u, 6u, 5u},
++    {0x016B18u, 6u, 5u},
++    {0x01707Eu, 6u, 5u},
++    {0x017082u, 6u, 5u},
++    {0x017086u, 6u, 5u},
++    {0x01708Au, 6u, 5u},
++    {0x01708Eu, 6u, 5u},
++    {0x017092u, 6u, 5u},
++    {0x017096u, 6u, 5u},
++    {0x01709Au, 6u, 5u},
++    {0x01709Eu, 6u, 5u},
++    {0x0170A2u, 6u, 5u},
++    {0x0170A6u, 6u, 5u},
++    {0x0170AAu, 6u, 5u},
++    {0x0170AEu, 6u, 5u},
++    {0x0170B2u, 6u, 5u},
++    {0x0170B6u, 6u, 5u},
++    {0x01761Cu, 7u, 6u},
++    {0x017620u, 7u, 6u},
++    {0x017624u, 7u, 6u},
++    {0x017628u, 7u, 6u},
++    {0x01762Cu, 7u, 6u},
++    {0x017630u, 7u, 6u},
++    {0x017634u, 7u, 6u},
++    {0x017638u, 7u, 6u},
++    {0x01763Cu, 7u, 6u},
++    {0x017640u, 7u, 6u},
++    {0x017644u, 7u, 6u},
++    {0x017648u, 7u, 6u},
++    {0x01764Cu, 7u, 6u},
++    {0x017650u, 7u, 6u},
++    {0x017654u, 7u, 6u},
++    {0x017658u, 7u, 6u},
++    {0x01765Cu, 7u, 6u},
++    {0x017660u, 7u, 6u},
++    {0x017664u, 7u, 6u},
++    {0x017668u, 7u, 6u},
++    {0x01766Cu, 7u, 6u},
++    {0x032C3Du, 11u, 10u},
++    {0x034737u, 11u, 10u},
++    {0x035764u, 8u, 7u},
++    {0x036CF8u, 11u, 10u},
++    {0x036CFCu, 11u, 10u},
++    {0x036D02u, 11u, 10u},
++    {0x036D07u, 11u, 10u},
++    {0x036D0Cu, 11u, 10u},
++    {0x037273u, 11u, 10u},
++    {0x037278u, 11u, 10u},
++    {0x03727Du, 11u, 10u},
++    {0x0377E4u, 11u, 10u},
++    {0x0377E9u, 11u, 10u},
++    {0x0377EEu, 11u, 10u},
++    {0x0377F3u, 11u, 10u},
++    {0x0377F8u, 11u, 10u},
++    {0x0377FDu, 11u, 10u},
++    {0x037D64u, 11u, 10u},
++    {0x037D69u, 11u, 10u},
++    {0x0382D0u, 8u, 7u},
++    {0x0382D5u, 8u, 7u},
++    {0x0382DAu, 8u, 7u},
++    {0x0382DFu, 8u, 7u},
++    {0x0382E4u, 8u, 7u},
++    {0x0382E9u, 8u, 7u},
++    {0x0382EBu, 8u, 7u},
++    {0x0382F0u, 8u, 7u},
++    {0x038DBCu, 8u, 7u},
++    {0x03A372u, 8u, 7u},
++    {0x03A37Cu, 8u, 7u},
++    {0x03A386u, 8u, 7u},
++    {0x03A8F2u, 8u, 7u},
++    {0x03A8F3u, 8u, 7u},
++    {0x03A8F4u, 8u, 7u},
++    {0x03AE58u, 8u, 7u},
++    {0x03AE59u, 8u, 7u},
++    {0x03C40Fu, 8u, 7u},
++    {0x03C973u, 8u, 7u},
++    {0x03C974u, 8u, 7u},
++    {0x03C975u, 8u, 7u},
++    {0x03C976u, 8u, 7u},
++    {0x03C977u, 8u, 7u},
++    {0x03CEDBu, 8u, 7u},
++    {0x03CEDCu, 8u, 7u},
++    {0x03CEDDu, 8u, 7u},
++    {0x03CEDEu, 8u, 7u},
++    {0x03CEDFu, 8u, 7u},
++    {0x03CEE0u, 8u, 7u},
++    {0x03CEE1u, 8u, 7u},
++    {0x03CEE2u, 8u, 7u},
++    {0x03D448u, 8u, 7u},
++    {0x03D44Au, 8u, 7u},
++    {0x03D44Bu, 8u, 7u},
++    {0x03D44Cu, 8u, 7u},
++}};
++}
+diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
+--- a/Code/client/Services/Generic/CharacterService.cpp
++++ b/Code/client/Services/Generic/CharacterService.cpp
+@@ -601,7 +601,22 @@
+             FaceGenSystem::Setup(m_world, *entity, acMessage.FaceTints);
+         }
+ 
+-        pActor = Actor::Create(pNpc, !acMessage.IsPlayer);
++        ActorSpawnLocation questLocation;
++        if (acMessage.IsQuestReference)
++        {
++            questLocation.Cell = Cast<TESObjectCELL>(TESForm::GetById(m_world.GetModSystem().GetGameId(acMessage.CellId)));
++            questLocation.WorldSpace = Cast<TESWorldSpace>(TESForm::GetById(m_world.GetModSystem().GetGameId(acMessage.QuestWorldSpace)));
++            questLocation.Position = acMessage.Position;
++            questLocation.Rotation.x = acMessage.Rotation.x;
++            questLocation.Rotation.z = acMessage.Rotation.y;
++            if (!questLocation.Cell && !questLocation.WorldSpace)
++            {
++                spdlog::warn("STR Missives quest actor cell not ready: server {}", acMessage.ServerId);
++                m_world.destroy(*entity);
++                return;
++            }
++        }
++        pActor = Actor::Create(pNpc, !acMessage.IsPlayer, acMessage.IsQuestReference ? &questLocation : nullptr);
+     }
+     else
+     {
+@@ -661,7 +676,8 @@
+ 
+     pActor->rotation.x = acMessage.Rotation.x;
+     pActor->rotation.z = acMessage.Rotation.y;
+-    pActor->MoveTo(PlayerCharacter::Get()->parentCell, acMessage.Position);
++    if (!acMessage.IsQuestReference)
++        pActor->MoveTo(PlayerCharacter::Get()->parentCell, acMessage.Position);
+     pActor->SetActorValues(acMessage.InitialActorValues);
+ 
+     pActor->GetExtension()->SetPlayer(acMessage.IsPlayer);
+diff --git a/Code/client/Services/Generic/InventoryService.cpp b/Code/client/Services/Generic/InventoryService.cpp
+--- a/Code/client/Services/Generic/InventoryService.cpp
++++ b/Code/client/Services/Generic/InventoryService.cpp
+@@ -1,4 +1,5 @@
+ #include <Services/InventoryService.h>
++#include <ModCompat/MissivesCompat.h>
+ #include <Systems/PendingActorUpdates.h>
+ 
+ #include <Messages/RequestObjectInventoryChanges.h>
+@@ -50,6 +51,13 @@
+     if (!m_transport.IsConnected())
+         return;
+ 
++    const auto* pReference = Cast<TESObjectREFR>(TESForm::GetById(acEvent.FormId));
++    if (MissivesCompat::HasBoardPatch() && MissivesCompat::IsBoard(pReference))
++        return;
++    if (MissivesCompat::IsBoard(pReference))
++        spdlog::info("STR Missives board inventory event: board {:X}, posting {:X}:{:X}, delta {}, quest {}, update_clients {}",
++            acEvent.FormId, acEvent.Item.BaseId.ModId, acEvent.Item.BaseId.BaseId, acEvent.Item.Count, acEvent.Item.IsQuestItem, acEvent.UpdateClients);
++
+     auto view = m_world.view<FormIdComponent>();
+ 
+     const auto iter = std::find_if(std::begin(view), std::end(view), [view, formId = acEvent.FormId](auto entity) { return view.get<FormIdComponent>(entity).Id == formId; });
+diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/client/Services/Generic/MissivesService.cpp
+@@ -0,0 +1,437 @@
++#include <TiltedOnlinePCH.h>
++#include <Services/MissivesService.h>
++#include <Services/TransportService.h>
++#include <Services/PapyrusService.h>
++#include <ModCompat/MissivesBridge.h>
++#include <ModCompat/MissivesCompat.h>
++#include <Events/UpdateEvent.h>
++#include <Events/ActorAddedEvent.h>
++#include <World.h>
++#include <PlayerCharacter.h>
++#include <Forms/TESQuest.h>
++#include <Forms/TESGlobal.h>
++#include <Forms/TESObjectCELL.h>
++#include <bcrypt.h>
++
++namespace
++{
++const Mod* Plugin(const char* apName) noexcept
++{
++    auto* pManager = ModManager::Get();
++    const Mod* pMod = pManager ? pManager->GetByName(apName) : nullptr;
++    return pMod && pMod->IsLoaded() ? pMod : nullptr;
++}
++struct AliasPrefix
++{
++    void* Vtable;
++    BSFixedString Name;
++    TESQuest* Quest;
++    uint32_t Id;
++};
++static_assert(offsetof(AliasPrefix, Id) == 0x18);
++}
++
++MissivesService::MissivesService(World& aWorld, entt::dispatcher& aDispatcher, TransportService& aTransport) noexcept
++    : m_world(aWorld), m_transport(aTransport)
++{
++    BCryptGenRandom(nullptr, reinterpret_cast<PUCHAR>(&m_nonce), sizeof(m_nonce), BCRYPT_USE_SYSTEM_PREFERRED_RNG);
++    m_connectedConnection = aDispatcher.sink<ConnectedEvent>().connect<&MissivesService::OnConnected>(this);
++    m_disconnectedConnection = aDispatcher.sink<DisconnectedEvent>().connect<&MissivesService::OnDisconnected>(this);
++    m_updateConnection = aDispatcher.sink<UpdateEvent>().connect<&MissivesService::OnUpdate>(this);
++    m_notifyConnection = aDispatcher.sink<NotifyMissives>().connect<&MissivesService::OnNotify>(this);
++}
++
++uint64_t MissivesService::ProfileToken() noexcept
++{
++    // Local character identity only. No hardware identifiers, credentials or
++    // player names are sent to the server or included in diagnostics.
++    const auto* pPlayer = PlayerCharacter::Get();
++    const char* pName = pPlayer ? pPlayer->GetName() : nullptr;
++    if (!pName || !*pName) return 0;
++    uint64_t nameHash = 14695981039346656037ULL;
++    for (const char* p = pName; *p; ++p) { nameHash ^= static_cast<uint8_t>(*p); nameHash *= 1099511628211ULL; }
++    wchar_t directory[32768]{};
++    const DWORD cLength = GetEnvironmentVariableW(L"LOCALAPPDATA", directory, 32768);
++    if (!cLength || cLength >= 32768) return 0;
++    std::filesystem::path folder = std::filesystem::path(directory) / L"SkyrimTogetherReborn" / L"Missives";
++    std::error_code error;
++    std::filesystem::create_directories(folder, error);
++    if (error) return 0;
++    const auto file = folder / (std::to_wstring(nameHash) + L".bin");
++    uint64_t token{};
++    std::ifstream input(file, std::ios::binary);
++    if (input.read(reinterpret_cast<char*>(&token), sizeof(token)) && token) return token;
++    input.close();
++    if (BCryptGenRandom(nullptr, reinterpret_cast<PUCHAR>(&token), sizeof(token), BCRYPT_USE_SYSTEM_PREFERRED_RNG) != 0 || !token) return 0;
++    std::ofstream output(file, std::ios::binary | std::ios::trunc);
++    output.write(reinterpret_cast<const char*>(&token), sizeof(token));
++    output.flush();
++    return output ? token : 0;
++}
++
++const MissiveQuestSpec* MissivesService::Spec(uint32_t aRuntimeId) const noexcept
++{
++    const auto* pMod = Plugin("Missives.esp");
++    if (!pMod) return nullptr;
++    for (const auto& spec : cMissiveQuestSpecs)
++        if (pMod->GetFormId(spec.Quest) == aRuntimeId) return &spec;
++    return nullptr;
++}
++
++void MissivesService::OnConnected(const ConnectedEvent&) noexcept
++{
++    m_enabled = Plugin("Missives.esp") && Plugin("STR_Missives_Compat.esp");
++    m_hello = m_ready = m_authority = m_snapshot = false;
++    m_server = 0;
++    m_boards.clear();
++    m_assigning.clear();
++    m_actorRequests.clear();
++    m_reserved.clear();
++    m_sentReservations.clear();
++    m_claims.clear();
++    if (!m_enabled) return;
++    m_token = ProfileToken();
++    MissivesBridge::SetConnection(true, false, false);
++    const auto* pMod = Plugin("Missives.esp");
++    for (const auto& spec : cMissiveQuestSpecs)
++    {
++        const uint32_t cQuest = pMod->GetFormId(spec.Quest);
++        auto* pQuest = Cast<TESQuest>(TESForm::GetById(cQuest));
++        // Existing offline missions stay personal and reserve their reusable
++        // quest slot. Available stage-zero quests are safe to canonicalize.
++        if (pQuest && !pQuest->IsStopped() && pQuest->currentStage >= 20 && pQuest->currentStage < 110 && !m_current.contains(cQuest))
++            m_personal.insert(cQuest);
++        Cache(cQuest, spec, nullptr);
++    }
++}
++
++void MissivesService::OnDisconnected(const DisconnectedEvent&) noexcept
++{
++    m_ready = m_hello = m_authority = false;
++    MissivesBridge::SetConnection(false, false, false);
++    for (const auto& [quest, id] : m_current)
++    {
++        const auto record = m_postings.find(id);
++        if (record != m_postings.end() && record->second.Mine) m_personal.insert(quest);
++    }
++    // Stop background replicas without running claimant reward fragments.
++    for (auto& [quest, context] : m_contexts)
++        if (!m_personal.contains(quest)) context->Stop();
++    m_boards.clear();
++    m_claims.clear();
++}
++
++void MissivesService::Send(RequestMissives::Operation aAction, const MissivesData& acData, uint64_t aSequence) noexcept
++{
++    if (!m_token || !m_transport.IsOnline()) return;
++    RequestMissives request;
++    request.Action = aAction;
++    request.ClientSession = m_token;
++    request.ServerSession = m_server;
++    request.Sequence = aSequence;
++    request.Data = acData;
++    m_transport.Send(request);
++}
++
++void MissivesService::Cache(uint32_t aQuest, const MissiveQuestSpec& acSpec, const Posting* apPosting) noexcept
++{
++    MissivesBridge::QuestState state;
++    state.Personal = m_personal.contains(aQuest) || (apPosting && apPosting->Mine);
++    state.State = apPosting ? apPosting->State : -1;
++    state.Reserved = m_reserved.contains(aQuest) || state.Personal || (apPosting && apPosting->State != 0);
++    state.PostingAlias = acSpec.PostingAlias;
++    state.BoardAlias = acSpec.BoardAlias;
++    if (apPosting)
++        if (auto* pRecipient = ResolveActor(apPosting->Recipient)) state.Recipient = pRecipient->formID;
++    MissivesBridge::SetQuest(aQuest, state);
++}
++
++uint32_t MissivesService::ActorId(TESObjectREFR* apReference) noexcept
++{
++    if (!apReference) return 0;
++    const auto view = m_world.view<FormIdComponent>();
++    for (const auto entity : view)
++        if (view.get<FormIdComponent>(entity).Id == apReference->formID)
++            if (const auto id = Utils::GetServerId(entity)) return *id;
++    const auto remote = m_world.view<RemoteComponent>();
++    for (const auto entity : remote)
++        if (remote.get<RemoteComponent>(entity).CachedRefId == apReference->formID) return remote.get<RemoteComponent>(entity).Id;
++    auto* pActor = Cast<Actor>(apReference);
++    if (pActor && !pActor->IsStillLoading() && pActor->GetParentCellEx())
++    {
++        const auto key = std::make_pair(pActor->formID, pActor->GetHandle().handle.iBits);
++        if (key.second && !m_assigning.contains(key))
++        {
++            m_assigning.insert(key);
++            // Existing discovery/assignment owns the network identity. Never
++            // create an alternative Missives-only actor identifier.
++            if (std::none_of(view.begin(), view.end(), [view, pActor](auto entity) { return view.get<FormIdComponent>(entity).Id == pActor->formID; }))
++                m_world.GetCharacterService().OnActorAdded(ActorAddedEvent(pActor->formID));
++        }
++    }
++    return 0;
++}
++
++TESObjectREFR* MissivesService::ResolveActor(uint32_t aId) noexcept
++{
++    if (!aId) return nullptr;
++    const auto entity = Utils::FindEntityByServerId(aId);
++    if (!entity) return nullptr;
++    if (const auto* pForm = m_world.try_get<FormIdComponent>(*entity))
++        return Cast<TESObjectREFR>(TESForm::GetById(pForm->Id));
++    if (const auto* pRemote = m_world.try_get<RemoteComponent>(*entity))
++        return Cast<TESObjectREFR>(TESForm::GetById(pRemote->CachedRefId));
++    return nullptr;
++}
++
++void MissivesService::CaptureGlobals(const MissiveQuestSpec& acSpec, MissivesData& aData) noexcept
++{
++    aData.Globals.clear();
++    const auto* pMod = Plugin("Missives.esp");
++    if (!pMod) return;
++    for (uint32_t i = 0; i < acSpec.GlobalCount; ++i)
++    {
++        const uint32_t cForm = pMod->GetFormId(cMissiveGlobalSpecs[acSpec.GlobalBegin + i]);
++        auto* pGlobal = Cast<TESGlobal>(TESForm::GetById(cForm));
++        MissivesGlobal entry;
++        if (pGlobal && m_world.GetModSystem().GetServerModId(cForm, entry.Id))
++        {
++            entry.Value = pGlobal->f;
++            aData.Globals.push_back(entry);
++        }
++    }
++}
++
++bool MissivesService::Capture(const MissiveQuestSpec& acSpec, TESQuest* apQuest, MissivesData& aData) noexcept
++{
++    auto& mods = m_world.GetModSystem();
++    auto* pPost = apQuest->GetAliasedRef(acSpec.PostingAlias);
++    auto* pBoard = apQuest->GetAliasedRef(acSpec.BoardAlias);
++    if (!pPost || !pPost->baseForm || !MissivesCompat::IsBoard(pBoard) || !m_boards.contains(pBoard->formID)) return false;
++    if (!mods.GetServerModId(apQuest->formID, aData.Quest) || !mods.GetServerModId(pBoard->formID, aData.Board)
++        || !mods.GetServerModId(pPost->baseForm->formID, aData.Book)) return false;
++    const uint32_t cHandle = pPost->GetHandle().handle.iBits;
++    auto& source = m_sources[apQuest->formID];
++    if (!source.second || source.first != cHandle) source = {cHandle, ++m_nonce};
++    aData.SourceNonce = source.second;
++    aData.Stage = apQuest->currentStage;
++    for (uint32_t i = 0; i < acSpec.AliasCount; ++i)
++    {
++        const auto& spec = cMissiveAliasSpecs[acSpec.AliasBegin + i];
++        MissivesAlias entry;
++        entry.Id = spec.Id;
++        if (spec.Location)
++        {
++            const void* pFunction = m_world.ctx().at<PapyrusService>().Get("LocationAlias", "GetLocation");
++            void* pAlias = nullptr;
++            for (void* p : apQuest->aliases) if (p && static_cast<AliasPrefix*>(p)->Id == spec.Id) pAlias = p;
++            TESForm* pLocation = pAlias && pFunction ? PapyrusFunction<TESForm*, void>(pFunction)(pAlias) : nullptr;
++            if (!pLocation) continue;
++            entry.Type = MissivesAlias::Kind::Location;
++            if (!mods.GetServerModId(pLocation->formID, entry.Form)) return false;
++        }
++        else
++        {
++            auto* pRef = apQuest->GetAliasedRef(spec.Id);
++            if (!pRef) continue;
++            void* pAlias = nullptr;
++            for (void* p : apQuest->aliases) if (p && static_cast<AliasPrefix*>(p)->Id == spec.Id) pAlias = p;
++            if (pAlias && static_cast<AliasPrefix*>(pAlias)->Name && !_stricmp(static_cast<AliasPrefix*>(pAlias)->Name.AsAscii(), "Player"))
++                entry.Type = MissivesAlias::Kind::Player;
++            else if (!pRef->IsTemporary())
++            {
++                entry.Type = MissivesAlias::Kind::Reference;
++                if (!mods.GetServerModId(pRef->formID, entry.Form)) return false;
++            }
++            else if (Cast<Actor>(pRef))
++            {
++                entry.Type = MissivesAlias::Kind::Actor;
++                entry.ActorId = ActorId(pRef);
++                if (!entry.ActorId) return false;
++            }
++            else
++            {
++                entry.Type = MissivesAlias::Kind::Item;
++                if (!pRef->baseForm || !mods.GetServerModId(pRef->baseForm->formID, entry.Base)) return false;
++            }
++        }
++        aData.Aliases.push_back(entry);
++    }
++    CaptureGlobals(acSpec, aData);
++    return true;
++}
++
++void MissivesService::PublishBoards() noexcept
++{
++    const auto* pMod = Plugin("Missives.esp");
++    if (!pMod || !m_ready || m_snapshot || !m_authority) return;
++    for (const auto& spec : cMissiveQuestSpecs)
++    {
++        const uint32_t cQuest = pMod->GetFormId(spec.Quest);
++        if (m_reserved.contains(cQuest) || m_personal.contains(cQuest)) continue;
++        if (const auto current = m_current.find(cQuest); current != m_current.end())
++        {
++            const auto record = m_postings.find(current->second);
++            if (record != m_postings.end() && record->second.State < 4) continue;
++        }
++        auto* pQuest = Cast<TESQuest>(TESForm::GetById(cQuest));
++        if (!pQuest || pQuest->IsStopped() || pQuest->currentStage >= 20) continue;
++        MissivesData data;
++        if (Capture(spec, pQuest, data)) Send(RequestMissives::Operation::Publish, data);
++    }
++}
++
++void MissivesService::ApplyPostings() noexcept
++{
++    const auto now = std::chrono::steady_clock::now();
++    for (const auto& [quest, id] : m_current)
++    {
++        const auto spec = Spec(quest);
++        const auto record = m_postings.find(id);
++        if (!spec || record == m_postings.end()) continue;
++        auto& post = record->second;
++        Cache(quest, *spec, &post);
++        auto& context = m_contexts[quest];
++        if (context && m_contextIds[quest] != id)
++        {
++            context->Stop();
++            if (context->IsRunning()) continue;
++            context.reset();
++        }
++        if (!context) context = std::make_unique<MissivesContext>(*spec);
++        m_contextIds[quest] = id;
++        context->SetPersonal(post.Mine);
++        if (post.State >= 4)
++        {
++            context->Stop();
++            continue;
++        }
++        for (const auto& alias : post.Data.Aliases)
++            if (alias.Type == MissivesAlias::Kind::Actor && !ResolveActor(alias.ActorId) && now >= m_actorRequests[alias.ActorId])
++            {
++                MissivesData request = post.Data;
++                request.Stage = alias.ActorId;
++                Send(RequestMissives::Operation::Actor, request);
++                m_actorRequests[alias.ActorId] = now + 2s;
++            }
++        const auto source = m_sources.find(quest);
++        const bool cSource = source != m_sources.end() && source->second.second == post.Data.SourceNonce;
++        if (!post.Applied)
++            post.Applied = context->Apply(post.Data, cSource, post.Recipient, [this](uint32_t actor) { return ResolveActor(actor); });
++        if (!post.Applied) continue;
++        context->RebindPlayer(post.Recipient, [this](uint32_t actor) { return ResolveActor(actor); });
++        if (post.State == 2 || post.State == 3) context->SetStage(static_cast<uint16_t>(post.Data.Stage));
++        if (m_claims.contains(quest) && post.State == 0)
++        {
++            Send(RequestMissives::Operation::Claim, post.Data);
++            post.State = 1;
++            Cache(quest, *spec, &post);
++        }
++    }
++}
++
++void MissivesService::OnUpdate(const UpdateEvent&) noexcept
++{
++    if (!m_enabled || !m_transport.IsOnline()) return;
++    const auto now = std::chrono::steady_clock::now();
++    if (now < m_next) return;
++    m_next = now + 200ms;
++    const auto& papyrus = m_world.ctx().at<PapyrusService>();
++    if (!m_hello)
++    {
++        if (!m_token || !MissivesBridge::SawScript() || !papyrus.Get("ReferenceAlias", "ForceRefTo")) return;
++        if (!ActorId(PlayerCharacter::Get())) return;
++        Send(RequestMissives::Operation::Hello);
++        m_hello = true;
++    }
++    for (const auto& event : MissivesBridge::Drain())
++    {
++        using O = MissivesBridge::Operation;
++        if (event.Action == O::Open)
++        {
++            if (MissivesCompat::IsBoard(Cast<TESObjectREFR>(TESForm::GetById(event.Id)))) m_boards.insert(event.Id);
++            continue;
++        }
++        if (event.Action == O::Close) { m_boards.erase(event.Id); continue; }
++        if (event.Action == O::Changed) continue;
++        const auto* pSpec = Spec(event.Id);
++        if (!pSpec) continue;
++        if (event.Action == O::Claim) m_claims.insert(event.Id);
++        const auto current = m_current.find(event.Id);
++        if (current == m_current.end()) continue;
++        const auto found = m_postings.find(current->second);
++        if (found == m_postings.end()) continue;
++        auto& post = found->second;
++        if (event.Action == O::Stage && post.Mine)
++        {
++            post.Data.Stage = event.Value;
++            CaptureGlobals(*pSpec, post.Data);
++            Send(event.Value >= 110 ? RequestMissives::Operation::Complete : RequestMissives::Operation::Progress, post.Data, ++post.Sequence);
++        }
++    }
++    if (!m_ready || m_snapshot) return;
++    for (const uint32_t quest : m_personal)
++    {
++        MissivesData data;
++        if (m_current.contains(quest)) continue;
++        if (m_world.GetModSystem().GetServerModId(quest, data.Quest))
++        {
++            auto* pQuest = Cast<TESQuest>(TESForm::GetById(quest));
++            const bool cRunning = pQuest && !pQuest->IsStopped() && pQuest->currentStage < 110;
++            if (cRunning && !m_sentReservations.contains(quest))
++            {
++                Send(RequestMissives::Operation::Reserve, data);
++                m_sentReservations.insert(quest);
++            }
++            else if (!cRunning && m_sentReservations.erase(quest)) Send(RequestMissives::Operation::ReleaseReserve, data);
++        }
++    }
++    PublishBoards();
++    ApplyPostings();
++}
++
++void MissivesService::OnNotify(const NotifyMissives& acMessage) noexcept
++{
++    using O = NotifyMissives::Operation;
++    if (!m_enabled || !acMessage.Data.Valid || !acMessage.ServerSession) return;
++    if (acMessage.Action == O::Ready)
++    {
++        if (m_server && m_server != acMessage.ServerSession)
++        {
++            m_current.clear();
++            m_postings.clear();
++            m_sources.clear();
++        }
++        m_server = acMessage.ServerSession;
++        m_ready = true;
++    }
++    if (acMessage.ServerSession != m_server) return;
++    if (acMessage.Action == O::Ready || acMessage.Action == O::SnapshotBegin)
++        m_authority = acMessage.Authority;
++    MissivesBridge::SetConnection(true, m_ready, m_authority);
++    if (acMessage.Action == O::SnapshotBegin) { m_snapshot = true; m_reserved.clear(); return; }
++    if (acMessage.Action == O::SnapshotEnd) { m_snapshot = false; return; }
++    const uint32_t cQuest = m_world.GetModSystem().GetGameId(acMessage.Data.Quest);
++    const auto* pSpec = Spec(cQuest);
++    if (!pSpec) return;
++    if (acMessage.Action == O::Reserved) { m_reserved.insert(cQuest); return; }
++    if (acMessage.Action == O::Unreserved) { m_reserved.erase(cQuest); return; }
++    if (!acMessage.Data.Id) return;
++    if (acMessage.Action == O::Rejected)
++    {
++        m_claims.erase(cQuest);
++        Send(RequestMissives::Operation::Snapshot);
++        return;
++    }
++    auto& post = m_postings[acMessage.Data.Id];
++    post.Data = acMessage.Data;
++    post.Mine = acMessage.Mine;
++    post.Sequence = std::max(post.Sequence, acMessage.Sequence);
++    post.Recipient = acMessage.RecipientActor;
++    post.State = acMessage.Action == O::Posting ? 0 : acMessage.Action == O::Retired ? 4 : acMessage.Action == O::Complete ? 5 : post.Mine ? 2 : 3;
++    post.Applied = false;
++    const auto current = m_current.find(cQuest);
++    if (current == m_current.end() || acMessage.Data.Id >= current->second) m_current[cQuest] = acMessage.Data.Id;
++    if (post.State >= 2) m_claims.erase(cQuest);
++    Cache(cQuest, *pSpec, &post);
++}
+diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
+--- a/Code/client/Services/Generic/ObjectService.cpp
++++ b/Code/client/Services/Generic/ObjectService.cpp
+@@ -1,4 +1,5 @@
+ #include <Services/ObjectService.h>
++#include <ModCompat/MissivesCompat.h>
+ 
+ #include <World.h>
+ #include <Events/DisconnectedEvent.h>
+@@ -96,6 +97,9 @@
+     if (acPlayerStashContainers.contains(apObject))
+         return false;
+ 
++    if (MissivesCompat::HasBoardPatch() && MissivesCompat::IsBoard(apObject))
++        return false; // Alias-aware postings use the dedicated board channel.
++
+     // Quest chests that take the player's whole inventory without going through faction crime data.
+     switch (apObject->formID)
+     {
+@@ -199,6 +203,9 @@
+ 
+         CreateObjectEntity(pObject->formID, objectData.ServerId);
+ 
++        if (MissivesCompat::IsBoard(pObject))
++            MissivesCompat::AuditBoard(pObject, objectData.IsSenderFirst ? "first_assignment" : "before_snapshot");
++
+         if (objectData.IsSenderFirst)
+             continue;
+ 
+@@ -227,6 +234,9 @@
+             else
+                 pObject->SetInventory(objectData.CurrentInventory);
+         }
++
++        if (MissivesCompat::IsBoard(pObject))
++            MissivesCompat::AuditBoard(pObject, "after_snapshot");
+     }
+ }
+ 
+@@ -250,6 +260,9 @@
+ 
+ void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
+ {
++    if (m_transport.IsConnected() && MissivesCompat::IsBoard(acEvent.pObject))
++        MissivesCompat::AuditBoard(acEvent.pObject, "activate");
++
+     if (acEvent.ActivateFlag)
+     {
+         acEvent.pObject->Activate(acEvent.pActivator, acEvent.Unk1, acEvent.pObjectToGet, acEvent.Count, acEvent.DefaultProcessing);
+diff --git a/Code/client/Services/Generic/QuestService.cpp b/Code/client/Services/Generic/QuestService.cpp
+--- a/Code/client/Services/Generic/QuestService.cpp
++++ b/Code/client/Services/Generic/QuestService.cpp
+@@ -6,6 +6,7 @@
+ #include <Events/UpdateEvent.h>
+ 
+ #include <Services/QuestService.h>
++#include <ModCompat/MissivesCompat.h>
+ #include <Services/ImguiService.h>
+ #include <Services/OverlayService.h>
+ #include <Services/TransportService.h>
+@@ -513,6 +514,14 @@
+         return;
+     }
+ 
++    // Missives uses local randomized aliases, and taking a posting does not
++    // authorize other players to start/complete its unrelated local instance.
++    if (MissivesCompat::IsPluginForm(pQuest))
++    {
++        spdlog::info("STR Missives remote quest stage ignored: quest {:X}, stage {}, status {}", formId, aUpdate.Stage, aUpdate.Status);
++        return;
++    }
++
+     if (aUpdate.Status == NotifyQuestUpdate::StageUpdate && pQuest->IsStageReached(aUpdate.Stage))
+     {
+         spdlog::info("Remote quest {:X} already reached stage {}, current stage: {}", formId, aUpdate.Stage, pQuest->currentStage);
+@@ -620,7 +629,8 @@
+     // Quests with no quest stages are never synced. Most TESQues::Type:: quests should
+     // be synced, including Type::None and Type::Miscellaneous, but there are a few
+     // known exceptions that should be excluded that are in the table.
+-    return    apQuest->stages.Empty() 
++    return    MissivesCompat::IsPluginForm(apQuest)
++           || apQuest->stages.Empty()
+            || std::find(kNonSyncableQuestIds.begin(), kNonSyncableQuestIds.end(), apQuest->formID) != kNonSyncableQuestIds.end();
+ }
+ 
+diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/MissivesService.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/Services/MissivesService.h
+@@ -0,0 +1,72 @@
++#pragma once
++#include <Messages/NotifyMissives.h>
++#include <Messages/RequestMissives.h>
++#include <ModCompat/MissivesContext.h>
++#include <map>
++#include <set>
++#include <memory>
++#include <chrono>
++
++struct World;
++struct TransportService;
++struct UpdateEvent;
++struct ConnectedEvent;
++struct DisconnectedEvent;
++
++class MissivesService
++{
++public:
++    MissivesService(World& aWorld, entt::dispatcher& aDispatcher, TransportService& aTransport) noexcept;
++private:
++    struct Posting
++    {
++        MissivesData Data;
++        uint64_t Sequence{};
++        uint32_t Recipient{};
++        int32_t State{};
++        bool Mine{};
++        bool Applied{};
++    };
++    void OnConnected(const ConnectedEvent&) noexcept;
++    void OnDisconnected(const DisconnectedEvent&) noexcept;
++    void OnUpdate(const UpdateEvent&) noexcept;
++    void OnNotify(const NotifyMissives& acMessage) noexcept;
++    void Send(RequestMissives::Operation aAction, const MissivesData& acData = {}, uint64_t aSequence = 0) noexcept;
++    void PublishBoards() noexcept;
++    void ApplyPostings() noexcept;
++    bool Capture(const MissiveQuestSpec& acSpec, TESQuest* apQuest, MissivesData& aData) noexcept;
++    void CaptureGlobals(const MissiveQuestSpec& acSpec, MissivesData& aData) noexcept;
++    TESObjectREFR* ResolveActor(uint32_t aId) noexcept;
++    uint32_t ActorId(TESObjectREFR* apReference) noexcept;
++    void Cache(uint32_t aQuest, const MissiveQuestSpec& acSpec, const Posting* apPosting) noexcept;
++    uint64_t ProfileToken() noexcept;
++    const MissiveQuestSpec* Spec(uint32_t aRuntimeId) const noexcept;
++
++    World& m_world;
++    TransportService& m_transport;
++    uint64_t m_token{};
++    uint64_t m_server{};
++    uint64_t m_nonce{};
++    bool m_enabled{};
++    bool m_hello{};
++    bool m_ready{};
++    bool m_authority{};
++    bool m_snapshot{};
++    std::map<uint64_t, Posting> m_postings;
++    std::map<uint32_t, std::unique_ptr<MissivesContext>> m_contexts;
++    std::map<uint32_t, uint64_t> m_current;
++    std::map<uint32_t, uint64_t> m_contextIds;
++    std::map<uint32_t, std::pair<uint32_t, uint64_t>> m_sources;
++    std::map<uint32_t, std::chrono::steady_clock::time_point> m_actorRequests;
++    std::set<std::pair<uint32_t, uint32_t>> m_assigning;
++    std::set<uint32_t> m_boards;
++    std::set<uint32_t> m_reserved;
++    std::set<uint32_t> m_personal;
++    std::set<uint32_t> m_sentReservations;
++    std::set<uint32_t> m_claims;
++    std::chrono::steady_clock::time_point m_next{};
++    entt::scoped_connection m_connectedConnection;
++    entt::scoped_connection m_disconnectedConnection;
++    entt::scoped_connection m_updateConnection;
++    entt::scoped_connection m_notifyConnection;
++};
+diff --git a/Code/client/World.cpp b/Code/client/World.cpp
+--- a/Code/client/World.cpp
++++ b/Code/client/World.cpp
+@@ -14,6 +14,7 @@
+ #include <Services/ActorValueService.h>
+ #include <Services/InventoryService.h>
+ #include <Services/DroppedItemService.h>
++#include <Services/MissivesService.h>
+ #include <Services/MagicService.h>
+ #include <Services/CommandService.h>
+ #include <Services/CalendarService.h>
+@@ -50,6 +51,7 @@
+     ctx().emplace<ActorValueService>(*this, m_dispatcher, m_transport);
+     ctx().emplace<InventoryService>(*this, m_dispatcher, m_transport);
+     ctx().emplace<DroppedItemService>(*this, m_dispatcher, m_transport);
++    ctx().emplace<MissivesService>(*this, m_dispatcher, m_transport);
+     ctx().emplace<MagicService>(*this, m_dispatcher, m_transport);
+     ctx().emplace<CommandService>(*this, m_transport, m_dispatcher);
+     ctx().emplace<PlayerService>(*this, m_dispatcher, m_transport);
+diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
+--- a/Code/common/BuildInfo.h.in
++++ b/Code/common/BuildInfo.h.in
+@@ -1,4 +1,4 @@
+ #pragma once
+ // This file was autogenerated by xmake
+ #define BUILD_BRANCH "${GIT_BRANCH}"
+-#define BUILD_COMMIT "${GIT_TAG}-coopfix4g"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-missives2"
+diff --git a/Code/encoding/Messages/CharacterSpawnRequest.cpp b/Code/encoding/Messages/CharacterSpawnRequest.cpp
+--- a/Code/encoding/Messages/CharacterSpawnRequest.cpp
++++ b/Code/encoding/Messages/CharacterSpawnRequest.cpp
+@@ -22,6 +22,8 @@
+     Serialization::WriteBool(aWriter, IsWeaponDrawn);
+     Serialization::WriteBool(aWriter, IsPlayerSummon);
+     LeveledNpcPickId.Serialize(aWriter);
++    Serialization::WriteBool(aWriter, IsQuestReference);
++    QuestWorldSpace.Serialize(aWriter);
+ }
+ 
+ void CharacterSpawnRequest::DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept
+@@ -59,4 +61,6 @@
+     IsWeaponDrawn = Serialization::ReadBool(aReader);
+     IsPlayerSummon = Serialization::ReadBool(aReader);
+     LeveledNpcPickId.Deserialize(aReader);
++    IsQuestReference = Serialization::ReadBool(aReader);
++    QuestWorldSpace.Deserialize(aReader);
+ }
+diff --git a/Code/encoding/Messages/CharacterSpawnRequest.h b/Code/encoding/Messages/CharacterSpawnRequest.h
+--- a/Code/encoding/Messages/CharacterSpawnRequest.h
++++ b/Code/encoding/Messages/CharacterSpawnRequest.h
+@@ -33,7 +33,8 @@
+                InventoryContent == acRhs.InventoryContent && FactionsContent == acRhs.FactionsContent &&
+                ActionsToReplay == acRhs.ActionsToReplay && FaceTints == acRhs.FaceTints && PlayerId == acRhs.PlayerId &&
+                OwnershipEpoch == acRhs.OwnershipEpoch && IsDead == acRhs.IsDead && IsPlayer == acRhs.IsPlayer && IsWeaponDrawn == acRhs.IsWeaponDrawn &&
+-               IsPlayerSummon == acRhs.IsPlayerSummon && LeveledNpcPickId == acRhs.LeveledNpcPickId && GetOpcode() == acRhs.GetOpcode();
++               IsPlayerSummon == acRhs.IsPlayerSummon && LeveledNpcPickId == acRhs.LeveledNpcPickId &&
++               IsQuestReference == acRhs.IsQuestReference && QuestWorldSpace == acRhs.QuestWorldSpace && GetOpcode() == acRhs.GetOpcode();
+     }
+ 
+     uint32_t ServerId{};
+@@ -56,4 +57,6 @@
+     bool IsPlayer{};
+     bool IsWeaponDrawn{};
+     bool IsPlayerSummon{};
++    bool IsQuestReference{};
++    GameId QuestWorldSpace{};
+ };
+diff --git a/Code/encoding/Messages/ClientMessageFactory.h b/Code/encoding/Messages/ClientMessageFactory.h
+--- a/Code/encoding/Messages/ClientMessageFactory.h
++++ b/Code/encoding/Messages/ClientMessageFactory.h
+@@ -1,4 +1,5 @@
+ #pragma once
++#include <Messages/RequestMissives.h>
+ 
+ #include <Messages/Message.h>
+ #include <MetaMessage.h>
+@@ -71,7 +72,7 @@
+             PartyChangeLeaderRequest, PartyKickRequest, RequestActorValueChanges, RequestActorMaxValueChanges, EnterExteriorCellRequest, RequestHealthChangeBroadcast, ActivateRequest, LockChangeRequest, AssignObjectsRequest, RequestDeathStateChange, ShiftGridCellRequest,
+             RequestOwnershipTransfer, RequestOwnershipClaim, RequestObjectInventoryChanges, SpellCastRequest, ProjectileLaunchRequest, InterruptCastRequest, AddTargetRequest, ScriptAnimationRequest, DrawWeaponRequest, MountRequest, NewPackageRequest, RequestRespawn, SyncExperienceRequest,
+             RequestEquipmentChanges, SendChatMessageRequest, TeleportCommandRequest, PlayerRespawnRequest, DialogueRequest, SubtitleRequest, PlayerDialogueRequest, PlayerLevelRequest, TeleportRequest, RequestPlayerHealthUpdate, RequestWeatherChange, RequestCurrentWeather, RequestSetWaypoint,
+-            RequestRemoveWaypoint, RemoveSpellRequest, SetTimeCommandRequest, RequestActionEvents, RequestDroppedItem>;
++            RequestRemoveWaypoint, RemoveSpellRequest, SetTimeCommandRequest, RequestActionEvents, RequestDroppedItem, RequestMissives>;
+ 
+         return s_visitor(std::forward<T>(func));
+     }
+diff --git a/Code/encoding/Messages/NotifyMissives.cpp b/Code/encoding/Messages/NotifyMissives.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/encoding/Messages/NotifyMissives.cpp
+@@ -0,0 +1,24 @@
++#include <Messages/NotifyMissives.h>
++void NotifyMissives::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
++{
++    Serialization::WriteVarInt(aWriter, static_cast<uint8_t>(Action));
++    Serialization::WriteVarInt(aWriter, ServerSession);
++    Serialization::WriteVarInt(aWriter, Scope);
++    Serialization::WriteVarInt(aWriter, Sequence);
++    Serialization::WriteVarInt(aWriter, RecipientActor);
++    Serialization::WriteBool(aWriter, Authority);
++    Serialization::WriteBool(aWriter, Mine);
++    Data.Serialize(aWriter);
++}
++void NotifyMissives::DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept
++{
++    ServerMessage::DeserializeRaw(aReader);
++    Action = static_cast<Operation>(Serialization::ReadVarInt(aReader));
++    ServerSession = Serialization::ReadVarInt(aReader);
++    Scope = Serialization::ReadVarInt(aReader);
++    Sequence = Serialization::ReadVarInt(aReader);
++    RecipientActor = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++    Authority = Serialization::ReadBool(aReader);
++    Mine = Serialization::ReadBool(aReader);
++    Data.Deserialize(aReader);
++}
+diff --git a/Code/encoding/Messages/NotifyMissives.h b/Code/encoding/Messages/NotifyMissives.h
+new file mode 100644
+--- /dev/null
++++ b/Code/encoding/Messages/NotifyMissives.h
+@@ -0,0 +1,20 @@
++#pragma once
++#include "Message.h"
++#include <Structs/MissivesData.h>
++
++struct NotifyMissives final : ServerMessage
++{
++    static constexpr ServerOpcode Opcode = kNotifyMissives;
++    enum class Operation : uint8_t { Ready, SnapshotBegin, Posting, Taken, Grant, Retired, Progress, Complete, Reserved, Unreserved, Rejected, SnapshotEnd };
++    NotifyMissives() : ServerMessage(Opcode) {}
++    void SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept override;
++    void DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept override;
++    Operation Action{Operation::Ready};
++    uint64_t ServerSession{};
++    uint64_t Scope{};
++    uint64_t Sequence{};
++    uint32_t RecipientActor{};
++    bool Authority{};
++    bool Mine{};
++    MissivesData Data;
++};
+diff --git a/Code/encoding/Messages/RequestMissives.cpp b/Code/encoding/Messages/RequestMissives.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/encoding/Messages/RequestMissives.cpp
+@@ -0,0 +1,20 @@
++#include <Messages/RequestMissives.h>
++void RequestMissives::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
++{
++    Serialization::WriteVarInt(aWriter, static_cast<uint8_t>(Action));
++    Serialization::WriteVarInt(aWriter, ClientSession);
++    Serialization::WriteVarInt(aWriter, ServerSession);
++    Serialization::WriteVarInt(aWriter, Sequence);
++    Serialization::WriteVarInt(aWriter, Revision);
++    Data.Serialize(aWriter);
++}
++void RequestMissives::DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept
++{
++    ClientMessage::DeserializeRaw(aReader);
++    Action = static_cast<Operation>(Serialization::ReadVarInt(aReader));
++    ClientSession = Serialization::ReadVarInt(aReader);
++    ServerSession = Serialization::ReadVarInt(aReader);
++    Sequence = Serialization::ReadVarInt(aReader);
++    Revision = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++    Data.Deserialize(aReader);
++}
+diff --git a/Code/encoding/Messages/RequestMissives.h b/Code/encoding/Messages/RequestMissives.h
+new file mode 100644
+--- /dev/null
++++ b/Code/encoding/Messages/RequestMissives.h
+@@ -0,0 +1,19 @@
++#pragma once
++#include "Message.h"
++#include <Structs/MissivesData.h>
++
++struct RequestMissives final : ClientMessage
++{
++    static constexpr ClientOpcode Opcode = kRequestMissives;
++    enum class Operation : uint8_t { Hello, Snapshot, Publish, Retire, Claim, Progress, Complete, Reserve, ReleaseReserve, Actor };
++    RequestMissives() : ClientMessage(Opcode) {}
++    void SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter) const noexcept override;
++    void DeserializeRaw(TiltedPhoques::Buffer::Reader& aReader) noexcept override;
++    Operation Action{Operation::Hello};
++    // Private stable client profile token, never included in notifications/logs.
++    uint64_t ClientSession{};
++    uint64_t ServerSession{};
++    uint64_t Sequence{};
++    uint32_t Revision{2};
++    MissivesData Data;
++};
+diff --git a/Code/encoding/Messages/ServerMessageFactory.h b/Code/encoding/Messages/ServerMessageFactory.h
+--- a/Code/encoding/Messages/ServerMessageFactory.h
++++ b/Code/encoding/Messages/ServerMessageFactory.h
+@@ -1,4 +1,5 @@
+ #pragma once
++#include <Messages/NotifyMissives.h>
+ 
+ #include <TiltedCore/Stl.hpp>
+ #include <Messages/Message.h>
+@@ -74,7 +75,7 @@
+             NotifyActorValueChanges, NotifyPartyJoined, NotifyPartyLeft, NotifyActorMaxValueChanges, NotifyHealthChangeBroadcast, NotifyActivate, NotifyLockChange, AssignObjectsResponse, NotifyDeathStateChange, NotifyOwnershipTransfer, NotifyObjectInventoryChanges, NotifySpellCast,
+             NotifyProjectileLaunch, NotifyInterruptCast, NotifyAddTarget, NotifyScriptAnimation, NotifyDrawWeapon, NotifyMount, NotifyNewPackage, NotifyRespawn, NotifySyncExperience, NotifyEquipmentChanges, NotifyChatMessageBroadcast, TeleportCommandResponse, NotifyPlayerRespawn, NotifyDialogue,
+             NotifySubtitle, NotifyPlayerDialogue, NotifyActorTeleport, NotifyPlayerLeft, NotifyPlayerJoined, NotifyDialogue, NotifySubtitle, NotifyPlayerDialogue, NotifyPlayerLevel, NotifyPlayerCellChanged, NotifyTeleport, NotifyPlayerHealthUpdate, NotifySettingsChange,
+-            NotifyWeatherChange, NotifySetWaypoint, NotifyRemoveWaypoint, NotifySetTimeResult, NotifyRemoveSpell, NotifyActionEvents, NotifyDroppedItem>;
++            NotifyWeatherChange, NotifySetWaypoint, NotifyRemoveWaypoint, NotifySetTimeResult, NotifyRemoveSpell, NotifyActionEvents, NotifyDroppedItem, NotifyMissives>;
+ 
+         return s_visitor(std::forward<T>(func));
+     }
+diff --git a/Code/encoding/Opcodes.h b/Code/encoding/Opcodes.h
+--- a/Code/encoding/Opcodes.h
++++ b/Code/encoding/Opcodes.h
+@@ -55,6 +55,7 @@
+     kSetTimeCommandRequest,
+     kRequestActionEvents,
+     kRequestDroppedItem,
++    kRequestMissives,
+     kClientOpcodeMax
+ };
+ 
+@@ -116,5 +117,6 @@
+     kNotifySetTimeResult,
+     kNotifyActionEvents,
+     kNotifyDroppedItem,
++    kNotifyMissives,
+     kServerOpcodeMax
+ };
+diff --git a/Code/encoding/Structs/Inventory.cpp b/Code/encoding/Structs/Inventory.cpp
+--- a/Code/encoding/Structs/Inventory.cpp
++++ b/Code/encoding/Structs/Inventory.cpp
+@@ -48,6 +48,7 @@
+     Serialization::WriteBool(aWriter, ExtraWorn);
+     Serialization::WriteBool(aWriter, ExtraWornLeft);
+     Serialization::WriteBool(aWriter, IsQuestItem);
++    Serialization::WriteBool(aWriter, IsPersonalQuestItem);
+ }
+ 
+ void Inventory::Entry::Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept
+@@ -79,6 +80,7 @@
+     ExtraWorn = Serialization::ReadBool(aReader);
+     ExtraWornLeft = Serialization::ReadBool(aReader);
+     IsQuestItem = Serialization::ReadBool(aReader);
++    IsPersonalQuestItem = Serialization::ReadBool(aReader);
+ }
+ 
+ bool Inventory::operator==(const Inventory& acRhs) const noexcept
+@@ -202,4 +204,4 @@
+             return true;
+     }
+     return false;
+-}
+\ No newline at end of file
++}
+diff --git a/Code/encoding/Structs/Inventory.h b/Code/encoding/Structs/Inventory.h
+--- a/Code/encoding/Structs/Inventory.h
++++ b/Code/encoding/Structs/Inventory.h
+@@ -48,6 +48,9 @@
+         bool ExtraWorn{};
+         bool ExtraWornLeft{};
+         bool IsQuestItem{};
++        // A personal Missives artifact must not be granted to another player
++        // by the generic shared-quest inventory path.
++        bool IsPersonalQuestItem{};
+ 
+         bool operator==(const Entry& acRhs) const noexcept;
+         bool operator!=(const Entry& acRhs) const noexcept;
+@@ -65,7 +68,7 @@
+             // since many of these things can and will change, like poison id or charge
+             // or the fact that the enchant id can be temp
+             return ExtraCharge == acRhs.ExtraCharge && ExtraEnchantId == acRhs.ExtraEnchantId && ExtraEnchantCharge == acRhs.ExtraEnchantCharge && ExtraEnchantRemoveUnequip == acRhs.ExtraEnchantRemoveUnequip && ExtraHealth == acRhs.ExtraHealth && ExtraPoisonId == acRhs.ExtraPoisonId &&
+-                   ExtraPoisonCount == acRhs.ExtraPoisonCount && ExtraSoulLevel == acRhs.ExtraSoulLevel && ExtraWorn == acRhs.ExtraWorn && ExtraWornLeft == acRhs.ExtraWornLeft && IsQuestItem == acRhs.IsQuestItem;
++                   ExtraPoisonCount == acRhs.ExtraPoisonCount && ExtraSoulLevel == acRhs.ExtraSoulLevel && ExtraWorn == acRhs.ExtraWorn && ExtraWornLeft == acRhs.ExtraWornLeft && IsQuestItem == acRhs.IsQuestItem && IsPersonalQuestItem == acRhs.IsPersonalQuestItem;
+         }
+ 
+         bool IsWorn() const noexcept { return ExtraWorn || ExtraWornLeft; }
+diff --git a/Code/encoding/Structs/MissivesData.cpp b/Code/encoding/Structs/MissivesData.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/encoding/Structs/MissivesData.cpp
+@@ -0,0 +1,75 @@
++#include <Structs/MissivesData.h>
++#include <cmath>
++#include <TiltedCore/Serialization.hpp>
++using TiltedPhoques::Serialization;
++
++void MissivesAlias::Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
++{
++    Serialization::WriteVarInt(aWriter, Id);
++    Serialization::WriteVarInt(aWriter, static_cast<uint8_t>(Type));
++    Form.Serialize(aWriter);
++    Base.Serialize(aWriter);
++    Serialization::WriteVarInt(aWriter, ActorId);
++    Serialization::WriteVarInt(aWriter, Count);
++}
++void MissivesAlias::Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept
++{
++    Id = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++    const uint64_t cType = Serialization::ReadVarInt(aReader);
++    Type = static_cast<Kind>(cType <= static_cast<uint64_t>(Kind::Actor) ? cType : 255);
++    Form.Deserialize(aReader);
++    Base.Deserialize(aReader);
++    ActorId = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++    Count = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++}
++void MissivesGlobal::Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
++{
++    Id.Serialize(aWriter);
++    Serialization::WriteFloat(aWriter, Value);
++}
++void MissivesGlobal::Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept
++{
++    Id.Deserialize(aReader);
++    Value = Serialization::ReadFloat(aReader);
++}
++void MissivesData::Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept
++{
++    Serialization::WriteVarInt(aWriter, Id);
++    Serialization::WriteVarInt(aWriter, SourceNonce);
++    Board.Serialize(aWriter);
++    Quest.Serialize(aWriter);
++    Book.Serialize(aWriter);
++    Serialization::WriteVarInt(aWriter, Stage);
++    Serialization::WriteVarInt(aWriter, Aliases.size());
++    for (const auto& alias : Aliases) alias.Serialize(aWriter);
++    Serialization::WriteVarInt(aWriter, Globals.size());
++    for (const auto& global : Globals) global.Serialize(aWriter);
++}
++void MissivesData::Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept
++{
++    Valid = true;
++    Id = Serialization::ReadVarInt(aReader);
++    SourceNonce = Serialization::ReadVarInt(aReader);
++    Board.Deserialize(aReader);
++    Quest.Deserialize(aReader);
++    Book.Deserialize(aReader);
++    Stage = Serialization::ReadVarInt(aReader) & 0xFFFFFFFF;
++    Aliases.clear();
++    Globals.clear();
++    const uint64_t cAliases = Serialization::ReadVarInt(aReader);
++    if (cAliases > 64) { Valid = false; return; }
++    for (uint64_t i = 0; i < cAliases; ++i)
++    {
++        auto& alias = Aliases.emplace_back();
++        alias.Deserialize(aReader);
++        if (alias.Type > MissivesAlias::Kind::Actor || alias.Count <= 0 || alias.Count > 10000) Valid = false;
++    }
++    const uint64_t cGlobals = Serialization::ReadVarInt(aReader);
++    if (cGlobals > 32) { Valid = false; return; }
++    for (uint64_t i = 0; i < cGlobals; ++i)
++    {
++        auto& global = Globals.emplace_back();
++        global.Deserialize(aReader);
++        if (!std::isfinite(global.Value)) Valid = false;
++    }
++}
+diff --git a/Code/encoding/Structs/MissivesData.h b/Code/encoding/Structs/MissivesData.h
+new file mode 100644
+--- /dev/null
++++ b/Code/encoding/Structs/MissivesData.h
+@@ -0,0 +1,40 @@
++#pragma once
++#include <Structs/GameId.h>
++#include <Structs/Vector3_NetQuantize.h>
++#include <Structs/Rotator2_NetQuantize.h>
++
++struct MissivesAlias
++{
++    enum class Kind : uint8_t { Reference, Location, Player, Item, Actor };
++    uint32_t Id{};
++    Kind Type{Kind::Reference};
++    GameId Form{};
++    GameId Base{};
++    uint32_t ActorId{};
++    int32_t Count{1};
++    void Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept;
++    void Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept;
++};
++
++struct MissivesGlobal
++{
++    GameId Id{};
++    float Value{};
++    void Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept;
++    void Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept;
++};
++
++struct MissivesData
++{
++    uint64_t Id{};
++    uint64_t SourceNonce{};
++    GameId Board{};
++    GameId Quest{};
++    GameId Book{};
++    uint32_t Stage{};
++    TiltedPhoques::Vector<MissivesAlias> Aliases;
++    TiltedPhoques::Vector<MissivesGlobal> Globals;
++    bool Valid{true};
++    void Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept;
++    void Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept;
++};
+diff --git a/Code/server/Game/Inventory/MissivesLedger.h b/Code/server/Game/Inventory/MissivesLedger.h
+new file mode 100644
+--- /dev/null
++++ b/Code/server/Game/Inventory/MissivesLedger.h
+@@ -0,0 +1,173 @@
++#pragma once
++#include <Structs/MissivesData.h>
++#include <map>
++#include <mutex>
++#include <optional>
++#include <set>
++#include <tuple>
++#include <vector>
++
++// Server-owned posting lifetimes. Tokens are private process/profile identities;
++// only the service translates ownership into a recipient-specific notification.
++class MissivesLedger
++{
++public:
++    enum class State { Available, Claimed, Retired, Completed };
++    struct Record
++    {
++        uint64_t Scope{};
++        uint64_t Publisher{};
++        uint64_t Owner{};
++        uint64_t ProgressSequence{};
++        uint32_t RecipientActor{};
++        State Status{State::Available};
++        MissivesData Data;
++    };
++    enum class ClaimResult { Won, AlreadyOwned, Unavailable };
++
++    void SetAuthority(uint64_t aScope, uint64_t aToken) noexcept
++    {
++        std::lock_guard lock(m_lock);
++        m_authorities[aScope] = aToken;
++    }
++    uint64_t GetAuthority(uint64_t aScope) const noexcept
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_authorities.find(aScope);
++        return it == m_authorities.end() ? 0 : it->second;
++    }
++    std::optional<Record> Publish(uint64_t aScope, uint64_t aToken, const MissivesData& acData) noexcept
++    {
++        std::lock_guard lock(m_lock);
++        if (!aToken || m_authorities[aScope] != aToken || !acData.Valid || !acData.SourceNonce || !acData.Board || !acData.Quest || !acData.Book)
++            return std::nullopt;
++        const auto creation = std::make_tuple(aScope, aToken, acData.SourceNonce);
++        if (const auto old = m_creations.find(creation); old != m_creations.end())
++            return m_records.find(old->second)->second;
++        const auto key = std::make_pair(aScope, acData.Quest.LogFormat());
++        if (const auto current = m_slots.find(key); current != m_slots.end())
++        {
++            const auto& record = m_records.find(current->second)->second;
++            if (record.Publisher == aToken && record.Data.SourceNonce == acData.SourceNonce && record.Status == State::Available)
++                return record;
++            return std::nullopt;
++        }
++        if (const auto reserve = m_reservations.find(key); reserve != m_reservations.end() && !reserve->second.empty())
++            return std::nullopt;
++        Record record;
++        record.Scope = aScope;
++        record.Publisher = aToken;
++        record.Data = acData;
++        record.Data.Id = ++m_nextId;
++        m_records.emplace(record.Data.Id, record);
++        m_creations.emplace(creation, record.Data.Id);
++        m_slots.emplace(key, record.Data.Id);
++        return record;
++    }
++    ClaimResult Claim(uint64_t aScope, uint64_t aId, uint64_t aToken, uint32_t aActor) noexcept
++    {
++        std::lock_guard lock(m_lock);
++        auto it = m_records.find(aId);
++        if (!aToken || !aActor || it == m_records.end() || it->second.Scope != aScope)
++            return ClaimResult::Unavailable;
++        auto& record = it->second;
++        if (record.Status == State::Claimed && record.Owner == aToken)
++        {
++            record.RecipientActor = aActor;
++            return ClaimResult::AlreadyOwned;
++        }
++        if (record.Status != State::Available)
++            return ClaimResult::Unavailable;
++        record.Status = State::Claimed;
++        record.Owner = aToken;
++        record.RecipientActor = aActor;
++        record.Data.Stage = 20;
++        return ClaimResult::Won;
++    }
++    bool Retire(uint64_t aScope, uint64_t aId, uint64_t aToken) noexcept
++    {
++        std::lock_guard lock(m_lock);
++        auto it = m_records.find(aId);
++        if (m_authorities[aScope] != aToken || it == m_records.end() || it->second.Scope != aScope || it->second.Status != State::Available)
++            return false;
++        it->second.Status = State::Retired;
++        m_slots.erase({aScope, it->second.Data.Quest.LogFormat()});
++        return true;
++    }
++    bool Progress(uint64_t aScope, uint64_t aId, uint64_t aToken, uint64_t aSequence, const MissivesData& acData) noexcept
++    {
++        std::lock_guard lock(m_lock);
++        auto it = m_records.find(aId);
++        if (!acData.Valid || !aSequence || it == m_records.end()) return false;
++        auto& record = it->second;
++        if (record.Scope != aScope || record.Status != State::Claimed || record.Owner != aToken || aSequence <= record.ProgressSequence || acData.Stage > 65535)
++            return false;
++        record.ProgressSequence = aSequence;
++        record.Data.Stage = acData.Stage;
++        record.Data.Globals = acData.Globals;
++        return true;
++    }
++    bool Complete(uint64_t aScope, uint64_t aId, uint64_t aToken) noexcept
++    {
++        std::lock_guard lock(m_lock);
++        auto it = m_records.find(aId);
++        if (it == m_records.end()) return false;
++        auto& record = it->second;
++        if (record.Scope != aScope || record.Status != State::Claimed || record.Owner != aToken) return false;
++        record.Status = State::Completed;
++        record.Data.Stage = 110;
++        m_slots.erase({aScope, record.Data.Quest.LogFormat()});
++        return true;
++    }
++    bool Reserve(uint64_t aScope, const GameId& acQuest, uint64_t aToken, bool aSet) noexcept
++    {
++        std::lock_guard lock(m_lock);
++        const auto key = std::make_pair(aScope, acQuest.LogFormat());
++        if (!aToken || !acQuest || (aSet && m_slots.contains(key))) return false;
++        if (aSet) m_reservations[key].insert(aToken);
++        else if (auto it = m_reservations.find(key); it != m_reservations.end())
++        {
++            it->second.erase(aToken);
++            if (it->second.empty()) m_reservations.erase(it);
++        }
++        return true;
++    }
++    std::vector<GameId> Reserved(uint64_t aScope) const noexcept
++    {
++        std::lock_guard lock(m_lock);
++        std::vector<GameId> result;
++        for (const auto& [key, owners] : m_reservations)
++            if (key.first == aScope && !owners.empty()) result.emplace_back(static_cast<uint32_t>(key.second >> 32), static_cast<uint32_t>(key.second));
++        for (const auto& [id, record] : m_records)
++            if (record.Scope == aScope && record.Status == State::Claimed) result.push_back(record.Data.Quest);
++        return result;
++    }
++    std::optional<Record> Get(uint64_t aScope, uint64_t aId) const noexcept
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_records.find(aId);
++        return it == m_records.end() || it->second.Scope != aScope ? std::nullopt : std::optional<Record>(it->second);
++    }
++    std::optional<Record> Find(uint64_t aId) const noexcept
++    {
++        std::lock_guard lock(m_lock);
++        const auto it = m_records.find(aId);
++        return it == m_records.end() ? std::nullopt : std::optional<Record>(it->second);
++    }
++    std::vector<Record> Snapshot(uint64_t aScope) const noexcept
++    {
++        std::lock_guard lock(m_lock);
++        std::vector<Record> result;
++        for (const auto& [id, record] : m_records)
++            if (record.Scope == aScope) result.push_back(record);
++        return result;
++    }
++private:
++    mutable std::mutex m_lock;
++    uint64_t m_nextId{};
++    std::map<uint64_t, uint64_t> m_authorities;
++    std::map<uint64_t, Record> m_records;
++    std::map<std::tuple<uint64_t, uint64_t, uint64_t>, uint64_t> m_creations;
++    std::map<std::pair<uint64_t, uint64_t>, uint64_t> m_slots;
++    std::map<std::pair<uint64_t, uint64_t>, std::set<uint64_t>> m_reservations;
++};
+diff --git a/Code/server/Services/MissivesService.cpp b/Code/server/Services/MissivesService.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/server/Services/MissivesService.cpp
+@@ -0,0 +1,231 @@
++#include <Services/MissivesService.h>
++#include <Services/CharacterService.h>
++#include <Services/PartyService.h>
++#include <Events/PlayerLeaveEvent.h>
++#include <Messages/CharacterSpawnRequest.h>
++#include <World.h>
++#include <Game/Player.h>
++#include <Game/PlayerManager.h>
++#include <Components.h>
++
++MissivesService::MissivesService(World& aWorld, entt::dispatcher& aDispatcher) noexcept
++    : m_world(aWorld), m_session(static_cast<uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) | 1ULL)
++{
++    m_requestConnection = aDispatcher.sink<PacketEvent<RequestMissives>>().connect<&MissivesService::OnRequest>(this);
++    m_leaveConnection = aDispatcher.sink<PlayerLeaveEvent>().connect<&MissivesService::OnLeave>(this);
++}
++
++uint64_t MissivesService::GetScope(Player* apPlayer) const noexcept
++{
++    // A physical board is shared by the server's world, including visitors
++    // outside a party. Personal ownership is still per client profile.
++    return 1;
++}
++
++void MissivesService::Send(Player* apPlayer, uint64_t aToken, const MissivesLedger::Record& acRecord, NotifyMissives::Operation aOperation) const noexcept
++{
++    NotifyMissives notify;
++    notify.Action = aOperation;
++    notify.ServerSession = m_session;
++    notify.Scope = acRecord.Scope;
++    notify.Sequence = acRecord.ProgressSequence;
++    notify.RecipientActor = acRecord.RecipientActor;
++    notify.Mine = acRecord.Owner != 0 && acRecord.Owner == aToken;
++    notify.Authority = m_ledger.GetAuthority(acRecord.Scope) == aToken;
++    notify.Data = acRecord.Data;
++    if (notify.Mine && aOperation == NotifyMissives::Operation::Taken)
++        notify.Action = NotifyMissives::Operation::Grant;
++    apPlayer->Send(notify);
++}
++
++void MissivesService::Broadcast(const MissivesLedger::Record& acRecord, NotifyMissives::Operation aOperation) const noexcept
++{
++    for (const auto& [token, binding] : m_bindings)
++        if (binding.Scope == acRecord.Scope)
++            if (auto* pPlayer = m_world.GetPlayerManager().GetById(binding.PlayerId))
++                Send(pPlayer, token, acRecord, aOperation);
++}
++
++void MissivesService::Snapshot(Player* apPlayer, uint64_t aToken, uint64_t aScope) const noexcept
++{
++    NotifyMissives notify;
++    notify.ServerSession = m_session;
++    notify.Scope = aScope;
++    notify.Authority = m_ledger.GetAuthority(aScope) == aToken;
++    notify.Action = NotifyMissives::Operation::SnapshotBegin;
++    apPlayer->Send(notify);
++    for (const auto& record : m_ledger.Snapshot(aScope))
++    {
++        const auto operation = record.Status == MissivesLedger::State::Available ? NotifyMissives::Operation::Posting :
++            record.Status == MissivesLedger::State::Claimed ? NotifyMissives::Operation::Taken :
++            record.Status == MissivesLedger::State::Completed ? NotifyMissives::Operation::Complete : NotifyMissives::Operation::Retired;
++        Send(apPlayer, aToken, record, operation);
++    }
++    for (const auto& quest : m_ledger.Reserved(aScope))
++    {
++        notify.Action = NotifyMissives::Operation::Reserved;
++        notify.Data.Quest = quest;
++        apPlayer->Send(notify);
++    }
++    notify.Action = NotifyMissives::Operation::SnapshotEnd;
++    notify.Data = {};
++    apPlayer->Send(notify);
++}
++
++void MissivesService::SendActor(Player* apPlayer, uint32_t aActorId) const noexcept
++{
++    const auto entity = static_cast<entt::entity>(aActorId);
++    if (!aActorId || !m_world.valid(entity) || !m_world.all_of<CharacterComponent, CellIdComponent, AnimationComponent>(entity))
++        return;
++    CharacterSpawnRequest spawn;
++    CharacterService::Serialize(m_world, entity, &spawn);
++    spawn.IsQuestReference = true;
++    spawn.QuestWorldSpace = m_world.get<CellIdComponent>(entity).WorldSpaceId;
++    apPlayer->Send(spawn);
++}
++
++void MissivesService::OnLeave(const PlayerLeaveEvent& acEvent) noexcept
++{
++    for (auto it = m_bindings.begin(); it != m_bindings.end();)
++    {
++        if (it->second.PlayerId != acEvent.pPlayer->GetId()) { ++it; continue; }
++        const uint64_t cScope = it->second.Scope;
++        const uint64_t cToken = it->first;
++        it = m_bindings.erase(it);
++        if (m_ledger.GetAuthority(cScope) == cToken)
++        {
++            m_ledger.SetAuthority(cScope, 0);
++            for (const auto& [token, binding] : m_bindings)
++                if (binding.Scope == cScope)
++                {
++                    m_ledger.SetAuthority(cScope, token);
++                    break;
++                }
++            for (const auto& [token, binding] : m_bindings)
++                if (binding.Scope == cScope)
++                    if (auto* pPlayer = m_world.GetPlayerManager().GetById(binding.PlayerId))
++                        Snapshot(pPlayer, token, cScope);
++        }
++    }
++    // Claims, retirements and per-profile reservations survive disconnects.
++}
++
++void MissivesService::OnRequest(const PacketEvent<RequestMissives>& acEvent) noexcept
++{
++    const auto& request = acEvent.Packet;
++    Player* pPlayer = acEvent.pPlayer;
++    if (!request.ClientSession || request.Revision != 2 || !request.Data.Valid || request.Action > RequestMissives::Operation::Actor)
++        return;
++    const uint64_t cToken = request.ClientSession;
++    const uint64_t cScope = GetScope(pPlayer);
++    if (request.Action == RequestMissives::Operation::Hello)
++    {
++        const auto old = m_bindings.find(cToken);
++        if (old != m_bindings.end() && old->second.PlayerId != pPlayer->GetId())
++        {
++            NotifyMissives rejected;
++            rejected.Action = NotifyMissives::Operation::Rejected;
++            rejected.ServerSession = m_session;
++            rejected.Scope = cScope;
++            pPlayer->Send(rejected);
++            return;
++        }
++        m_bindings[cToken] = {pPlayer->GetId(), cScope};
++        if (!m_ledger.GetAuthority(cScope)) m_ledger.SetAuthority(cScope, cToken);
++        if (const auto actor = pPlayer->GetCharacter())
++            for (const auto& record : m_ledger.Snapshot(cScope))
++                if (record.Status == MissivesLedger::State::Claimed && record.Owner == cToken)
++                {
++                    m_ledger.Claim(cScope, record.Data.Id, cToken, World::ToInteger(*actor));
++                    Broadcast(*m_ledger.Get(cScope, record.Data.Id), NotifyMissives::Operation::Taken);
++                }
++        NotifyMissives ready;
++        ready.Action = NotifyMissives::Operation::Ready;
++        ready.ServerSession = m_session;
++        ready.Scope = cScope;
++        ready.Authority = m_ledger.GetAuthority(cScope) == cToken;
++        pPlayer->Send(ready);
++        Snapshot(pPlayer, cToken, cScope);
++        return;
++    }
++    const auto binding = m_bindings.find(cToken);
++    if (binding == m_bindings.end() || binding->second.PlayerId != pPlayer->GetId() || binding->second.Scope != cScope || request.ServerSession != m_session)
++        return;
++    if (request.Action == RequestMissives::Operation::Snapshot)
++    {
++        Snapshot(pPlayer, cToken, cScope);
++        return;
++    }
++    if (request.Action == RequestMissives::Operation::Reserve || request.Action == RequestMissives::Operation::ReleaseReserve)
++    {
++        const bool cSet = request.Action == RequestMissives::Operation::Reserve;
++        if (m_ledger.Reserve(cScope, request.Data.Quest, cToken, cSet))
++        {
++            NotifyMissives notify;
++            notify.Action = cSet ? NotifyMissives::Operation::Reserved : NotifyMissives::Operation::Unreserved;
++            notify.ServerSession = m_session;
++            notify.Scope = cScope;
++            notify.Data.Quest = request.Data.Quest;
++            for (const auto& [token, recipient] : m_bindings)
++                if (recipient.Scope == cScope)
++                    if (auto* pRecipient = m_world.GetPlayerManager().GetById(recipient.PlayerId)) pRecipient->Send(notify);
++        }
++        return;
++    }
++    if (request.Action == RequestMissives::Operation::Publish)
++    {
++        if (const auto record = m_ledger.Publish(cScope, cToken, request.Data))
++            Broadcast(*record, record->Status == MissivesLedger::State::Available ? NotifyMissives::Operation::Posting :
++                record->Status == MissivesLedger::State::Claimed ? NotifyMissives::Operation::Taken :
++                record->Status == MissivesLedger::State::Completed ? NotifyMissives::Operation::Complete : NotifyMissives::Operation::Retired);
++        return;
++    }
++    if (request.Action == RequestMissives::Operation::Actor)
++    {
++        const auto record = m_ledger.Get(cScope, request.Data.Id);
++        if (!record) return;
++        for (const auto& alias : record->Data.Aliases)
++            if (alias.Type == MissivesAlias::Kind::Actor && alias.ActorId == request.Data.Stage) SendActor(pPlayer, alias.ActorId);
++        if (record->RecipientActor == request.Data.Stage) SendActor(pPlayer, record->RecipientActor);
++        return;
++    }
++    if (request.Action == RequestMissives::Operation::Claim)
++    {
++        const uint32_t cActor = pPlayer->GetCharacter() ? World::ToInteger(*pPlayer->GetCharacter()) : 0;
++        const auto result = m_ledger.Claim(cScope, request.Data.Id, cToken, cActor);
++        if (result != MissivesLedger::ClaimResult::Unavailable)
++        {
++            const auto record = m_ledger.Get(cScope, request.Data.Id);
++            Broadcast(*record, NotifyMissives::Operation::Taken);
++            spdlog::info("STR Missives claim accepted: posting {}, recipient actor {}", request.Data.Id, cActor);
++        }
++        else
++        {
++            NotifyMissives rejected;
++            rejected.Action = NotifyMissives::Operation::Rejected;
++            rejected.ServerSession = m_session;
++            rejected.Scope = cScope;
++            rejected.Data = request.Data;
++            pPlayer->Send(rejected);
++        }
++        return;
++    }
++    const auto existing = m_ledger.Find(request.Data.Id);
++    if (!existing) return;
++    bool changed = false;
++    NotifyMissives::Operation operation = NotifyMissives::Operation::Progress;
++    if (request.Action == RequestMissives::Operation::Retire)
++    {
++        changed = m_ledger.Retire(cScope, request.Data.Id, cToken);
++        operation = NotifyMissives::Operation::Retired;
++    }
++    else if (request.Action == RequestMissives::Operation::Progress)
++        changed = m_ledger.Progress(existing->Scope, request.Data.Id, cToken, request.Sequence, request.Data);
++    else if (request.Action == RequestMissives::Operation::Complete)
++    {
++        changed = m_ledger.Complete(existing->Scope, request.Data.Id, cToken);
++        operation = NotifyMissives::Operation::Complete;
++    }
++    if (changed)
++        Broadcast(*m_ledger.Find(request.Data.Id), operation);
++}
+diff --git a/Code/server/Services/MissivesService.h b/Code/server/Services/MissivesService.h
+new file mode 100644
+--- /dev/null
++++ b/Code/server/Services/MissivesService.h
+@@ -0,0 +1,27 @@
++#pragma once
++#include <Events/PacketEvent.h>
++#include <Game/Inventory/MissivesLedger.h>
++#include <Messages/NotifyMissives.h>
++#include <Messages/RequestMissives.h>
++
++struct World;
++struct PlayerLeaveEvent;
++struct MissivesService
++{
++    MissivesService(World& aWorld, entt::dispatcher& aDispatcher) noexcept;
++private:
++    struct Binding { uint32_t PlayerId{}; uint64_t Scope{}; };
++    uint64_t GetScope(Player* apPlayer) const noexcept;
++    void OnRequest(const PacketEvent<RequestMissives>& acEvent) noexcept;
++    void OnLeave(const PlayerLeaveEvent& acEvent) noexcept;
++    void Send(Player* apPlayer, uint64_t aToken, const MissivesLedger::Record& acRecord, NotifyMissives::Operation aOperation) const noexcept;
++    void Broadcast(const MissivesLedger::Record& acRecord, NotifyMissives::Operation aOperation) const noexcept;
++    void Snapshot(Player* apPlayer, uint64_t aToken, uint64_t aScope) const noexcept;
++    void SendActor(Player* apPlayer, uint32_t aActorId) const noexcept;
++    World& m_world;
++    uint64_t m_session;
++    MissivesLedger m_ledger;
++    std::map<uint64_t, Binding> m_bindings;
++    entt::scoped_connection m_requestConnection;
++    entt::scoped_connection m_leaveConnection;
++};
+diff --git a/Code/server/World.cpp b/Code/server/World.cpp
+--- a/Code/server/World.cpp
++++ b/Code/server/World.cpp
+@@ -8,6 +8,7 @@
+ #include <Services/ActorValueService.h>
+ #include <Services/InventoryService.h>
+ #include <Services/DroppedItemService.h>
++#include <Services/MissivesService.h>
+ #include <Services/MagicService.h>
+ #include <Services/OverlayService.h>
+ #include <Services/CommandService.h>
+@@ -32,6 +33,7 @@
+     ctx().emplace<ActorValueService>(*this, m_dispatcher);
+     ctx().emplace<InventoryService>(*this, m_dispatcher);
+     ctx().emplace<DroppedItemService>(*this, m_dispatcher);
++    ctx().emplace<MissivesService>(*this, m_dispatcher);
+     ctx().emplace<MagicService>(*this, m_dispatcher);
+     ctx().emplace<OverlayService>(*this, m_dispatcher);
+     ctx().emplace<CommandService>(*this, m_dispatcher);
+diff --git a/Code/tests/missives.cpp b/Code/tests/missives.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/tests/missives.cpp
+@@ -0,0 +1,193 @@
++#include <TiltedCore/Stl.hpp>
++#include <TiltedCore/Buffer.hpp>
++#include <TiltedCore/Serialization.hpp>
++#include <catch2/catch.hpp>
++#include <Messages/ClientMessageFactory.h>
++#include <Messages/ServerMessageFactory.h>
++#include <Messages/RequestMissives.h>
++#include <Messages/NotifyMissives.h>
++#include <Messages/CharacterSpawnRequest.h>
++#include <Game/Inventory/MissivesLedger.h>
++#include <atomic>
++#include <thread>
++#include <limits>
++
++namespace
++{
++MissivesData Notice(uint64_t aNonce = 1)
++{
++    MissivesData data;
++    data.SourceNonce = aNonce;
++    data.Board = GameId(3, 0x1000);
++    data.Quest = GameId(3, 0x2000);
++    data.Book = GameId(3, 0x3000);
++    MissivesAlias alias;
++    alias.Id = 2;
++    alias.Type = MissivesAlias::Kind::Actor;
++    alias.ActorId = 42;
++    data.Aliases.push_back(alias);
++    data.Globals.push_back({GameId(3, 0x4000), 100.f});
++    return data;
++}
++}
++
++TEST_CASE("Missives publishes one canonical instance and preserves its claim tombstone", "[missives]")
++{
++    MissivesLedger ledger;
++    ledger.SetAuthority(1, 10);
++    REQUIRE_FALSE(ledger.Publish(1, 20, Notice()));
++    const auto first = ledger.Publish(1, 10, Notice());
++    REQUIRE(first);
++    REQUIRE(ledger.Publish(1, 10, Notice())->Data.Id == first->Data.Id);
++    REQUIRE_FALSE(ledger.Publish(1, 10, Notice(2)));
++    REQUIRE(ledger.Claim(1, first->Data.Id, 20, 7) == MissivesLedger::ClaimResult::Won);
++    REQUIRE(ledger.Publish(1, 10, Notice())->Status == MissivesLedger::State::Claimed);
++    REQUIRE(ledger.Complete(1, first->Data.Id, 20));
++    REQUIRE(ledger.Publish(1, 10, Notice())->Status == MissivesLedger::State::Completed);
++    const auto next = ledger.Publish(1, 10, Notice(2));
++    REQUIRE(next);
++    REQUIRE(next->Data.Id != first->Data.Id);
++    REQUIRE(ledger.Claim(1, first->Data.Id, 30, 8) == MissivesLedger::ClaimResult::Unavailable);
++    REQUIRE(ledger.Snapshot(1).size() == 2);
++}
++
++TEST_CASE("Concurrent Missives claims elect exactly one personal recipient", "[missives]")
++{
++    MissivesLedger ledger;
++    ledger.SetAuthority(1, 10);
++    const auto post = ledger.Publish(1, 10, Notice());
++    REQUIRE(post);
++    std::atomic<bool> start{false};
++    std::atomic<int> winners{0};
++    std::vector<std::thread> workers;
++    for (uint32_t i = 1; i <= 24; ++i)
++        workers.emplace_back([&, i]() {
++            while (!start.load()) std::this_thread::yield();
++            if (ledger.Claim(1, post->Data.Id, 100+i, i) == MissivesLedger::ClaimResult::Won) ++winners;
++        });
++    start = true;
++    for (auto& worker : workers) worker.join();
++    REQUIRE(winners == 1);
++    const auto claimed = ledger.Get(1, post->Data.Id);
++    REQUIRE(claimed);
++    REQUIRE(claimed->Owner != 0);
++    REQUIRE(ledger.Claim(1, post->Data.Id, claimed->Owner, 99) == MissivesLedger::ClaimResult::AlreadyOwned);
++    REQUIRE(ledger.Get(1, post->Data.Id)->RecipientActor == 99);
++    REQUIRE_FALSE(ledger.Get(2, post->Data.Id));
++}
++
++TEST_CASE("Missives progress is claimant-only ordered and survives authority handoff", "[missives]")
++{
++    MissivesLedger ledger;
++    ledger.SetAuthority(1, 10);
++    const auto post = ledger.Publish(1, 10, Notice());
++    REQUIRE(post);
++    REQUIRE(ledger.Claim(1, post->Data.Id, 20, 7) == MissivesLedger::ClaimResult::Won);
++    auto data = post->Data;
++    data.Stage = 40;
++    REQUIRE_FALSE(ledger.Progress(1, data.Id, 10, 1, data));
++    REQUIRE(ledger.Progress(1, data.Id, 20, 2, data));
++    data.Stage = 20;
++    REQUIRE_FALSE(ledger.Progress(1, data.Id, 20, 1, data));
++    ledger.SetAuthority(1, 30);
++    REQUIRE(ledger.Get(1, data.Id)->Data.Stage == 40);
++    REQUIRE_FALSE(ledger.Retire(1, data.Id, 30));
++    REQUIRE_FALSE(ledger.Complete(1, data.Id, 30));
++    REQUIRE(ledger.Complete(1, data.Id, 20));
++    REQUIRE_FALSE(ledger.Progress(1, data.Id, 20, 3, data));
++}
++
++TEST_CASE("Missives reservations and retired instances cannot generate a second personal mission", "[missives]")
++{
++    MissivesLedger ledger;
++    ledger.SetAuthority(1, 10);
++    const auto data = Notice();
++    REQUIRE(ledger.Reserve(1, data.Quest, 20, true));
++    REQUIRE_FALSE(ledger.Publish(1, 10, data));
++    REQUIRE(ledger.Reserve(1, data.Quest, 20, false));
++    const auto post = ledger.Publish(1, 10, data);
++    REQUIRE(post);
++    REQUIRE_FALSE(ledger.Reserve(1, data.Quest, 20, true));
++    REQUIRE_FALSE(ledger.Retire(1, post->Data.Id, 20));
++    REQUIRE(ledger.Retire(1, post->Data.Id, 10));
++    REQUIRE(ledger.Publish(1, 10, data)->Status == MissivesLedger::State::Retired);
++    REQUIRE(ledger.Claim(1, post->Data.Id, 20, 7) == MissivesLedger::ClaimResult::Unavailable);
++}
++
++TEST_CASE("Missives real factories retain canonical aliases globals and personal grants", "[missives][encoding]")
++{
++    RequestMissives request;
++    request.Action = RequestMissives::Operation::Publish;
++    request.ClientSession = 0x876543210ULL;
++    request.ServerSession = 88;
++    request.Data = Notice();
++    TiltedPhoques::Buffer buffer(16384);
++    TiltedPhoques::Buffer::Writer writer(&buffer);
++    request.Serialize(writer);
++    TiltedPhoques::Buffer::Reader reader(&buffer);
++    auto decoded = ClientMessageFactory{}.Extract(reader);
++    REQUIRE(decoded);
++    REQUIRE(decoded->GetOpcode() == kRequestMissives);
++    const auto* result = static_cast<RequestMissives*>(decoded.get());
++    REQUIRE(result->ClientSession == request.ClientSession);
++    REQUIRE(result->Data.Valid);
++    REQUIRE(result->Data.Aliases[0].ActorId == 42);
++    REQUIRE(result->Data.Globals[0].Value == 100.f);
++    NotifyMissives notify;
++    notify.Action = NotifyMissives::Operation::Grant;
++    notify.Mine = true;
++    notify.RecipientActor = 99;
++    notify.Data = Notice();
++    TiltedPhoques::Buffer out(16384);
++    TiltedPhoques::Buffer::Writer outWriter(&out);
++    notify.Serialize(outWriter);
++    TiltedPhoques::Buffer::Reader outReader(&out);
++    auto answer = ServerMessageFactory{}.Extract(outReader);
++    REQUIRE(answer);
++    const auto* grant = static_cast<NotifyMissives*>(answer.get());
++    REQUIRE(grant->Action == NotifyMissives::Operation::Grant);
++    REQUIRE(grant->Mine);
++    REQUIRE(grant->RecipientActor == 99);
++    REQUIRE(grant->Data.Quest == notify.Data.Quest);
++}
++
++TEST_CASE("Missives protocol rejects oversized and nonfinite alias context", "[missives][encoding]")
++{
++    for (int mode = 0; mode < 3; ++mode)
++    {
++        auto data = Notice();
++        if (mode == 0) data.Aliases.resize(65);
++        if (mode == 1) data.Globals[0].Value = std::numeric_limits<float>::quiet_NaN();
++        if (mode == 2) data.Aliases[0].Type = static_cast<MissivesAlias::Kind>(255);
++        TiltedPhoques::Buffer buffer(16384);
++        TiltedPhoques::Buffer::Writer writer(&buffer);
++        data.Serialize(writer);
++        TiltedPhoques::Buffer::Reader reader(&buffer);
++        MissivesData decoded;
++        decoded.Deserialize(reader);
++        REQUIRE_FALSE(decoded.Valid);
++    }
++}
++
++TEST_CASE("Personal quest metadata and far quest actors survive the real wire format", "[missives][encoding]")
++{
++    CharacterSpawnRequest spawn;
++    spawn.IsQuestReference = true;
++    spawn.QuestWorldSpace = GameId(0, 0x3c);
++    Inventory::Entry item;
++    item.BaseId = GameId(0, 1);
++    item.Count = 1;
++    item.IsQuestItem = true;
++    item.IsPersonalQuestItem = true;
++    spawn.InventoryContent.Entries.push_back(item);
++    TiltedPhoques::Buffer buffer(65536);
++    TiltedPhoques::Buffer::Writer writer(&buffer);
++    spawn.Serialize(writer);
++    TiltedPhoques::Buffer::Reader reader(&buffer);
++    auto decoded = ServerMessageFactory{}.Extract(reader);
++    REQUIRE(decoded);
++    const auto* result = static_cast<CharacterSpawnRequest*>(decoded.get());
++    REQUIRE(result->IsQuestReference);
++    REQUIRE(result->QuestWorldSpace == spawn.QuestWorldSpace);
++    REQUIRE(result->InventoryContent.Entries[0].IsPersonalQuestItem);
++}
