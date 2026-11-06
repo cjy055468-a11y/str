@@ -38,6 +38,7 @@ jobs:
         with:
           path: ~/AppData/Local/.xmake/packages
           key: windows-x64-str-v184-xmake310-${{ hashFiles('source/**/xmake.lua') }}
+          restore-keys: windows-x64-str-v184-xmake310-
       - name: Verify official source and apply candidate
         run: |
           New-Item -ItemType Directory -Force logs | Out-Null
