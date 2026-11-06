@@ -40,6 +40,7 @@ jobs:
       - name: Verify official source and apply candidate
         run: |
           New-Item -ItemType Directory -Force logs | Out-Null
+          Start-Transcript -Path logs/source-validation.txt
           if ((git -C source rev-parse HEAD) -ne $env:SOURCE_COMMIT) { throw 'Wrong source commit' }
           git -C source submodule status --recursive | Tee-Object logs/submodules.txt
           if ($LASTEXITCODE -ne 0) { throw 'Submodule status failed' }
