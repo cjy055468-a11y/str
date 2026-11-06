@@ -31,6 +31,7 @@
     "Code/encoding/Opcodes.h",
     "Code/encoding/Structs/Inventory.cpp",
     "Code/encoding/Structs/Inventory.h",
+    "Code/encoding/Structs/MissivesActorId.h",
     "Code/encoding/Structs/MissivesData.cpp",
     "Code/encoding/Structs/MissivesData.h",
     "Code/server/Game/Inventory/MissivesLedger.h",
@@ -39,9 +40,8 @@
     "Code/server/World.cpp",
     "Code/tests/missives.cpp"
   ],
-  "delta_sha256": "56dac6782f7f01208d913064978584a6043aabf3b9cf208ff2ec8a01a73e6965",
+  "delta_sha256": "022d3a0924c5be1dddb2fe2280d5f890b9dea8a44a53d907b31721764f6e3a45",
   "exact_corpse3_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"
 }
-

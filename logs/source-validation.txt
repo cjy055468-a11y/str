@@ -1,12 +1,12 @@
 **********************
 PowerShell transcript start
-Start time: 20261106065956
+Start time: 20261106084909
 Username: runnervmquqza\runneradmin
 RunAs User: runnervmquqza\runneradmin
 Configuration Name: 
 Machine: runnervmquqza (Microsoft Windows NT 10.0.20348.0)
-Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\fd6621cb-3d51-4148-9bba-f3052e6f88cf.ps1'
-Process ID: 7072
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\1e39e793-db08-4606-a5f8-cec77229a33e.ps1'
+Process ID: 5144
 PSVersion: 7.6.9
 PSEdition: Core
 GitCommitId: 7.6.9
@@ -57,6 +57,7 @@ Transcript started, output file is logs/source-validation.txt
     "Code/encoding/Opcodes.h",
     "Code/encoding/Structs/Inventory.cpp",
     "Code/encoding/Structs/Inventory.h",
+    "Code/encoding/Structs/MissivesActorId.h",
     "Code/encoding/Structs/MissivesData.cpp",
     "Code/encoding/Structs/MissivesData.h",
     "Code/server/Game/Inventory/MissivesLedger.h",
@@ -65,7 +66,7 @@ Transcript started, output file is logs/source-validation.txt
     "Code/server/World.cpp",
     "Code/tests/missives.cpp"
   ],
-  "delta_sha256": "56dac6782f7f01208d913064978584a6043aabf3b9cf208ff2ec8a01a73e6965",
+  "delta_sha256": "022d3a0924c5be1dddb2fe2280d5f890b9dea8a44a53d907b31721764f6e3a45",
   "exact_corpse3_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"
@@ -75,6 +76,6 @@ PS>$global:?
 True
 **********************
 PowerShell transcript end
-End time: 20261106070001
+End time: 20261106084914
 **********************
 

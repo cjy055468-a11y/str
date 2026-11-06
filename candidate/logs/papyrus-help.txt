@@ -88,4 +88,3 @@ Advanced:
   --resolve-symlinks arg (=0)           Fully resolve symlinks when determining
                                         file paths.
 
-

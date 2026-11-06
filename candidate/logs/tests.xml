@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="TPTests.exe" errors="0" failures="0" tests="627" hostname="tbd" time="0.012" timestamp="2026-11-06T07:09:19Z">
+  <testsuite name="TPTests.exe" errors="0" failures="0" tests="638" hostname="tbd" time="0.007" timestamp="2026-11-06T08:55:48Z">
     <testcase classname="TPTests.exe.global" name="Temporary actor identity survives discovery unload and ownership changes" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Recycled temporary form IDs and new connections cannot inherit actor identity" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Known temporary actor identity survives real assignment factory round trips" time="0.000" status="run"/>
@@ -23,7 +23,7 @@
     <testcase classname="TPTests.exe.global" name="Dying actors retain their normal transition into a completed death" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="An accepted resurrection or unknown death state does not retain corpse bits" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Dropped instances retain distinct IDs and duplicate creation is idempotent" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.003" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.002" status="run"/>
     <testcase classname="TPTests.exe.global" name="Consumed drops stay absent from snapshots and creation retries" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Unacknowledged grants recover on reconnect without a second credit" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="An already applied recovered grant does not add to the new actor again" time="0.000" status="run"/>
@@ -60,13 +60,15 @@
     <testcase classname="TPTests.exe.global" name="Packets/Given: NotifyActionEvents" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="StringCache/Messages" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives publishes one canonical instance and preserves its claim tombstone" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Concurrent Missives claims elect exactly one personal recipient" time="0.002" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Concurrent Missives claims elect exactly one personal recipient" time="0.001" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives progress is claimant-only ordered and survives authority handoff" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives reservations and retired instances cannot generate a second personal mission" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives real factories retain canonical aliases globals and personal grants" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives protocol rejects oversized and nonfinite alias context" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Personal quest metadata and far quest actors survive the real wire format" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Different Missives boards elect independent generators without sharing quest ownership" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Missives encodes the valid zero network entity without confusing it with absence" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Missives actor zero and revision three survive the actual request factory" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Owner drop debit tolerates stale metadata and fragmented cached stacks" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Owner drop debit never invents a negative delta from an unavailable cache" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Equipment snapshots replace stale worn metadata without duplicating a cached item" time="0.000" status="run"/>
@@ -77,7 +79,7 @@
     <testcase classname="TPTests.exe.global" name="Visible drop geometry without collision does not consume physics setup attempts" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="A drop outfit refresh round trips without requesting another native equip action" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Stays well under the old fixed 300ms delay on a stable connection" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Playback clock/Buffers more on a jittery connection and rarely runs out of snapshots" time="0.002" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Buffers more on a jittery connection and rarely runs out of snapshots" time="0.001" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Plays low rate actors further behind instead of starving them" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Quickly plays further behind when the owner starts sending less often" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Keeps up with a 60 fps owner whose frame times vary" time="0.001" status="run"/>
@@ -96,4 +98,3 @@
     <system-err/>
   </testsuite>
 </testsuites>
-
