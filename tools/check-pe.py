@@ -22,7 +22,7 @@ def inspect(path, require_fix=False):
     if is_dll != (path.suffix.lower() == ".dll"):
         raise ValueError(f"{path.name}: DLL characteristic mismatch")
     if path.name == "SkyrimTogether.exe":
-        build_markers = (b"v1.8.4-coopfix4g", b"v1.8.4-coopfix4h-corpse4-loot1")
+        build_markers = (b"v1.8.4-coopfix4g", b"v1.8.4-coopfix4h-corpse4-loot1", b"v1.8.4-coopfix4i-corpse4-loot1")
         if not any(marker in data for marker in build_markers):
             raise ValueError(f"{path.name}: missing a recognized Skyrim Together build marker")
         for marker in (b"1.6.1170.0", b"EarlyLoad.dll", b"libcef.dll"):
@@ -31,7 +31,7 @@ def inspect(path, require_fix=False):
         if require_fix and (b"STR replay audit v2:" not in data or b"STR drop grant applied:" not in data or b"STR NPC reattach request:" not in data or b"STR corpse pending death:" not in data or b"STR player pickpocket blocked:" not in data or b"STR furniture recovery exit:" not in data or b"STR drop proxy physics:" not in data or b"STR drop save filter installed:" not in data or b"STR drop owner placement:" not in data):
             raise ValueError("EXE lacks the combined replay/dropfix markers")
     if require_fix and path.name in ("STServer.dll", "SkyrimTogetherServer.exe"):
-        server_build_markers = (b"master@v1.8.4-coopfix4g\0", b"master@v1.8.4-coopfix4h-corpse4-loot1\0")
+        server_build_markers = (b"master@v1.8.4-coopfix4g\0", b"master@v1.8.4-coopfix4h-corpse4-loot1\0", b"master@v1.8.4-coopfix4i-corpse4-loot1\0")
         if not any(marker in data for marker in server_build_markers):
             raise ValueError(f"{path.name}: matching protocol build tag is missing")
     return {"file": path.name, "bytes": len(data), "machine": "AMD64",

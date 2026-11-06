@@ -1,5 +1,5 @@
 diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtension.h
-index 970d31e..b5378d5 100644
+index 970d31ee..f326a8fc 100644
 --- a/Code/client/Games/ActorExtension.h
 +++ b/Code/client/Games/ActorExtension.h
 @@ -1,5 +1,6 @@
@@ -9,7 +9,7 @@ index 970d31e..b5378d5 100644
  #include <Structs/ActionEvent.h>
  
  struct ActorExtension
-@@ -37,6 +38,11 @@ struct ActorExtension
+@@ -37,6 +38,12 @@ struct ActorExtension
      ActionEvent LatestAnimation{};
      size_t GraphDescriptorHash = 0;
      uint64_t GraphDescriptorProjectKey = 0;
@@ -18,11 +18,12 @@ index 970d31e..b5378d5 100644
 +    uint32_t AnimationDrivenVariableIndex = ~uint32_t{0};
 +    bool AnimationDrivenVariableResolved = false;
 +    bool CorpseAnimationDrivenReset = false;
++    bool CorpseAnimationDrivenResetFailureLogged = false;
  
      // TODO: atomic? bool instead? maybe simplify to `IsReenabling()` ?
      // Protects discovery while rebuilding a leveled NPC.
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
-index 9f2c895..8aeb94d 100644
+index 9f2c895f..8aeb94d3 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
 @@ -1,3 +1,4 @@
@@ -53,7 +54,7 @@ index 9f2c895..8aeb94d 100644
  
          if (apThis->currentProcess)
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-index e42b1fb..23e7c79 100644
+index e42b1fb3..a9423bb3 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
 @@ -39,6 +39,7 @@
@@ -64,7 +65,7 @@ index e42b1fb..23e7c79 100644
  
  extern const AnimationGraphDescriptor* BehaviorVarPatch(BSAnimationGraphManager* pManager, Actor* pActor);
  
-@@ -74,6 +75,15 @@ void UpdateGraphDescriptorHash(Actor* apActor, BSAnimationGraphManager* apManage
+@@ -74,6 +75,16 @@ void UpdateGraphDescriptorHash(Actor* apActor, BSAnimationGraphManager* apManage
      const auto cPreviousHash = pExtension->GraphDescriptorHash;
      pExtension->GraphDescriptorHash = apManager->GetDescriptorKey(aForceIndex);
      pExtension->GraphDescriptorProjectKey = cProjectKey;
@@ -76,11 +77,12 @@ index e42b1fb..23e7c79 100644
 +        pExtension->AnimationDrivenVariableIndex = ~uint32_t{0};
 +        pExtension->AnimationDrivenVariableResolved = false;
 +        pExtension->CorpseAnimationDrivenReset = false;
++        pExtension->CorpseAnimationDrivenResetFailureLogged = false;
 +    }
  
      if (cPreviousHash != 0)
          spdlog::info("Animation graph project of actor {:X} changed, graph descriptor {} -> {}", apActor->formID, cPreviousHash, pExtension->GraphDescriptorHash);
-@@ -272,7 +282,7 @@ void TESObjectREFR::SaveAnimationVariables(AnimationVariables& aVariables) const
+@@ -272,7 +283,7 @@ void TESObjectREFR::SaveAnimationVariables(AnimationVariables& aVariables) const
      }
  }
  
@@ -89,7 +91,7 @@ index e42b1fb..23e7c79 100644
  {
      const auto spManager = animationGraphHolder.GetAnimationGraphManagerPtr();
      if (spManager)
-@@ -306,18 +316,64 @@ void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables)
+@@ -306,18 +317,75 @@ void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables)
              if (!pDescriptor)
                  return;
  
@@ -131,13 +133,24 @@ index e42b1fb..23e7c79 100644
 +                bool cWasAnimationDriven = false;
 +                const bool cVariableFound = pActor->animationGraphHolder.GetVariableBool(&cAnimationDriven, &cWasAnimationDriven);
 +                const bool cSetResult = cVariableFound && (!cWasAnimationDriven || pActor->animationGraphHolder.SetVariableBool(&cAnimationDriven, false));
-+                pExtendedActor->CorpseAnimationDrivenReset = true;
-+                spdlog::info("STR corpse animation sync reset: actor {:X}, variable found {}, before {}, result {}",
-+                    pActor->formID, cVariableFound, cWasAnimationDriven, cSetResult);
++                if (cSetResult)
++                {
++                    pExtendedActor->CorpseAnimationDrivenReset = true;
++                    pExtendedActor->CorpseAnimationDrivenResetFailureLogged = false;
++                    spdlog::info("STR corpse animation sync reset: actor {:X}, variable found {}, before {}, result {}",
++                        pActor->formID, cVariableFound, cWasAnimationDriven, cSetResult);
++                }
++                else if (!pExtendedActor->CorpseAnimationDrivenResetFailureLogged)
++                {
++                    pExtendedActor->CorpseAnimationDrivenResetFailureLogged = true;
++                    spdlog::warn("STR corpse animation sync reset pending: actor {:X}, variable found {}, before {}",
++                        pActor->formID, cVariableFound, cWasAnimationDriven);
++                }
 +            }
 +            else if (!aPreserveCorpsePhysics)
 +            {
 +                pExtendedActor->CorpseAnimationDrivenReset = false;
++                pExtendedActor->CorpseAnimationDrivenResetFailureLogged = false;
 +            }
 +
              // Never write into a variable whose word is an index: a wrong descriptor would turn the synced value into an
@@ -155,7 +168,7 @@ index e42b1fb..23e7c79 100644
                  {
                      pVariableSet->data[idx] = aVariables.Booleans.size() > i ? aVariables.Booleans[i] : false;
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.h b/Code/client/Games/Skyrim/TESObjectREFR.h
-index 207d514..f64d605 100644
+index 207d5140..f64d6050 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.h
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.h
 @@ -179,7 +179,7 @@ struct TESObjectREFR : TESForm
@@ -168,7 +181,7 @@ index 207d514..f64d605 100644
  
      void RemoveAllItems() noexcept;
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 9ae4da8..9a4c01a 100644
+index 9ae4da82..9a4c01ad 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
 @@ -2090,7 +2090,8 @@ void CharacterService::RunRemoteUpdates() noexcept
@@ -193,7 +206,7 @@ index 9ae4da8..9a4c01a 100644
  
          m_weaponDrawUpdates[pActor->formID] = {waitingFor3D.SpawnRequest.IsWeaponDrawn};
 diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
-index 4b70c46..e51450e 100644
+index 4b70c465..e51450ed 100644
 --- a/Code/client/Systems/AnimationSystem.cpp
 +++ b/Code/client/Systems/AnimationSystem.cpp
 @@ -58,10 +58,12 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
@@ -222,7 +235,7 @@ index 4b70c46..e51450e 100644
  
 diff --git a/Code/client/Systems/CorpseAnimationSync.h b/Code/client/Systems/CorpseAnimationSync.h
 new file mode 100644
-index 0000000..e1729fa
+index 00000000..e1729fa3
 --- /dev/null
 +++ b/Code/client/Systems/CorpseAnimationSync.h
 @@ -0,0 +1,16 @@
@@ -243,7 +256,7 @@ index 0000000..e1729fa
 +    return aPreserveCorpsePhysics && !aAlreadyReset;
 +}
 diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseLifeState.h
-index 266c6be..e505f37 100644
+index 266c6bec..e505f37c 100644
 --- a/Code/client/Systems/CorpseLifeState.h
 +++ b/Code/client/Systems/CorpseLifeState.h
 @@ -19,3 +19,21 @@ inline uint32_t PreserveConfirmedCorpseLifeState(uint32_t aNativeState, uint32_t
@@ -269,7 +282,7 @@ index 266c6be..e505f37 100644
 +    return life == 1 || life == 2;
 +}
 diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/InterpolationSystem.cpp
-index 94040eb..fb3a771 100644
+index 94040eb1..fb3a771d 100644
 --- a/Code/client/Systems/InterpolationSystem.cpp
 +++ b/Code/client/Systems/InterpolationSystem.cpp
 @@ -101,7 +101,7 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
@@ -291,7 +304,7 @@ index 94040eb..fb3a771 100644
      if (apActor->currentProcess && apActor->currentProcess->middleProcess)
      {
 diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
-index 5bf5cb4..2275a05 100644
+index 5bf5cb4f..ef1e49df 100644
 --- a/Code/common/BuildInfo.h.in
 +++ b/Code/common/BuildInfo.h.in
 @@ -1,4 +1,4 @@
@@ -299,10 +312,10 @@ index 5bf5cb4..2275a05 100644
  // This file was autogenerated by xmake
  #define BUILD_BRANCH "${GIT_BRANCH}"
 -#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-missives2r1-loot1"
-+#define BUILD_COMMIT "${GIT_TAG}-coopfix4h-corpse4-loot1"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4i-corpse4-loot1"
 diff --git a/Code/tests/corpse_animation_sync.cpp b/Code/tests/corpse_animation_sync.cpp
 new file mode 100644
-index 0000000..73fdc63
+index 00000000..73fdc633
 --- /dev/null
 +++ b/Code/tests/corpse_animation_sync.cpp
 @@ -0,0 +1,13 @@
@@ -320,7 +333,7 @@ index 0000000..73fdc63
 +    CHECK_FALSE(ShouldResetCorpseAnimationDriven(false, false));
 +}
 diff --git a/Code/tests/corpse_speech_window.cpp b/Code/tests/corpse_speech_window.cpp
-index e2e680b..bc6c3ba 100644
+index e2e680bd..bc6c3bac 100644
 --- a/Code/tests/corpse_speech_window.cpp
 +++ b/Code/tests/corpse_speech_window.cpp
 @@ -78,3 +78,35 @@ TEST_CASE("An accepted resurrection or unknown death state does not retain corps

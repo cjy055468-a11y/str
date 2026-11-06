@@ -47,9 +47,9 @@ jobs:
           git -C source submodule status --recursive | Tee-Object logs/submodules.txt
           if ($LASTEXITCODE -ne 0) { throw 'Submodule status failed' }
           if (Select-String -Path logs/submodules.txt -Pattern '^[+\-U]') { throw 'Submodule mismatch' }
-          git -C source apply --check ../fixes/coopfix4h-corpse4-v184.patch 2>&1 | Tee-Object logs/patch-check.txt
+          git -C source apply --check ../fixes/coopfix4i-corpse4-v184.patch 2>&1 | Tee-Object logs/patch-check.txt
           if ($LASTEXITCODE -ne 0) { throw 'Patch does not match official release' }
-          git -C source apply ../fixes/coopfix4h-corpse4-v184.patch
+          git -C source apply ../fixes/coopfix4i-corpse4-v184.patch
           if ($LASTEXITCODE -ne 0) { throw 'Patch apply failed' }
           git -C source diff --check
           if ($LASTEXITCODE -ne 0) { throw 'Invalid patch whitespace' }
@@ -143,7 +143,7 @@ jobs:
           Copy-Item compiled-pex/*.pex candidate/MissivesCompat/Scripts/
           Copy-Item mods/missives2/STR_Missives_Compat.esp candidate/MissivesCompat/
           Copy-Item mods/missives2/Scripts/Source candidate/MissivesCompat/Scripts/ -Recurse
-          Copy-Item fixes/coopfix4h-corpse4-v184.patch candidate/
+          Copy-Item fixes/coopfix4i-corpse4-v184.patch candidate/
           Copy-Item fixes/README-corpse4.zh-CN.md candidate/README.zh-CN.md
           Copy-Item source/LICENSE candidate/LICENSE
           Copy-Item logs candidate/logs -Recurse
@@ -152,7 +152,7 @@ jobs:
       - name: Upload candidate after all three checks pass
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-SSE-161170-corpse4-r1
+          name: STR-v184-SSE-161170-corpse4-r2
           path: candidate/
           if-no-files-found: error
           retention-days: 14
