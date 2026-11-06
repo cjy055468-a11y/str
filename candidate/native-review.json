@@ -1,0 +1,14 @@
+{
+  "c7_native_combat_process_position_inventory_hooks_unchanged": 5,
+  "c7_drop_furniture_corpse_speech_tick_server_inventory_unchanged": 10,
+  "no_nonexistent_getcontainer_dependency": true,
+  "source_only_native_assumptions": [
+    "BGSRefAlias forced fill definitions/flags and asynchronous quest startup",
+    "AE read locks68233/68239 and ExtraAliasInstanceArray layouts",
+    "ExtraTextDisplayData vtable186855 and quest instance text substitution",
+    "far temporary actor placement and force alias native callback ABI",
+    "save/reconnect alias lifecycle and Papyrus event ordering"
+  ],
+  "binary_reverse_engineering": "not run; user authorized source-based attempts",
+  "actual_game_validation": "not run"
+}
