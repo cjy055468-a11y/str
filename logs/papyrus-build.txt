@@ -21,20 +21,6 @@ Compiling _M_QuestRetrieveScript.psc
 Compiling _M_QuestTrackFugitiveScript.psc
 Compiling _M_QuestTrackThiefScript.psc
 Compiling _M_QuestTrackVampire.psc
-STRMissivesBridge.psc (10, 14:22): Error: The signature of the 'GetState' function (int(int)) doesn't match the signature in the parent class '__ScriptObject'. The expected signature is 'string()'.
-STRMissivesBridge.psc (8, 10:19): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (5, 15:30): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (2, 15:26): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (9, 10:20): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (13, 14:26): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (3, 15:26): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (4, 15:26): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (7, 10:22): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (6, 15:20): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (10, 14:22): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (11, 14:29): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (12, 14:27): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (14, 10:18): Error: You can only define Native functions in a script marked Native.
-STRMissivesBridge.psc (15, 10:22): Error: You can only define Native functions in a script marked Native.
-Compilation of 'STRMissivesBridge.psc' failed; 0 warnings and 15 errors were encountered.
+_M_AliasPlayerGather.psc (18, 51:53): Warning W4001: Unnecessary cast from 'Form' to 'Form'.
+_M_AliasPlayerGather.psc (33, 51:53): Warning W4001: Unnecessary cast from 'Form' to 'Form'.
 
