@@ -558,6 +558,85 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
  
      if (!pActor)
      {
+@@ -1967,7 +2059,8 @@
+         // Actions run on the clock the interpolation pass above just advanced, so the body and its animations stay in step
+         const auto cTick = InterpolationSystem::GetPlaybackTick(animatedView.get<InterpolationComponent>(entity));
+ 
+-        AnimationSystem::Update(m_world, pActor, animationComponent, cTick);
++        const bool cConfirmedDeath = animatedView.get<RemoteComponent>(entity).AuthoritativeDeath.value_or(false);
++        AnimationSystem::Update(m_world, pActor, animationComponent, cTick, cConfirmedDeath);
+     }
+ 
+     auto facegenView = m_world.view<FormIdComponent, FaceGenComponent>();
+diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
+--- a/Code/client/Systems/AnimationSystem.cpp
++++ b/Code/client/Systems/AnimationSystem.cpp
+@@ -1,6 +1,7 @@
+ #include <TiltedOnlinePCH.h>
+ 
+ #include <Systems/AnimationSystem.h>
++#include <Systems/CorpseLifeState.h>
+ 
+ #include <Games/Animation/TESActionData.h>
+ #include <Games/Animation/ActorMediator.h>
+@@ -20,7 +21,7 @@
+ #include <Forms/TESObjectCELL.h>
+ #include <Forms/TESWorldSpace.h>
+ 
+-void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationComponent& aAnimationComponent, const uint64_t aTick) noexcept
++void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationComponent& aAnimationComponent, const uint64_t aTick, const bool aConfirmedDeath) noexcept
+ {
+     auto& actions = aAnimationComponent.TimePoints;
+ 
+@@ -59,8 +60,14 @@
+         const auto* pExtension = apActor->GetExtension();
+         const bool cWasCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
+ 
+-        apActor->actorState.flags1 = first.State1;
++        const uint32_t cNativeState = apActor->actorState.flags1;
++        const uint32_t cAppliedState = PreserveConfirmedCorpseLifeState(cNativeState, first.State1, cWasCorpse && aConfirmedDeath);
++        apActor->actorState.flags1 = cAppliedState;
+         apActor->actorState.flags2 = first.State2;
++
++        if (cAppliedState != first.State1)
++            spdlog::info("STR corpse life-state guard: actor {:X}, native {:X}, incoming {:X}, applied {:X}, event {}",
++                apActor->formID, cNativeState, first.State1, cAppliedState, first.EventName.c_str());
+ 
+         apActor->LoadAnimationVariables(first.Variables);
+ 
+diff --git a/Code/client/Systems/AnimationSystem.h b/Code/client/Systems/AnimationSystem.h
+--- a/Code/client/Systems/AnimationSystem.h
++++ b/Code/client/Systems/AnimationSystem.h
+@@ -19,7 +19,7 @@
+      * @param aAnimationComponent The animation component attached to the actor.
+      * @param aTick The owner tick currently being played back, actions up to it are run.
+      */
+-    static void Update(World& aWorld, Actor* apActor, RemoteAnimationComponent& aAnimationComponent, uint64_t aTick) noexcept;
++    static void Update(World& aWorld, Actor* apActor, RemoteAnimationComponent& aAnimationComponent, uint64_t aTick, bool aConfirmedDeath) noexcept;
+     /**
+      * @brief Sets up the animation system for a particular actor.
+      * @param aWorld The registry where the actor in question lives.
+diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseLifeState.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/Systems/CorpseLifeState.h
+@@ -0,0 +1,16 @@
++#pragma once
++
++#include <cstdint>
++
++// Source reference: CommonLibSSE-NG ActorState1::lifeState occupies bits 21..24,
++// kDead is 2. This mask also matches this project's IsBleedingOut implementation.
++// Preserve only an already completed, authoritatively confirmed death; never
++// force a dying actor to dead or block an accepted resurrection.
++inline uint32_t PreserveConfirmedCorpseLifeState(uint32_t aNativeState, uint32_t aActionState, bool aConfirmedDeath) noexcept
++{
++    constexpr uint32_t kLifeMask = 0x01E00000;
++    constexpr uint32_t kDead = 2u << 21;
++    if (aConfirmedDeath && (aNativeState & kLifeMask) == kDead)
++        return (aActionState & ~kLifeMask) | kDead;
++    return aActionState;
++}
 diff --git a/Code/client/Systems/CorpseSpeechWindow.h b/Code/client/Systems/CorpseSpeechWindow.h
 new file mode 100644
 --- /dev/null
@@ -618,9 +697,10 @@ diff --git a/Code/tests/corpse_speech_window.cpp b/Code/tests/corpse_speech_wind
 new file mode 100644
 --- /dev/null
 +++ b/Code/tests/corpse_speech_window.cpp
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,80 @@
 +#include <catch2/catch.hpp>
 +#include "../client/Systems/CorpseSpeechWindow.h"
++#include "../client/Systems/CorpseLifeState.h"
 +
 +#include <limits>
 +
@@ -672,4 +752,29 @@ new file mode 100644
 +    CHECK(window.Observe(42, true, 4100));
 +    CHECK(window.Observe(42, true, 0));
 +    CHECK(window.Observe(42, true, std::numeric_limits<uint64_t>::max()));
++}
++
++TEST_CASE("A stale live action preserves only a confirmed corpse life field", "[corpse.state]")
++{
++    constexpr uint32_t kLifeMask = 0x01E00000;
++    constexpr uint32_t kDead = 2u << 21;
++    constexpr uint32_t kIncoming = 0xA5A5A5A5 & ~kLifeMask;
++    const uint32_t result = PreserveConfirmedCorpseLifeState(kDead | 0x12345, kIncoming, true);
++    CHECK((result & kLifeMask) == kDead);
++    CHECK((result & ~kLifeMask) == (kIncoming & ~kLifeMask));
++}
++
++TEST_CASE("Dying actors retain their normal transition into a completed death", "[corpse.state]")
++{
++    constexpr uint32_t kDead = 2u << 21;
++    CHECK(PreserveConfirmedCorpseLifeState(1u << 21, kDead | 17, true) == (kDead | 17));
++    CHECK(PreserveConfirmedCorpseLifeState(1u << 21, 31, true) == 31);
++    CHECK(PreserveConfirmedCorpseLifeState(0, 47, true) == 47);
++}
++
++TEST_CASE("An accepted resurrection or unknown death state does not retain corpse bits", "[corpse.state]")
++{
++    constexpr uint32_t kDead = 2u << 21;
++    CHECK(PreserveConfirmedCorpseLifeState(kDead | 9, 23, false) == 23);
++    CHECK(PreserveConfirmedCorpseLifeState(kDead, 4u << 21, false) == (4u << 21));
 +}

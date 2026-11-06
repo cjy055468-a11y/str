@@ -7,3 +7,5 @@
 待游戏/反汇编确认的假设：CommonLibSSE-NG对该运行时标志字的命名及副作用与1.6.1170二进制一致；临时NPC继承的保存入口覆盖完整存档路径；保存策略导致当前无搜索提示；现有HideSubtitle/StopCurrentDialogue足以结束残留；脚本场景豁免不会保留异常呻吟。实际保存入口支持性会在运行时核对并记录，但这不等于已用IDA/Ghidra验证其引擎语义。
 
 无IDA/Ghidra核实，本次按用户已同意的源码尝试实施。不把原制作组的设计认定为遗漏，也不预先归因MOD。继续保留corpse2原有非虚IsInRagdollState查询AE37491，查询线程范围没有扩大。随机断线根因仍未确认，原网络诊断保留。
+
+新增直接线索：AnimationSystem用动作State1整字覆盖actorState.flags1，该字含生命状态；旧动作与已接受死亡更新分属不同同步路径。只保护已经完成的dead生命状态位，保留dying过渡和已接受复活。位范围与项目原有IsBleedingOut掩码一致，枚举值2来自CommonLibSSE-NG；它是否导致本次客机症状仍待新日志/游戏确认。

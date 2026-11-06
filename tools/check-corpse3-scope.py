@@ -13,7 +13,7 @@ repo = Path(__file__).resolve().parent.parent
 delta = repo / 'fixes/corpse3-delta.patch'
 expected = json.loads((repo / 'fixes/corpse3-scope.json').read_text())
 paths = re.findall(r'^diff --git a/(.*?) b/', delta.read_text(), re.M)
-assert paths == expected and len(paths) == 16
+assert paths == expected and len(paths) == 19
 assert all(p.startswith('Code/client/') or p == 'Code/tests/corpse_speech_window.cpp' for p in paths)
 assert not any('Missives' in p for p in paths)
 env = os.environ.copy()

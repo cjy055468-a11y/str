@@ -4,6 +4,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 expected = {
+    'A stale live action preserves only a confirmed corpse life field',
+    'Dying actors retain their normal transition into a completed death',
+    'An accepted resurrection or unknown death state does not retain corpse bits',
     'Corpse speech allows a final line before a bounded death deadline',
     'Repeated late speech cannot extend an expired corpse deadline',
     'A revived actor regains speech and a later death receives a new grace period',
@@ -66,5 +69,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 9, 'required_placement_cases': 6, 'required_corpse_timing_cases': 5,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 9, 'required_placement_cases': 6, 'required_corpse_timing_cases': 5, 'required_corpse_life_field_cases': 3,
                   'failures': 0, 'errors': 0}, indent=2))

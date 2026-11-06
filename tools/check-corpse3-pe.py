@@ -9,7 +9,7 @@ assert {p.name for p in files} == {'SkyrimTogether.exe', 'EarlyLoad.dll', 'STSer
 reports = [inspect(p, require_fix=True) for p in files]
 data = next(p for p in files if p.name == 'SkyrimTogether.exe').read_bytes()
 assert b'STR corpse death playback:' in data
-for marker in (b'STR network NPC save policy:', b'STR network NPC save filter installed:', b'STR corpse speech cleanup:'):
+for marker in (b'STR network NPC save policy:', b'STR network NPC save filter installed:', b'STR corpse speech cleanup:', b'STR corpse life-state guard:'):
     assert marker in data, marker
 assert b'STR corpse action replay:' in data
 assert b'STR Missives' not in data
