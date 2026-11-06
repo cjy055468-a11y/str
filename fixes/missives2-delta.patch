@@ -129,7 +129,7 @@ diff --git a/Code/client/ModCompat/MissivesBridge.cpp b/Code/client/ModCompat/Mi
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesBridge.cpp
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,146 @@
 +#include <TiltedOnlinePCH.h>
 +#include <ModCompat/MissivesBridge.h>
 +#include <Misc/BSScript.h>
@@ -194,6 +194,7 @@ new file mode 100644
 +    case Operation::Authority: return s_ready && !s_boards.empty();
 +    case Operation::CanGenerate: return s_ready && s_boards.contains(aValue) && (it == s_quests.end() || !it->second.Reserved);
 +    case Operation::Personal: return it == s_quests.end() ? !s_connected : it->second.Personal;
++    case Operation::Source: return it != s_quests.end() && it->second.Source;
 +    case Operation::State: return it == s_quests.end() ? -1 : it->second.State;
 +    case Operation::PostingAlias: return it == s_quests.end() ? -1 : static_cast<int32_t>(it->second.PostingAlias);
 +    case Operation::BoardAlias: return it == s_quests.end() ? -1 : static_cast<int32_t>(it->second.BoardAlias);
@@ -204,7 +205,11 @@ new file mode 100644
 +    if (aOperation == Operation::Claim)
 +    {
 +        if (it == s_quests.end()) { s_events.push_back({aOperation, aId, aValue}); return 1; }
-+        if (it->second.State == 0) it->second.State = 1;
++        if (it->second.State == 0)
++        {
++            it->second.State = 1;
++            it->second.Reserved = true;
++        }
 +    }
 +    if (aOperation == Operation::Stage && (it == s_quests.end() || !it->second.Personal)) return 0;
 +    s_events.push_back({aOperation, aId, aValue});
@@ -261,6 +266,7 @@ new file mode 100644
 +    const Binding bindings[] = {
 +        {"IsConnected",O::Connected,0,V::kBoolean},{"IsAuthority",O::Authority,0,V::kBoolean},
 +        {"CanGenerate",O::CanGenerate,2,V::kBoolean},{"IsPersonalQuest",O::Personal,1,V::kBoolean},
++        {"IsSourceQuest",O::Source,1,V::kBoolean},
 +        {"Claim",O::Claim,1,V::kBoolean},{"StageChanged",O::Stage,2,V::kEmpty},
 +        {"OpenBoard",O::Open,2,V::kEmpty},{"CloseBoard",O::Close,1,V::kEmpty},
 +        {"GetPostingState",O::State,1,V::kInteger},{"GetPostingAlias",O::PostingAlias,1,V::kInteger},
@@ -274,7 +280,7 @@ diff --git a/Code/client/ModCompat/MissivesBridge.h b/Code/client/ModCompat/Miss
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesBridge.h
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,29 @@
 +#pragma once
 +#include <cstdint>
 +#include <map>
@@ -284,12 +290,13 @@ new file mode 100644
 +struct BSScript;
 +namespace MissivesBridge
 +{
-+enum class Operation { Connected, Authority, CanGenerate, Personal, Claim, Stage, Open, Close, State, PostingAlias, BoardAlias, Recipient, Released, Changed };
++enum class Operation { Connected, Authority, CanGenerate, Personal, Source, Claim, Stage, Open, Close, State, PostingAlias, BoardAlias, Recipient, Released, Changed };
 +struct Event { Operation Action; uint32_t Id; uint32_t Value; };
 +struct QuestState
 +{
 +    int32_t State{-1};
 +    bool Personal{true};
++    bool Source{};
 +    bool Reserved{};
 +    uint32_t PostingAlias{};
 +    uint32_t BoardAlias{};
@@ -483,7 +490,7 @@ diff --git a/Code/client/ModCompat/MissivesContext.cpp b/Code/client/ModCompat/M
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesContext.cpp
-@@ -0,0 +1,273 @@
+@@ -0,0 +1,283 @@
 +#include <TiltedOnlinePCH.h>
 +#include <ModCompat/MissivesContext.h>
 +#include <ModCompat/MissivesCompat.h>
@@ -697,6 +704,16 @@ new file mode 100644
 +        }
 +    }
 +    const void* pUpdate = world.ctx().at<PapyrusService>().Get("Quest", "UpdateCurrentInstanceGlobal");
++    // A reconnecting claimant keeps its existing item references and executed
++    // reward stages. Repair only an absent actor link after replica recreation.
++    if (aSource)
++        for (const auto& alias : acData.Aliases)
++            if (alias.Type == MissivesAlias::Kind::Actor && !m_quest->GetAliasedRef(alias.Id))
++            {
++                auto* pActor = acResolveActor(alias.ActorId);
++                if (!pActor) return false;
++                ForceReference(alias.Id, pActor);
++            }
 +    for (const auto& entry : acData.Globals)
 +        if (auto* pGlobal = Cast<TESGlobal>(TESForm::GetById(world.GetModSystem().GetGameId(entry.Id))))
 +        {
@@ -4260,7 +4277,7 @@ diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Serv
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,516 @@
+@@ -0,0 +1,543 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -4346,6 +4363,7 @@ new file mode 100644
 +    m_enabled = Plugin("Missives.esp") && Plugin("STR_Missives_Compat.esp");
 +    m_hello = m_ready = m_authority = m_snapshot = false;
 +    m_boards.clear();
++    m_transientBoards.clear();
 +    m_boardQueries.clear();
 +    m_generators.clear();
 +    m_assigning.clear();
@@ -4407,6 +4425,8 @@ new file mode 100644
 +            || (apPosting->State >= 4 && !m_terminal.contains(apPosting->Data.Id))));
 +    state.PostingAlias = acSpec.PostingAlias;
 +    state.BoardAlias = acSpec.BoardAlias;
++    if (const auto source = m_sources.find(aQuest); source != m_sources.end() && apPosting)
++        state.Source = source->second.second == apPosting->Data.SourceNonce;
 +    if (apPosting)
 +        if (auto* pRecipient = ResolveActor(apPosting->Recipient)) state.Recipient = pRecipient->formID;
 +    MissivesBridge::SetQuest(aQuest, state);
@@ -4613,8 +4633,9 @@ new file mode 100644
 +            }
 +        const auto source = m_sources.find(quest);
 +        const bool cSource = source != m_sources.end() && source->second.second == post.Data.SourceNonce;
++        const bool cResume = post.Mine && m_personal.contains(quest) && context->IsRunning() && context->GetStage() >= 20;
 +        if (!post.Applied)
-+            post.Applied = context->Apply(post.Data, cSource, post.Recipient, [this](uint32_t actor) { return ResolveActor(actor); });
++            post.Applied = context->Apply(post.Data, cSource || cResume, post.Recipient, [this](uint32_t actor) { return ResolveActor(actor); });
 +        if (!post.Applied) continue;
 +        context->RebindPlayer(post.Recipient, [this](uint32_t actor) { return ResolveActor(actor); });
 +        if (post.State == 2 || post.State == 3) context->SetStage(static_cast<uint16_t>(post.Data.Stage));
@@ -4657,6 +4678,7 @@ new file mode 100644
 +        }
 +        if (event.Action == O::Close)
 +        {
++            if (!m_claims.empty()) { m_transientBoards.insert(event.Id); continue; }
 +            m_boards.erase(event.Id);
 +            m_boardQueries.erase(event.Id);
 +            MissivesData data;
@@ -4666,7 +4688,17 @@ new file mode 100644
 +        if (event.Action == O::Changed) continue;
 +        const auto* pSpec = Spec(event.Id);
 +        if (!pSpec) continue;
-+        if (event.Action == O::Claim) m_claims.insert(event.Id);
++        if (event.Action == O::Claim)
++        {
++            m_claims.insert(event.Id);
++            auto* pQuest = Cast<TESQuest>(TESForm::GetById(event.Id));
++            auto* pBoard = pQuest ? pQuest->GetAliasedRef(pSpec->BoardAlias) : nullptr;
++            if (MissivesCompat::IsBoard(pBoard) && !m_boards.contains(pBoard->formID))
++            {
++                m_boards.insert(pBoard->formID);
++                m_transientBoards.insert(pBoard->formID);
++            }
++        }
 +        const auto current = m_current.find(event.Id);
 +        if (current == m_current.end()) continue;
 +        const auto found = m_postings.find(current->second);
@@ -4720,6 +4752,17 @@ new file mode 100644
 +        }
 +    PublishBoards();
 +    ApplyPostings();
++    if (m_claims.empty())
++    {
++        for (uint32_t board : m_transientBoards)
++        {
++            MissivesData data;
++            if (m_world.GetModSystem().GetServerModId(board, data.Board)) Send(RequestMissives::Operation::CloseBoard, data);
++            m_boards.erase(board);
++            m_boardQueries.erase(board);
++        }
++        m_transientBoards.clear();
++    }
 +}
 +
 +void MissivesService::OnNotify(const NotifyMissives& acMessage) noexcept
@@ -4770,6 +4813,7 @@ new file mode 100644
 +    post.Sequence = std::max(post.Sequence, acMessage.Sequence);
 +    post.Recipient = acMessage.RecipientActor;
 +    post.State = acMessage.Action == O::Posting ? 0 : acMessage.Action == O::Retired ? 4 : acMessage.Action == O::Complete ? 5 : post.Mine ? 2 : 3;
++    if (post.State >= 4) m_reserved.erase(cQuest);
 +    post.Applied = false;
 +    const auto current = m_current.find(cQuest);
 +    if (current != m_current.end() && acMessage.Data.Id < current->second) return;
@@ -4866,7 +4910,7 @@ diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/Missi
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/MissivesService.h
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,76 @@
 +#pragma once
 +#include <Messages/NotifyMissives.h>
 +#include <Messages/RequestMissives.h>
@@ -4929,6 +4973,7 @@ new file mode 100644
 +    std::map<uint32_t, std::chrono::steady_clock::time_point> m_actorRequests;
 +    std::set<std::pair<uint32_t, uint32_t>> m_assigning;
 +    std::set<uint32_t> m_boards;
++    std::set<uint32_t> m_transientBoards;
 +    std::set<uint32_t> m_boardQueries;
 +    std::set<uint32_t> m_generators;
 +    std::set<uint32_t> m_reserved;

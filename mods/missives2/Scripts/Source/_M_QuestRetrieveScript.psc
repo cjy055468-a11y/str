@@ -40,6 +40,12 @@ ReferenceAlias Property Alias_Missive Auto
 ;BEGIN FRAGMENT Fragment_0
 Function Fragment_0()
     STRMissivesBridge.StageChanged(GetFormID(), GetStage())
+    If STRMissivesBridge.IsConnected() && STRMissivesBridge.IsPersonalQuest(GetFormID()) && !STRMissivesBridge.IsSourceQuest(GetFormID())
+        ; Forced aliases suppress independent created items. Place this exact
+        ; personal item in the canonical chest once on acceptance.
+        Alias_Item.GetRef().Enable()
+        Alias_Chest.GetRef().AddItem(Alias_Item.GetRef(), 1, True)
+    EndIf
 ;BEGIN CODE
 If STRMissivesBridge.IsPersonalQuest(GetFormID())
     SetObjectiveDisplayed(20)
