@@ -4,6 +4,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 expected = {
+    'Corpse speech allows a final line before a bounded death deadline',
+    'Repeated late speech cannot extend an expired corpse deadline',
+    'A revived actor regains speech and a later death receives a new grace period',
+    'A recycled reference handle cannot inherit a corpse speech mute',
+    'Corpse speech timing handles a clock rollback without unsigned expiry',
     'Exit-only replay requires a reset even when its action list is empty',
     'A seated NPC replay preserves its enter state',
     'Exit followed by a different furniture enter retains the new action',
@@ -61,5 +66,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 9, 'required_placement_cases': 6,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 9, 'required_placement_cases': 6, 'required_corpse_timing_cases': 5,
                   'failures': 0, 'errors': 0}, indent=2))

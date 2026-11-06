@@ -1,0 +1,18 @@
+[
+  "Code/client/Components.h",
+  "Code/client/Components/CorpseSpeechComponent.h",
+  "Code/client/Components/RemoteComponent.h",
+  "Code/client/Games/ActorExtension.cpp",
+  "Code/client/Games/ActorExtension.h",
+  "Code/client/Games/Misc/SubtitleManager.cpp",
+  "Code/client/Games/Skyrim/Actor.cpp",
+  "Code/client/Games/Skyrim/Actor.h",
+  "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+  "Code/client/ModCompat/NetworkActorSavePolicy.h",
+  "Code/client/Services/CharacterService.h",
+  "Code/client/Services/Generic/ActorValueService.cpp",
+  "Code/client/Services/Generic/CharacterService.cpp",
+  "Code/client/Systems/CorpseSpeechWindow.h",
+  "Code/client/Systems/InterpolationSystem.cpp",
+  "Code/tests/corpse_speech_window.cpp"
+]
