@@ -1,0 +1,7 @@
+[
+  "Code/client/Games/Skyrim/ExtraData/ExtraData.h",
+  "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+  "Code/common/BuildInfo.h.in",
+  "Code/encoding/Structs/NpcInventorySnapshot.h",
+  "Code/tests/npc_inventory_snapshot.cpp"
+]
