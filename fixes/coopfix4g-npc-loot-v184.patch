@@ -562,7 +562,7 @@ index efe4f697..d80f5d88 100644
  
      Inventory::Entry item{};
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-index e5852696..d216a01c 100644
+index e5852696..e42b1fb3 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
 @@ -1,4 +1,7 @@
@@ -594,7 +594,7 @@ index e5852696..d216a01c 100644
  
      Inventory extraInventory{};
 +    Vector<GameId> resolvedNpcBases;
-+    const auto* pActor = Cast<Actor>(this);
++    auto* pActor = Cast<Actor>(this);
 +    const bool cNpc = pActor && this != PlayerCharacter::Get() && !pActor->GetExtension()->IsPlayer();
  
      auto pExtraContChangesEntries = GetContainerChanges()->entries;

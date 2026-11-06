@@ -25,7 +25,7 @@ diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyr
  
      Inventory extraInventory{};
 +    Vector<GameId> resolvedNpcBases;
-+    const auto* pActor = Cast<Actor>(this);
++    auto* pActor = Cast<Actor>(this);
 +    const bool cNpc = pActor && this != PlayerCharacter::Get() && !pActor->GetExtension()->IsPlayer();
  
      auto pExtraContChangesEntries = GetContainerChanges()->entries;
