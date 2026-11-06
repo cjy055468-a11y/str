@@ -99,7 +99,7 @@ Function RemovePosting(Quest mission, ReferenceAlias postAlias, ReferenceAlias b
         Return
     EndIf
     ObjectReference holder = GetPostingHolder(postAlias)
-    If IsConnected()
+    If IsConnected() || !IsPersonalQuest(mission.GetFormID())
         If holder == board
             board.RemoveItem(letter, 1, True)
         ElseIf holder == Game.GetPlayer() && IsPersonalQuest(mission.GetFormID())

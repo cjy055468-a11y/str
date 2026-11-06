@@ -6645,10 +6645,10 @@ index 8d9f2c78..8a5effe4 100644
  
 diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
 new file mode 100644
-index 00000000..4c201282
+index 00000000..5f54e218
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,550 @@
+@@ -0,0 +1,563 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -7032,7 +7032,12 @@ index 00000000..4c201282
 +    if (!m_transport.IsOnline())
 +    {
 +        for (auto& [quest, context] : m_contexts)
-+            if (!m_personal.contains(quest) && !context->IsRunning()) context->Stop();
++            if (!m_personal.contains(quest) && !context->IsRunning())
++            {
++                context->Stop();
++                context->SetPersonal(true);
++                MissivesBridge::RemoveQuest(quest);
++            }
 +        return;
 +    }
 +    const auto now = std::chrono::steady_clock::now();
@@ -7191,6 +7196,14 @@ index 00000000..4c201282
 +    post.Sequence = std::max(post.Sequence, acMessage.Sequence);
 +    post.Recipient = acMessage.RecipientActor;
 +    post.State = acMessage.Action == O::Posting ? 0 : acMessage.Action == O::Retired ? 4 : acMessage.Action == O::Complete ? 5 : post.Mine ? 2 : 3;
++    if (post.Mine && post.State == 2)
++        if (auto* pQuest = Cast<TESQuest>(TESForm::GetById(cQuest)); pQuest && pQuest->IsStopped() && pQuest->currentStage >= 110)
++        {
++            // A personal mission may have been finished while disconnected.
++            // Retire its server claim instead of replaying completed rewards.
++            Send(RequestMissives::Operation::Complete, post.Data, ++post.Sequence);
++            post.State = 5;
++        }
 +    if (post.State >= 4) m_reserved.erase(cQuest);
 +    post.Applied = false;
 +    const auto current = m_current.find(cQuest);
