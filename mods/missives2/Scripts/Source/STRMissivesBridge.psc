@@ -1,4 +1,4 @@
-Scriptname STRMissivesBridge Hidden
+Scriptname STRMissivesBridge Hidden Native
 Bool Function IsConnected() Global Native
 Bool Function IsAuthority() Global Native
 Bool Function CanGenerate(Int questId, Int boardId) Global Native
@@ -7,7 +7,7 @@ Bool Function Claim(Int questId) Global Native
 Function StageChanged(Int questId, Int stageId) Global Native
 Function OpenBoard(Int boardId, Int controllerId) Global Native
 Function CloseBoard(Int boardId) Global Native
-Int Function GetState(Int questId) Global Native
+Int Function GetPostingState(Int questId) Global Native
 Int Function GetPostingAlias(Int questId) Global Native
 Int Function GetBoardAlias(Int questId) Global Native
 Int Function GetRecipient(Int questId) Global Native
@@ -21,7 +21,7 @@ Function RefreshPosting(Quest mission) Global
         Return
     EndIf
     Int questId = mission.GetFormID()
-    Int status = GetState(questId)
+    Int status = GetPostingState(questId)
     If status < 0 || status == 1
         Return
     EndIf

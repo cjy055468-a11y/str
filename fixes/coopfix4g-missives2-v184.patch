@@ -685,7 +685,7 @@ index e5852696..78d0478e 100644
      });
 diff --git a/Code/client/ModCompat/MissivesBridge.cpp b/Code/client/ModCompat/MissivesBridge.cpp
 new file mode 100644
-index 00000000..2b3854bd
+index 00000000..42615a17
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesBridge.cpp
 @@ -0,0 +1,140 @@
@@ -822,7 +822,7 @@ index 00000000..2b3854bd
 +        {"CanGenerate",O::CanGenerate,2,V::kBoolean},{"IsPersonalQuest",O::Personal,1,V::kBoolean},
 +        {"Claim",O::Claim,1,V::kBoolean},{"StageChanged",O::Stage,2,V::kEmpty},
 +        {"OpenBoard",O::Open,2,V::kEmpty},{"CloseBoard",O::Close,1,V::kEmpty},
-+        {"GetState",O::State,1,V::kInteger},{"GetPostingAlias",O::PostingAlias,1,V::kInteger},
++        {"GetPostingState",O::State,1,V::kInteger},{"GetPostingAlias",O::PostingAlias,1,V::kInteger},
 +        {"GetBoardAlias",O::BoardAlias,1,V::kInteger},{"GetRecipient",O::Recipient,1,V::kInteger},
 +        {"Released",O::Released,1,V::kEmpty},{"BoardChanged",O::Changed,1,V::kEmpty}
 +    };
