@@ -181,14 +181,15 @@ index 83f38a6c..a42c51c6 100644
 +    mutable uint32_t onlineFlags{0};
  };
 diff --git a/Code/client/Games/Misc/SubtitleManager.cpp b/Code/client/Games/Misc/SubtitleManager.cpp
-index 99cac10d..e72925f9 100644
+index 99cac10d..d4907375 100644
 --- a/Code/client/Games/Misc/SubtitleManager.cpp
 +++ b/Code/client/Games/Misc/SubtitleManager.cpp
-@@ -36,6 +36,8 @@ void TP_MAKE_THISCALL(HookShowSubtitle, SubtitleManager, TESObjectREFR* apSpeake
+@@ -36,6 +36,9 @@ void TP_MAKE_THISCALL(HookShowSubtitle, SubtitleManager, TESObjectREFR* apSpeake
      // spdlog::debug("Subtitle for actor {:X} (bool {}):\n\t{}", apSpeaker ? apSpeaker->formID : 0, aIsInDialogue, apSubtitleText);
  
      Actor* pActor = Cast<Actor>(apSpeaker);
-+    if (pActor && pActor->GetExtension()->IsDeadSpeechMuted())
++    // Empty updates may be the engine ending a line; keep cleanup working.
++    if (apSubtitleText && *apSubtitleText && pActor && pActor->GetExtension()->IsDeadSpeechMuted())
 +        return;
      const bool isNpc = pActor && !pActor->GetExtension()->IsPlayer();
      const bool isPlayerDialogue = isNpc && MenuTopicManager::IsPlayerDialogueSpeaker(pActor);
