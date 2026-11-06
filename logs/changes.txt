@@ -4,7 +4,7 @@
  .../Components/WaitingForAssignmentComponent.h     |   4 +
  Code/client/Games/ActorExtension.cpp               |  38 ++++-
  Code/client/Games/ActorExtension.h                 |  10 +-
- Code/client/Games/Misc/SubtitleManager.cpp         |   2 +
+ Code/client/Games/Misc/SubtitleManager.cpp         |   3 +
  Code/client/Games/Skyrim/Actor.cpp                 |  81 ++++++++++-
  Code/client/Games/Skyrim/Actor.h                   |   3 +-
  Code/client/Games/Skyrim/Forms/TESForm.h           |   1 +
@@ -37,5 +37,5 @@
  Code/server/Services/InventoryService.h            |   1 +
  Code/server/World.cpp                              |   2 +
  Code/tests/xmake.lua                               |   3 +-
- 39 files changed, 632 insertions(+), 68 deletions(-)
+ 39 files changed, 633 insertions(+), 68 deletions(-)
 

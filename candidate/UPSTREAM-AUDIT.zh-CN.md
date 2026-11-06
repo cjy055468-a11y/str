@@ -1,0 +1,11 @@
+# 官方基础与引擎假设
+
+基础固定为官方v1.8.4提交54b3a858e228dc8807ed65bc3f9ac3c3f81b610d及其四个匹配子模块。官方dev只作对照，不混入其未发布更改。完整补丁包含之前累计修复，corpse3-delta.patch列出相对已交付corpse2的本次增量。
+
+可直接确认的源码事实：SetSkipSaveFlag(true)写入TESForm.unk10=FFFF；Actor::Create对远端生成NPC调用它；接收字幕会直接显示，结束依赖原生语音流程；接收语音会结束上一句并播放新句；当前远端动画动作包含死亡过渡，必须保留。
+
+待游戏/反汇编确认的假设：CommonLibSSE-NG对该运行时标志字的命名及副作用与1.6.1170二进制一致；临时NPC继承的保存入口覆盖完整存档路径；保存策略导致当前无搜索提示；现有HideSubtitle/StopCurrentDialogue足以结束残留；脚本场景豁免不会保留异常呻吟。实际保存入口支持性会在运行时核对并记录，但这不等于已用IDA/Ghidra验证其引擎语义。
+
+无IDA/Ghidra核实，本次按用户已同意的源码尝试实施。不把原制作组的设计认定为遗漏，也不预先归因MOD。继续保留corpse2原有非虚IsInRagdollState查询AE37491，查询线程范围没有扩大。随机断线根因仍未确认，原网络诊断保留。
+
+新增直接线索：AnimationSystem用动作State1整字覆盖actorState.flags1，该字含生命状态；旧动作与已接受死亡更新分属不同同步路径。只保护已经完成的dead生命状态位，保留dying过渡和已接受复活。位范围与项目原有IsBleedingOut掩码一致，枚举值2来自CommonLibSSE-NG；它是否导致本次客机症状仍待新日志/游戏确认。
