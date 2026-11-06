@@ -1,257 +1,71 @@
-
-Algorithm : SHA256
-Hash      : A1F1B7B405EB1551AB136AEE274CA0BD771DAA75BC118CE07A00A7EF934DC0DF
-Path      : D:\a\str\str\candidate\coopfix4g-missives2-v184.patch
-
-Algorithm : SHA256
-Hash      : BD760A3A0553F8DA7F4060BE823A0F94C7C5A6C26FF53B5134FA48386675431D
-Path      : D:\a\str\str\candidate\LICENSE
-
-Algorithm : SHA256
-Hash      : F9777D7E9A9B1AA409150A3C66983894FCFF00F1E8C00CB0905F670C0710C627
-Path      : D:\a\str\str\candidate\README.zh-CN.md
-
-Algorithm : SHA256
-Hash      : 16B93F067646CE44BE69BB760DB73F38BB3E9D9CFF4E199C9A0A52B264C5CC40
-Path      : D:\a\str\str\candidate\logs\build-client.txt
-
-Algorithm : SHA256
-Hash      : 63FDBC49971DC68336EE81F06085D33197423299E61ECF09A08706B82D70D6FC
-Path      : D:\a\str\str\candidate\logs\build-server.txt
-
-Algorithm : SHA256
-Hash      : 88CA26B50F6DE84D0F0255E0F77CF0C9569ED9A4540D7A62554DA01FB0D66A87
-Path      : D:\a\str\str\candidate\logs\build-tests.txt
-
-Algorithm : SHA256
-Hash      : 06DB7A4C889A731231648DC69C5F21F53902FF94067A19D8AFA9E42C4CBC8F00
-Path      : D:\a\str\str\candidate\logs\changes.txt
-
-Algorithm : SHA256
-Hash      : A5D5C59DA7083D5B012009BA105F7195D8F64BF885047725ED7828047897F435
-Path      : D:\a\str\str\candidate\logs\check1.txt
-
-Algorithm : SHA256
-Hash      : 8A6ECEC209C5BF095D6C9E9EB23FA227326D4E49206F800F98BC13F75F1CC19F
-Path      : D:\a\str\str\candidate\logs\check2.json
-
-Algorithm : SHA256
-Hash      : 3E9F8601E65D89DB4FF3507830A8210463B9D3D0179FCA5CF311F63448530B59
-Path      : D:\a\str\str\candidate\logs\check3.txt
-
-Algorithm : SHA256
-Hash      : 3F5BC0C136E46437261CB59321113FA0D1FD3AC07333B56D8A17755F328334D1
-Path      : D:\a\str\str\candidate\logs\configure-attempt1.txt
-
-Algorithm : SHA256
-Hash      : 3F5BC0C136E46437261CB59321113FA0D1FD3AC07333B56D8A17755F328334D1
-Path      : D:\a\str\str\candidate\logs\configure.txt
-
-Algorithm : SHA256
-Hash      : E1FCBAB7CF436826CCD3D063A02708955BD25E1DB8C029033C96C16F6161AA63
-Path      : D:\a\str\str\candidate\logs\papyrus-build.txt
-
-Algorithm : SHA256
-Hash      : A610847F39B707AE500515C329A8B7F9CC86D11970B419E6E7BD5C337D7373C3
-Path      : D:\a\str\str\candidate\logs\papyrus-check.json
-
-Algorithm : SHA256
-Hash      : 8B3B1843A00791062F02CA64AF00919819D2A482180A7319134EF104541B9D9A
-Path      : D:\a\str\str\candidate\logs\papyrus-help.txt
-
-Algorithm : SHA256
-Hash      : F18C230E84DB2C10A6AC051793120321A8806B5B4DF787B29E3044E91F21871E
-Path      : D:\a\str\str\candidate\logs\server-smoke.txt
-
-Algorithm : SHA256
-Hash      : 4274DF51719F2122734F2B66D7430C2D6B00051950CC15344DD1A420B94C7033
-Path      : D:\a\str\str\candidate\logs\source-scope.json
-
-Algorithm : SHA256
-Hash      : 9D95BBB00238CA89F5AEC6CDDA55E542B80864FE606D7695E0415E1AF5C06E26
-Path      : D:\a\str\str\candidate\logs\source-validation.txt
-
-Algorithm : SHA256
-Hash      : 83766DF524A3E6CA470442FB1CE78BDF06E8DA4252262763D5A3C85A78F6F4DF
-Path      : D:\a\str\str\candidate\logs\STServer.ini
-
-Algorithm : SHA256
-Hash      : 0FEA4EE4324C43C1B8F62B05958A3C70170D7452909515C69EA39804D7DFE43B
-Path      : D:\a\str\str\candidate\logs\submodules.txt
-
-Algorithm : SHA256
-Hash      : FE7EEF73E89E7421690403CCFB96FB1CF7729EDB1F279C7304A9C00310E615C0
-Path      : D:\a\str\str\candidate\logs\test-summary.txt
-
-Algorithm : SHA256
-Hash      : C27EFC56A38817BF3D190F689960929353B6781F06D00AF69E2D4EB1BDAD5A4F
-Path      : D:\a\str\str\candidate\logs\tests.xml
-
-Algorithm : SHA256
-Hash      : AB3B91469FF40E248DC1CBC77273C90782252CAF1F7D2A5C4A0E0E8241121D4B
-Path      : D:\a\str\str\candidate\logs\xmake-config.txt
-
-Algorithm : SHA256
-Hash      : A1B76F7FE9504C8759610700F25AE916F8DB1697D00C6A048B624456D286924C
-Path      : D:\a\str\str\candidate\MissivesCompat\STR_Missives_Compat.esp
-
-Algorithm : SHA256
-Hash      : 32007257414F0E7AFDA49F257FE22FAEFEC6628185AD5D73370067DA275323FE
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_ActivatorScript.pex
-
-Algorithm : SHA256
-Hash      : DD74B514332B96A343F56D07B5E9B579D8BB059BC3115B407A37C80947174127
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_AliasDeliveryScript.pex
-
-Algorithm : SHA256
-Hash      : FB42C90F11E457414D782D8A0C250916190C30B58CBE1ACF59BDB1441696A90F
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_AliasItemScript.pex
-
-Algorithm : SHA256
-Hash      : 2B1446D146E83F799733E0B8CC47667EE359A051187AF8838F2E9ACD453C9469
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_AliasMissiveDeliverScript.pex
-
-Algorithm : SHA256
-Hash      : 7AE6151902C77CEA4192EE1AD5777BFCD72BF33A4DB16D7B9D44A1566F94B512
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_AliasMissiveScript.pex
-
-Algorithm : SHA256
-Hash      : BED9F9B69F8EC850F24D2DA4393EDD8FCDBCE1F6BB82638243ABBBDF926F2ACE
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_AliasPlayerCourier.pex
-
-Algorithm : SHA256
-Hash      : 1D8163EF3643F124A73E11718B63E5DFB105B0CE8DA970EF532A8E249CD20F7B
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_AliasPlayerGather.pex
-
-Algorithm : SHA256
-Hash      : D37C6D4E28F87D6136CC8CCEFB5FDAE2490E171A263C3E868360563B393F2F54
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestCourierScript.pex
-
-Algorithm : SHA256
-Hash      : 27EE68758E43E3E32BAEF149D4F0F35EB0287A828E340E3D5877B1EF72784E5A
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestDialogue100.pex
-
-Algorithm : SHA256
-Hash      : 49D9BF8C996539267D604571467DCC53EDA8DEBB4079CB39B7489B5E3FA21D68
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestDialogue30.pex
-
-Algorithm : SHA256
-Hash      : 7F89280E2B9A1C29E137F60FFAA4239E24CCEBA2F15BD126C37A89D382A9136F
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestGatherInnScript.pex
-
-Algorithm : SHA256
-Hash      : 5F0BB193EBFDD19682AFBBAFD514A78A2E0FC9B812418EF89E51184127BE6839
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestGatherScript.pex
-
-Algorithm : SHA256
-Hash      : 8708D1686210F9850C8E0C7F14AED786991FC002B2FDFF26C371EBE19212064D
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestKillScript.pex
-
-Algorithm : SHA256
-Hash      : 3B338B4E56F76049119F02606F38F67932E2BDEAFD5CF45C55097AD0E0084FCF
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestRetrieveScript.pex
-
-Algorithm : SHA256
-Hash      : B3C82EEBBCB94A0D776DB957430360CAB88516AA222EC79B588F873E4D11E926
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestTrackFugitiveScript.pex
-
-Algorithm : SHA256
-Hash      : 2A31A97B242C6E3A500FA7FD294E53DDB02958B92376FC8C3459A742EF61ECBA
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestTrackThiefScript.pex
-
-Algorithm : SHA256
-Hash      : 836E2CB84DE630C29983DDFA5BA1D6C1D3F35B25A750D2ABB604F9CD6A67F53A
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\_M_QuestTrackVampire.pex
-
-Algorithm : SHA256
-Hash      : 371C3C47CD231A4B6F154620B6AEEE302FC896BAF6616D8FE37B1D9B6B22E887
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\STRMissivesBridge.pex
-
-Algorithm : SHA256
-Hash      : 3C439B0E5EF558B591DE00D5B9F546AB9CBC95C89AE92618C4353DFC0BEEDC6C
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_ActivatorScript.psc
-
-Algorithm : SHA256
-Hash      : 984C8A712E37EFFA25EFAC696BB370912F3E938BC0FC654D489EF491334D3DAF
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_AliasDeliveryScript.psc
-
-Algorithm : SHA256
-Hash      : C41E513493FC36993406072B848FF4B9EBC363366A6C4456FA9BC8EB0BA02166
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_AliasItemScript.psc
-
-Algorithm : SHA256
-Hash      : B4AE7055DD9761F1F840971B5DFBC7498349116AA874C6880E17B6FE5165E585
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_AliasMissiveDeliverScript.psc
-
-Algorithm : SHA256
-Hash      : A44F2DBBE96192F43C1275E4B2F817260384F3B9D79BB43F3B3622D0A6D01479
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_AliasMissiveScript.psc
-
-Algorithm : SHA256
-Hash      : 05452E0157E6C8409CC94E81FAB4D1D4A62818A1009B341831A411B4AE5ACCDE
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_AliasPlayerCourier.psc
-
-Algorithm : SHA256
-Hash      : 454744E1961E0C1D3A384642E0F0DE021433CCB0529157F60C5F06731E654852
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_AliasPlayerGather.psc
-
-Algorithm : SHA256
-Hash      : FE39717D6866B37B9C88646794ABBDD893828AF2C37F059B5628A701C4594FDC
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestCourierScript.psc
-
-Algorithm : SHA256
-Hash      : 72AAE8DB62ABD9C8945D77D312DDA92388F805E304E56F27FD30ABF0C0667B44
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestDialogue100.psc
-
-Algorithm : SHA256
-Hash      : 13AD87AC19FFDE53498F7F88D4A69FF456AEF9AF1639F0E9246FC58C04A6B9DE
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestDialogue30.psc
-
-Algorithm : SHA256
-Hash      : 875C4AC94DC4C9BFD13ED2CEB2BFCEC32F9A37384F743C5815835A5DB4E6499D
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestGatherInnScript.psc
-
-Algorithm : SHA256
-Hash      : 0ABDA2764BAE1A6EABBD469CC7CF2A5082CE243258B8CFCB20D414B4289B7B2D
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestGatherScript.psc
-
-Algorithm : SHA256
-Hash      : AE62939F5AF83D96698F48CD447C680E9657A6C9D14377816B5023D5EC352ECC
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestKillScript.psc
-
-Algorithm : SHA256
-Hash      : 149E2C05048705A9BB6F51294115D27CADB92780296EB665A8F9625DF1A11165
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestRetrieveScript.psc
-
-Algorithm : SHA256
-Hash      : 1156987B73818043C3002B3B01E6993D8BF176BF90E0D0CF64302FDCCA8C83F6
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestTrackFugitiveScript.psc
-
-Algorithm : SHA256
-Hash      : A07396D37D70B644AC4CA589DF68B90A2BB8D06861935C7D674A601E4C049BB1
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestTrackThiefScript.psc
-
-Algorithm : SHA256
-Hash      : F5961406941C6ED1483F3AC2DCA5B0BCAB51352BFA7AAC150F7782EAE4289A78
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\_M_QuestTrackVampire.psc
-
-Algorithm : SHA256
-Hash      : E18719BCA3F62BA19836482A0F95AF9AF3CB3F11CDB4BF05AF442F6939A294DA
-Path      : D:\a\str\str\candidate\MissivesCompat\Scripts\Source\STRMissivesBridge.psc
-
-Algorithm : SHA256
-Hash      : 560D87E9BA3D89532F7C2AB345DE5684F327C6ACF1D11BEDB6255B4E53CA7E24
-Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\EarlyLoad.dll
-
-Algorithm : SHA256
-Hash      : 76D9F962CCA254600C0F6C76EAB83E1752CAA80CBAE926D55D74F3015BB69F09
-Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\SkyrimTogether.exe
-
-Algorithm : SHA256
-Hash      : AC81CE60E834C849C03D455A1D9D05354D9A2387A1E3D72CBD7B43681F90EAEA
-Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\SkyrimTogetherServer.exe
-
-Algorithm : SHA256
-Hash      : 499A92258CBF7EFFC80E3E30DFA41D8FA06ABE53FBB2A884803FC897DB7B81F4
-Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\STServer.dll
-
+4c7c092241e96379639734d6bec6638952557c7c0b4a6575e93308a743ba99d1  DELIVERY.zh-CN.md
+e4f7b7f49825641a828a9ed358eb2df080f252b7fd1ccbaf64f213d4e0181c8b  LICENSE
+a1b76f7fe9504c8759610700f25ae916f8db1697d00c6a048b624456d286924c  MissivesCompat/STR_Missives_Compat.esp
+371c3c47cd231a4b6f154620b6aeee302fc896baf6616d8fe37b1d9b6b22e887  MissivesCompat/Scripts/STRMissivesBridge.pex
+5c718ebf4eb379dc02309767a1bec7fb1f91ede750a1ee2f0b34418895dff57c  MissivesCompat/Scripts/Source/STRMissivesBridge.psc
+13df0a579fb4f0178c1288fc3c31b1cc4f80bc80f4595102f282fec26295415b  MissivesCompat/Scripts/Source/_M_ActivatorScript.psc
+9d7007d980bb2e64c44d9ccd3c4bac74c4fba4219e21dbe36dc1f70d28b03e5a  MissivesCompat/Scripts/Source/_M_AliasDeliveryScript.psc
+763530708958212cf8a35a2ca5f8275ef04ae6253858961dba5c92f1df257898  MissivesCompat/Scripts/Source/_M_AliasItemScript.psc
+2969195235e49817dd44cad7480613e4c53f6fa480a2812a277961b6254b5c86  MissivesCompat/Scripts/Source/_M_AliasMissiveDeliverScript.psc
+80332a9568847b115a56df57819ec2754e7343859da9c54f1ac88bdc9761b5d5  MissivesCompat/Scripts/Source/_M_AliasMissiveScript.psc
+2636d162abf652af7cd48a3a7216061228e27a4dec323f3e7e4bd492a6bc84fb  MissivesCompat/Scripts/Source/_M_AliasPlayerCourier.psc
+ec358bde2c8bf76b419f7d73e183db895c8521acb3aa9db1d7d75a0fd5285443  MissivesCompat/Scripts/Source/_M_AliasPlayerGather.psc
+c6485b9a0097b5e448ad80ebd19ef90ffc26026764621673124e010e68ed9e82  MissivesCompat/Scripts/Source/_M_QuestCourierScript.psc
+9dc61778687e1e0bd0accad467fa6608e0f95f8c63a30d30c98f1e53102dbddd  MissivesCompat/Scripts/Source/_M_QuestDialogue100.psc
+4481e550ddaa22a4f33ed80248f3b962b0a35ff954db707043031c966a00bab9  MissivesCompat/Scripts/Source/_M_QuestDialogue30.psc
+d83ed483b56701f1ae3d0dd5c5c6f218cb2a09778dc1848ee027b8b966202461  MissivesCompat/Scripts/Source/_M_QuestGatherInnScript.psc
+7217c91165e88ec085fbfab856bccc2c28d03325afbf5c7be98a0eeba1b64a0d  MissivesCompat/Scripts/Source/_M_QuestGatherScript.psc
+4b36d221a45d37c9425760f5aefc73bed1044419464521dbdacb3aae86b07a89  MissivesCompat/Scripts/Source/_M_QuestKillScript.psc
+6bf7d08d34f982555d2f02e7c6d6bfbcb58ee8d83e27b2a6ba925f568febe52e  MissivesCompat/Scripts/Source/_M_QuestRetrieveScript.psc
+fc37ef38c1dab1c654ef8bf78968f72b48ae11589ad430f6faa00c1c8ef69e0b  MissivesCompat/Scripts/Source/_M_QuestTrackFugitiveScript.psc
+524f27eca34e7f455f563053dc080efa7a512371b84ec74696dd9f472b8e46d2  MissivesCompat/Scripts/Source/_M_QuestTrackThiefScript.psc
+3a27c65bf7c19760b406e3316d16ca5628acac0371068145b376b9d37cc78530  MissivesCompat/Scripts/Source/_M_QuestTrackVampire.psc
+32007257414f0e7afda49f257fe22faefec6628185ad5d73370067da275323fe  MissivesCompat/Scripts/_M_ActivatorScript.pex
+dd74b514332b96a343f56d07b5e9b579d8bb059bc3115b407a37c80947174127  MissivesCompat/Scripts/_M_AliasDeliveryScript.pex
+fb42c90f11e457414d782d8a0c250916190c30b58cbe1acf59bdb1441696a90f  MissivesCompat/Scripts/_M_AliasItemScript.pex
+2b1446d146e83f799733e0b8cc47667ee359a051187af8838f2e9acd453c9469  MissivesCompat/Scripts/_M_AliasMissiveDeliverScript.pex
+7ae6151902c77cea4192ee1ad5777bfcd72bf33a4db16d7b9d44a1566f94b512  MissivesCompat/Scripts/_M_AliasMissiveScript.pex
+bed9f9b69f8ec850f24d2da4393edd8fcdbce1f6bb82638243abbbdf926f2ace  MissivesCompat/Scripts/_M_AliasPlayerCourier.pex
+1d8163ef3643f124a73e11718b63e5dfb105b0ce8da970ef532a8e249cd20f7b  MissivesCompat/Scripts/_M_AliasPlayerGather.pex
+d37c6d4e28f87d6136cc8ccefb5fdae2490e171a263c3e868360563b393f2f54  MissivesCompat/Scripts/_M_QuestCourierScript.pex
+27ee68758e43e3e32baef149d4f0f35eb0287a828e340e3d5877b1ef72784e5a  MissivesCompat/Scripts/_M_QuestDialogue100.pex
+49d9bf8c996539267d604571467dcc53eda8debb4079cb39b7489b5e3fa21d68  MissivesCompat/Scripts/_M_QuestDialogue30.pex
+7f89280e2b9a1c29e137f60ffaa4239e24cceba2f15bd126c37a89d382a9136f  MissivesCompat/Scripts/_M_QuestGatherInnScript.pex
+5f0bb193ebfdd19682afbbafd514a78a2e0fc9b812418ef89e51184127be6839  MissivesCompat/Scripts/_M_QuestGatherScript.pex
+8708d1686210f9850c8e0c7f14aed786991fc002b2fdff26c371ebe19212064d  MissivesCompat/Scripts/_M_QuestKillScript.pex
+3b338b4e56f76049119f02606f38f67932e2bdeafd5cf45c55097ad0e0084fcf  MissivesCompat/Scripts/_M_QuestRetrieveScript.pex
+b3c82eebbcb94a0d776db957430360cab88516aa222ec79b588f873e4d11e926  MissivesCompat/Scripts/_M_QuestTrackFugitiveScript.pex
+2a31a97b242c6e3a500fa7fd294e53ddb02958b92376fc8c3459a742ef61ecba  MissivesCompat/Scripts/_M_QuestTrackThiefScript.pex
+836e2cb84de630c29983ddfa5ba1d6c1d3f35b25a750d2abb604f9cd6a67f53a  MissivesCompat/Scripts/_M_QuestTrackVampire.pex
+06df5acccd76f18f5c769aab9ae67732c88d44b73bccfc245657a687d0a99865  README.zh-CN.md
+560d87e9ba3d89532f7c2ab345de5684f327c6acf1d11bedb6255b4e53ca7e24  SkyrimTogetherReborn/EarlyLoad.dll
+499a92258cbf7effc80e3e30dfa41d8fa06abe53fbb2a884803fc897db7b81f4  SkyrimTogetherReborn/STServer.dll
+76d9f962cca254600c0f6c76eab83e1752caa80cbae926d55d74f3015bb69f09  SkyrimTogetherReborn/SkyrimTogether.exe
+ac81ce60e834c849c03d455a1d9d05354d9a2387a1e3d72cbd7b43681f90eaea  SkyrimTogetherReborn/SkyrimTogetherServer.exe
+40cc6dc771fd72a66b1f1274ab880a276614cbb6639238cca61b5b9449f8d43c  TEST.zh-CN.md
+a1f1b7b405eb1551ab136aee274ca0bd771daa75bc118ce07a00a7ef934dc0df  coopfix4g-missives2-v184.patch
+0478d36eaa5462ac9713b19f97671b85f28f1619c87c7719b2e9acabcad99f88  logs/STServer.ini
+6c381e56979b7a319202f2e3a1dae5f627b84237d2fa4bc4a0ca45cfa0221573  logs/build-client.txt
+34b2c88c50ef13e0e17c1d528f4f5d635d592e13ae07e29a9d3490c5a1f40004  logs/build-server.txt
+86d31ce1b07a417b5ca5448e22330f4dd44c86a884dc5e51b65b68ae5dab0b8e  logs/build-tests.txt
+859861d85feec80186dcc85a67578a62f106d11d0d91a95a201067603710cc9b  logs/changes.txt
+55b8f504bec33af0fa8f98f534029a5954e29085ecf20a1cedc34d249010e6d6  logs/check1.txt
+0b1b3763e904cbcf48b8db48a4e9d9d2d8d48c06ffac92816eaaab812a922a9f  logs/check2.json
+d71cddbdc1b10f38539378b4af35377064c794f9fae51143e3d2f4b5602f76be  logs/check3.txt
+8fcee287201b752c757aa04d0c79ac21963d206de7e4cd98839379c28c205118  logs/configure-attempt1.txt
+8fcee287201b752c757aa04d0c79ac21963d206de7e4cd98839379c28c205118  logs/configure.txt
+acd281cae484fb1c0c724415dfdf8425165dd5ae32c789b16e8c5ee27468e49b  logs/papyrus-build.txt
+b40b7b6e3186b146e63d09dc499f4b7501df58d296aa805855b27d20dc05cccc  logs/papyrus-check.json
+525e4d60242a656d9af5aff71449fd845445a6412ebe65f843f7cd0ff1e8222e  logs/papyrus-help.txt
+deb7ce5a16929341daea971d41b8ebdc9dd362fcdbb6728d02cd426817567329  logs/server-smoke.txt
+3a8717fd74b3f78938096431d3ee936b7dec5500d839c84e3d2bd2c1c0afec81  logs/source-scope.json
+2bc2325bb75b030258871c77ad3a41e25bde21538cc585cc7720b999c74839a5  logs/source-validation.txt
+edc0f1a0fa6a9d00f192f515e415acc88ea49b3f533598b8fec26c66d93a2b20  logs/submodules.txt
+1ac8942ab5b7a0b2c782e2fa6d44c644337fe5d0f106cbb9777cb567a750884f  logs/test-summary.txt
+d9516d5a73e2332f09d315feae57bc3487e4c55845a457264c51854f9991c010  logs/tests.xml
+ec16d3c8c68ad12cb875726846d6069e4ee4302a405b9553bd2fee7d70b67787  logs/xmake-config.txt
+5ec47260bf165bc287b5b4f7e9c296feebde4972c83c00e3087763e96511f326  mod-review.json
+3131714fd3f54dcb839dd8dffd6ff025777d7f72da15ed45fb8c11a8614e063c  native-review.json
+9c8c1206bbcfbf2e62783436a313a7a6a94078f7ea07e698fca106fb2d5b49b0  round1-source.json
+ce76258157403c9f45baa350b54f1b228c9c4d2322e4100cce946de6793caf25  round2-source.json
+c125855c57c245ef5dea0dfaa4dd58beecb760dabedead9278a18f24f2999813  verification.json

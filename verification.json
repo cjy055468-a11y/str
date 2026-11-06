@@ -1,9 +1,9 @@
 {
-  "source_revision": "918f2a099fa359d26ba2f21dde6c938b2b9edb19",
-  "run_id": "42177876198",
-  "tests": 91,
+  "source_revision": "377753bcb98985cd85c454bdcf4bdff9f42102e5",
+  "run_id": "42190318170",
+  "tests": 93,
   "old_corpse3_tests_retained": 83,
-  "required_tests": 64,
+  "required_tests": 66,
   "source_reviews": 2,
   "compiled_papyrus_scripts": 18,
   "pex": "Skyrim3.2/game1",
@@ -11,11 +11,11 @@
   "binaries": [
     {
       "file": "SkyrimTogether.exe",
-      "bytes": 6699520,
+      "bytes": 6704128,
       "machine": "AMD64",
       "format": "PE32+",
       "dll": false,
-      "sha256": "74877a26d779d76953a3dafa058c38b8cb436ff2b2bafeedcf25d9734e6fd8f0",
+      "sha256": "76d9f962cca254600c0f6c76eab83e1752caa80cbae926d55d74f3015bb69f09",
       "exports_match_corpse3": true,
       "added_import_dlls": []
     },
@@ -25,17 +25,17 @@
       "machine": "AMD64",
       "format": "PE32+",
       "dll": true,
-      "sha256": "1af12ae04f3826d78b79fa0828f068c8f06ebe56e8aea5645188f8cfa718dc2d",
+      "sha256": "560d87e9ba3d89532f7c2ab345de5684f327c6acf1d11bedb6255b4e53ca7e24",
       "exports_match_corpse3": true,
       "added_import_dlls": []
     },
     {
       "file": "STServer.dll",
-      "bytes": 7409152,
+      "bytes": 7409664,
       "machine": "AMD64",
       "format": "PE32+",
       "dll": true,
-      "sha256": "ac936fb660725cfac4f7dafeb401f570428996f66b87e57ce4134b7950d63d72",
+      "sha256": "499a92258cbf7effc80e3e30dfa41d8fa06abe53fbb2a884803fc897db7b81f4",
       "exports_match_corpse3": true,
       "added_import_dlls": []
     },
@@ -45,12 +45,12 @@
       "machine": "AMD64",
       "format": "PE32+",
       "dll": false,
-      "sha256": "bce759ceef5e109692e89089d7f686388531f056a4c7675fcda9e5245afc2879",
+      "sha256": "ac81ce60e834c849c03d455a1d9d05354d9a2387a1e3d72cbd7b43681f90eaea",
       "exports_match_corpse3": true,
       "added_import_dlls": []
     }
   ],
-  "protocol": "coopfix4g-missives2; both clients and server must match",
+  "protocol": "coopfix4g-missives2r1; both clients and server must match",
   "recipient_only": true,
   "intended_behavior": "canonical board contents; only claimant gets letters, objectives and rewards",
   "game_test": "not run; candidate requires two-client testing",

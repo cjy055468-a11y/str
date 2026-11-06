@@ -1,13 +1,13 @@
 {
-  "source_revision": "918f2a099fa359d26ba2f21dde6c938b2b9edb19",
-  "run_id": "42177876198",
-  "artifact": "STR-coopfix4g-missives2-test.zip",
-  "bytes": 6458263,
-  "sha256": "2974778c8111ce27371864c73efb45b1c2a788c212be78191a128c603f7d6900",
-  "tests": 91,
-  "required_tests": 64,
+  "source_revision": "377753bcb98985cd85c454bdcf4bdff9f42102e5",
+  "run_id": "42190318170",
+  "artifact": "STR-coopfix4g-missives2r1-test.zip",
+  "bytes": 6462524,
+  "sha256": "7a2de387f643733f453fa77017d6b50621f17b90e7d6ee1c69594618fd12b9cd",
+  "tests": 93,
+  "required_tests": 66,
   "compiled_papyrus_scripts": 18,
-  "protocol": "coopfix4g-missives2",
+  "protocol": "coopfix4g-missives2r1",
   "game_test": "not run; requires two clients",
   "source_reviews": 2
 }
