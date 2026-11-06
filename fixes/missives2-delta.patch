@@ -4312,7 +4312,7 @@ diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Serv
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,549 @@
+@@ -0,0 +1,550 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -4456,6 +4456,7 @@ new file mode 100644
 +    MissivesBridge::QuestState state;
 +    state.Personal = m_personal.contains(aQuest) || (apPosting && apPosting->Mine);
 +    state.State = apPosting ? apPosting->State : -1;
++    if (apPosting && !apPosting->Applied && apPosting->State < 4) state.State = -1;
 +    state.Reserved = m_reserved.contains(aQuest) || m_personal.contains(aQuest)
 +        || (apPosting && ((!apPosting->Applied && apPosting->State == 0) || (apPosting->State > 0 && apPosting->State < 4)
 +            || (apPosting->State >= 4 && !m_terminal.contains(apPosting->Data.Id))));

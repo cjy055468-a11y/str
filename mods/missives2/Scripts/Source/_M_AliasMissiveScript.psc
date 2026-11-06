@@ -16,7 +16,7 @@ EndEvent
 
 Event OnUpdate()
     STRMissivesBridge.RefreshPosting(GetOwningQuest())
-    If STRMissivesBridge.IsConnected() && STRMissivesBridge.GetPostingState(GetOwningQuest().GetFormID()) == 1
+    If STRMissivesBridge.IsConnected() && STRMissivesBridge.GetPostingState(GetOwningQuest().GetFormID()) <= 1
         RegisterForSingleUpdate(0.1)
     EndIf
 EndEvent

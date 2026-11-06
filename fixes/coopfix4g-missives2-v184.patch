@@ -6645,10 +6645,10 @@ index 8d9f2c78..8a5effe4 100644
  
 diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
 new file mode 100644
-index 00000000..1d8fe018
+index 00000000..a7536c34
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,549 @@
+@@ -0,0 +1,550 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -6792,6 +6792,7 @@ index 00000000..1d8fe018
 +    MissivesBridge::QuestState state;
 +    state.Personal = m_personal.contains(aQuest) || (apPosting && apPosting->Mine);
 +    state.State = apPosting ? apPosting->State : -1;
++    if (apPosting && !apPosting->Applied && apPosting->State < 4) state.State = -1;
 +    state.Reserved = m_reserved.contains(aQuest) || m_personal.contains(aQuest)
 +        || (apPosting && ((!apPosting->Applied && apPosting->State == 0) || (apPosting->State > 0 && apPosting->State < 4)
 +            || (apPosting->State >= 4 && !m_terminal.contains(apPosting->Data.Id))));
