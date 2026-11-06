@@ -6004,10 +6004,11 @@ diff --git a/Code/tests/missives.cpp b/Code/tests/missives.cpp
 new file mode 100644
 --- /dev/null
 +++ b/Code/tests/missives.cpp
-@@ -0,0 +1,213 @@
+@@ -0,0 +1,214 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
++#include <glm/glm.hpp>
 +#include <catch2/catch.hpp>
 +#include <Messages/ClientMessageFactory.h>
 +#include <Messages/ServerMessageFactory.h>

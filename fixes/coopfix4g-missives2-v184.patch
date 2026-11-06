@@ -10836,13 +10836,14 @@ index 00000000..71561908
 +}
 diff --git a/Code/tests/missives.cpp b/Code/tests/missives.cpp
 new file mode 100644
-index 00000000..1db89361
+index 00000000..e6f69ae6
 --- /dev/null
 +++ b/Code/tests/missives.cpp
-@@ -0,0 +1,213 @@
+@@ -0,0 +1,214 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
++#include <glm/glm.hpp>
 +#include <catch2/catch.hpp>
 +#include <Messages/ClientMessageFactory.h>
 +#include <Messages/ServerMessageFactory.h>
