@@ -13,7 +13,7 @@
     "Code/tests/corpse_animation_sync.cpp",
     "Code/tests/corpse_speech_window.cpp"
   ],
-  "delta_sha256": "6d0f369bac45da4e94a64c53b8d55a0a59d1bdf64fc7727c2ee5e78236c56833",
+  "delta_sha256": "57c376045a3baa9c12ca576c2bafbf2dea530bff46a035034eea6080dee036ad",
   "exact_loot1_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"

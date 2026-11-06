@@ -163,7 +163,7 @@ index d70627f9..2841162a 100644
 +        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kPlayer, std::memory_order_relaxed);
  }
 diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtension.h
-index 83f38a6c..b5378d5e 100644
+index 83f38a6c..f326a8fc 100644
 --- a/Code/client/Games/ActorExtension.h
 +++ b/Code/client/Games/ActorExtension.h
 @@ -1,5 +1,6 @@
@@ -183,7 +183,7 @@ index 83f38a6c..b5378d5e 100644
      };
  
      enum class ReconciliationStage
-@@ -24,15 +28,28 @@ struct ActorExtension
+@@ -24,15 +28,29 @@ struct ActorExtension
      bool IsLocalPlayer() const noexcept;
      void SetRemote(bool aSet) noexcept;
      void SetPlayer(bool aSet) noexcept;
@@ -202,6 +202,7 @@ index 83f38a6c..b5378d5e 100644
 +    uint32_t AnimationDrivenVariableIndex = ~uint32_t{0};
 +    bool AnimationDrivenVariableResolved = false;
 +    bool CorpseAnimationDrivenReset = false;
++    bool CorpseAnimationDrivenResetFailureLogged = false;
  
      // TODO: atomic? bool instead? maybe simplify to `IsReenabling()` ?
      // Protects discovery while rebuilding a leveled NPC.
@@ -582,7 +583,7 @@ index efe4f697..d80f5d88 100644
  
      Inventory::Entry item{};
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-index e5852696..23e7c798 100644
+index e5852696..a9423bb3 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
 @@ -1,4 +1,7 @@
@@ -609,7 +610,7 @@ index e5852696..23e7c798 100644
  
  extern const AnimationGraphDescriptor* BehaviorVarPatch(BSAnimationGraphManager* pManager, Actor* pActor);
  
-@@ -70,6 +75,15 @@ void UpdateGraphDescriptorHash(Actor* apActor, BSAnimationGraphManager* apManage
+@@ -70,6 +75,16 @@ void UpdateGraphDescriptorHash(Actor* apActor, BSAnimationGraphManager* apManage
      const auto cPreviousHash = pExtension->GraphDescriptorHash;
      pExtension->GraphDescriptorHash = apManager->GetDescriptorKey(aForceIndex);
      pExtension->GraphDescriptorProjectKey = cProjectKey;
@@ -621,11 +622,12 @@ index e5852696..23e7c798 100644
 +        pExtension->AnimationDrivenVariableIndex = ~uint32_t{0};
 +        pExtension->AnimationDrivenVariableResolved = false;
 +        pExtension->CorpseAnimationDrivenReset = false;
++        pExtension->CorpseAnimationDrivenResetFailureLogged = false;
 +    }
  
      if (cPreviousHash != 0)
          spdlog::info("Animation graph project of actor {:X} changed, graph descriptor {} -> {}", apActor->formID, cPreviousHash, pExtension->GraphDescriptorHash);
-@@ -268,7 +282,7 @@ void TESObjectREFR::SaveAnimationVariables(AnimationVariables& aVariables) const
+@@ -268,7 +283,7 @@ void TESObjectREFR::SaveAnimationVariables(AnimationVariables& aVariables) const
      }
  }
  
@@ -634,7 +636,7 @@ index e5852696..23e7c798 100644
  {
      const auto spManager = animationGraphHolder.GetAnimationGraphManagerPtr();
      if (spManager)
-@@ -302,18 +316,64 @@ void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables)
+@@ -302,18 +317,75 @@ void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables)
              if (!pDescriptor)
                  return;
  
@@ -676,13 +678,24 @@ index e5852696..23e7c798 100644
 +                bool cWasAnimationDriven = false;
 +                const bool cVariableFound = pActor->animationGraphHolder.GetVariableBool(&cAnimationDriven, &cWasAnimationDriven);
 +                const bool cSetResult = cVariableFound && (!cWasAnimationDriven || pActor->animationGraphHolder.SetVariableBool(&cAnimationDriven, false));
-+                pExtendedActor->CorpseAnimationDrivenReset = true;
-+                spdlog::info("STR corpse animation sync reset: actor {:X}, variable found {}, before {}, result {}",
-+                    pActor->formID, cVariableFound, cWasAnimationDriven, cSetResult);
++                if (cSetResult)
++                {
++                    pExtendedActor->CorpseAnimationDrivenReset = true;
++                    pExtendedActor->CorpseAnimationDrivenResetFailureLogged = false;
++                    spdlog::info("STR corpse animation sync reset: actor {:X}, variable found {}, before {}, result {}",
++                        pActor->formID, cVariableFound, cWasAnimationDriven, cSetResult);
++                }
++                else if (!pExtendedActor->CorpseAnimationDrivenResetFailureLogged)
++                {
++                    pExtendedActor->CorpseAnimationDrivenResetFailureLogged = true;
++                    spdlog::warn("STR corpse animation sync reset pending: actor {:X}, variable found {}, before {}",
++                        pActor->formID, cVariableFound, cWasAnimationDriven);
++                }
 +            }
 +            else if (!aPreserveCorpsePhysics)
 +            {
 +                pExtendedActor->CorpseAnimationDrivenReset = false;
++                pExtendedActor->CorpseAnimationDrivenResetFailureLogged = false;
 +            }
 +
              // Never write into a variable whose word is an index: a wrong descriptor would turn the synced value into an
@@ -699,7 +712,7 @@ index e5852696..23e7c798 100644
                  if (pVariableSet->size > idx && pBehaviorGraph->IsWordVariable(idx))
                  {
                      pVariableSet->data[idx] = aVariables.Booleans.size() > i ? aVariables.Booleans[i] : false;
-@@ -591,6 +651,7 @@ void TESObjectREFR::GetItemFromExtraData(Inventory::Entry& arEntry, ExtraDataLis
+@@ -591,6 +663,7 @@ void TESObjectREFR::GetItemFromExtraData(Inventory::Entry& arEntry, ExtraDataLis
      arEntry.ExtraWornLeft = apExtraDataList->Contains(ExtraDataType::WornLeft);
  
      arEntry.IsQuestItem = apExtraDataList->HasQuestObjectAlias();
@@ -707,7 +720,7 @@ index e5852696..23e7c798 100644
  }
  
  ExtraDataList* TESObjectREFR::GetExtraDataFromItem(const Inventory::Entry& arEntry) noexcept
-@@ -718,6 +779,9 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
+@@ -718,6 +791,9 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
      }
  
      Inventory extraInventory{};
@@ -717,7 +730,7 @@ index e5852696..23e7c798 100644
  
      auto pExtraContChangesEntries = GetContainerChanges()->entries;
      for (auto pGameEntry : *pExtraContChangesEntries)
-@@ -743,6 +807,11 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
+@@ -743,6 +819,11 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
  
              GetItemFromExtraData(innerEntry, pExtraDataList);
  
@@ -729,7 +742,7 @@ index e5852696..23e7c798 100644
              entry.Count -= innerEntry.Count;
  
              extraInventory.Entries.push_back(std::move(innerEntry));
-@@ -752,6 +821,14 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
+@@ -752,6 +833,14 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
              extraInventory.Entries.push_back(std::move(entry));
      }
  
@@ -744,7 +757,7 @@ index e5852696..23e7c798 100644
      spdlog::debug("ExtraInventory count: {}", extraInventory.Entries.size());
  
      Inventory minimizedExtraInventory{};
-@@ -883,6 +960,11 @@ void TESObjectREFR::SetInventoryRetainingQuestItems(Inventory& aCurrentInventory
+@@ -883,6 +972,11 @@ void TESObjectREFR::SetInventoryRetainingQuestItems(Inventory& aCurrentInventory
  
  void TESObjectREFR::AddOrRemoveItem(const Inventory::Entry& arEntry, bool aIsSettingInventory) noexcept
  {
@@ -756,7 +769,7 @@ index e5852696..23e7c798 100644
      ModSystem& modSystem = World::Get().GetModSystem();
  
      uint32_t objectId = modSystem.GetGameId(arEntry.BaseId);
-@@ -930,7 +1012,12 @@ void TESObjectREFR::AddOrRemoveItem(const Inventory::Entry& arEntry, bool aIsSet
+@@ -930,7 +1024,12 @@ void TESObjectREFR::AddOrRemoveItem(const Inventory::Entry& arEntry, bool aIsSet
          {
              Actor* pActor = Cast<Actor>(this);
              if (pActor && pActor->GetExtension()->IsRemotePlayer())
@@ -770,7 +783,7 @@ index e5852696..23e7c798 100644
          }
      }
  
-@@ -1032,6 +1119,26 @@ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, u
+@@ -1032,6 +1131,26 @@ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, u
  {
      Actor* pActivator = Cast<Actor>(apActivator);
  
@@ -797,7 +810,7 @@ index e5852696..23e7c798 100644
      // Exclude books from activation since only reading them removes them from the cell
      // Note: Books are now unsynced 
      if (pActivator && apThis->baseForm->formType != FormType::Book)
-@@ -1146,6 +1253,33 @@ void TP_MAKE_THISCALL(HookLockChange, TESObjectREFR)
+@@ -1146,6 +1265,33 @@ void TP_MAKE_THISCALL(HookLockChange, TESObjectREFR)
          World::Get().GetRunner().Trigger(LockChangeEvent(apThis->formID, false, 0));
  }
  
@@ -831,7 +844,7 @@ index e5852696..23e7c798 100644
  static TiltedPhoques::Initializer s_objectReferencesHooks(
      []()
      {
-@@ -1159,6 +1293,11 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
+@@ -1159,6 +1305,11 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
          POINTER_SKYRIMSE(TRemoveInventoryItem, s_removeInventoryItem, 19689);
          POINTER_SKYRIMSE(TPlayAnimationAndWait, s_playAnimationAndWait, 56206);
          POINTER_SKYRIMSE(TPlayAnimation, s_playAnimation, 56205);
@@ -843,7 +856,7 @@ index e5852696..23e7c798 100644
  
          RealLockChange = s_lockChange.Get();
          // RealSetLeveledCreature = s_SetLeveledCreature.Get();
-@@ -1181,4 +1320,7 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
+@@ -1181,4 +1332,7 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
          TP_HOOK(&RealRemoveInventoryItem, HookRemoveInventoryItem);
          TP_HOOK(&RealPlayAnimationAndWait, HookPlayAnimationAndWait);
          TP_HOOK(&RealPlayAnimation, HookPlayAnimation);
@@ -8215,7 +8228,7 @@ index b0596604..2fedcc51 100644
      ctx().emplace<MapService>(*this, m_dispatcher, m_transport);
  
 diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
-index 5db8d876..2275a052 100644
+index 5db8d876..ef1e49df 100644
 --- a/Code/common/BuildInfo.h.in
 +++ b/Code/common/BuildInfo.h.in
 @@ -1,4 +1,4 @@
@@ -8223,7 +8236,7 @@ index 5db8d876..2275a052 100644
  // This file was autogenerated by xmake
  #define BUILD_BRANCH "${GIT_BRANCH}"
 -#define BUILD_COMMIT "${GIT_TAG}"
-+#define BUILD_COMMIT "${GIT_TAG}-coopfix4h-corpse4-loot1"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4i-corpse4-loot1"
 diff --git a/Code/encoding/Messages/AssignCharacterRequest.cpp b/Code/encoding/Messages/AssignCharacterRequest.cpp
 index 7d7af814..24376ae9 100644
 --- a/Code/encoding/Messages/AssignCharacterRequest.cpp

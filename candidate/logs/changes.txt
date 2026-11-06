@@ -3,7 +3,7 @@
  Code/client/Components/RemoteComponent.h           |   3 +
  .../Components/WaitingForAssignmentComponent.h     |   4 +
  Code/client/Games/ActorExtension.cpp               |  51 ++++-
- Code/client/Games/ActorExtension.h                 |  19 +-
+ Code/client/Games/ActorExtension.h                 |  20 +-
  Code/client/Games/Misc/BSScript.cpp                |   2 +
  Code/client/Games/Misc/SubtitleManager.cpp         |   3 +
  Code/client/Games/Skyrim/Actor.cpp                 |  98 ++++++++-
@@ -13,7 +13,7 @@
  Code/client/Games/Skyrim/Misc/MiddleProcess.h      |   6 +-
  Code/client/Games/Skyrim/NetImmerse/NiAVObject.h   |   3 +
  Code/client/Games/Skyrim/PlayerCharacter.cpp       |   4 +
- Code/client/Games/Skyrim/TESObjectREFR.cpp         | 146 ++++++++++++-
+ Code/client/Games/Skyrim/TESObjectREFR.cpp         | 158 +++++++++++++-
  Code/client/Games/Skyrim/TESObjectREFR.h           |   2 +-
  Code/client/Services/CharacterService.h            |   6 +
  Code/client/Services/Generic/ActorValueService.cpp |  14 ++
@@ -46,4 +46,4 @@
  Code/server/Services/InventoryService.h            |   1 +
  Code/server/World.cpp                              |   4 +
  Code/tests/xmake.lua                               |   3 +-
- 48 files changed, 904 insertions(+), 84 deletions(-)
+ 48 files changed, 917 insertions(+), 84 deletions(-)
