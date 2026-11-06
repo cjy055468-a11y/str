@@ -490,7 +490,7 @@ diff --git a/Code/client/ModCompat/MissivesContext.cpp b/Code/client/ModCompat/M
 new file mode 100644
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesContext.cpp
-@@ -0,0 +1,284 @@
+@@ -0,0 +1,285 @@
 +#include <TiltedOnlinePCH.h>
 +#include <ModCompat/MissivesContext.h>
 +#include <ModCompat/MissivesCompat.h>
@@ -773,6 +773,7 @@ new file mode 100644
 +        m_pinned = false;
 +        m_initialized = false;
 +        m_quest->type = static_cast<TESQuest::Type>(m_originalType);
++        SetPersonal(true); // A stopped slot returns to the original offline defaults.
 +    }
 +}
 diff --git a/Code/client/ModCompat/MissivesContext.h b/Code/client/ModCompat/MissivesContext.h
