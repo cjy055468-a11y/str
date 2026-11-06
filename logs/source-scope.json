@@ -6,7 +6,7 @@
     "Code/encoding/Structs/NpcInventorySnapshot.h",
     "Code/tests/npc_inventory_snapshot.cpp"
   ],
-  "delta_sha256": "fb64c630dbe2588216818ea36ebe924789e8f4dfbb3a2f0af3c741682864be75",
+  "delta_sha256": "e31019bad892cc962b486da2539e6149d16277bcb42135a67fe38aa199235c38",
   "exact_missives2r1_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"
