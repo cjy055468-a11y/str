@@ -1,0 +1,15 @@
+{
+  "test_cases": 108,
+  "executed_cases": 108,
+  "required_replay_cases": 5,
+  "required_drop_cases": 9,
+  "required_actor_cases": 7,
+  "required_coopfix3r2_cases": 12,
+  "required_regression_cases": 9,
+  "required_placement_cases": 6,
+  "required_corpse_timing_cases": 5,
+  "required_corpse_life_field_cases": 3,
+  "failures": 0,
+  "errors": 0
+}
+
