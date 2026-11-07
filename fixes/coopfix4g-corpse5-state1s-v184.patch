@@ -7860,7 +7860,7 @@ index 00000000..49e97704
 +};
 diff --git a/Code/client/Systems/CorpseStateRefreshWindow.h b/Code/client/Systems/CorpseStateRefreshWindow.h
 new file mode 100644
-index 00000000..0db635b1
+index 00000000..8a925ceb
 --- /dev/null
 +++ b/Code/client/Systems/CorpseStateRefreshWindow.h
 @@ -0,0 +1,40 @@
@@ -7886,7 +7886,7 @@ index 00000000..0db635b1
 +            m_deadSince.reset();
 +            m_consumed = false;
 +        }
-+        if (!aConfirmedDead || aHandle == 0 || aServerId == 0 || aEpoch == 0 || m_consumed)
++        if (!aConfirmedDead || aHandle == 0 || aServerId == 0xFFFFFFFFu || aEpoch == 0 || m_consumed)
 +            return false;
 +        if (!m_deadSince || aNow < *m_deadSince)
 +            m_deadSince = aNow;
@@ -10762,10 +10762,10 @@ index 00000000..bc6c3bac
 +}
 diff --git a/Code/tests/corpse_state_refresh_window.cpp b/Code/tests/corpse_state_refresh_window.cpp
 new file mode 100644
-index 00000000..8124a28e
+index 00000000..84408f73
 --- /dev/null
 +++ b/Code/tests/corpse_state_refresh_window.cpp
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,59 @@
 +#include <catch2/catch.hpp>
 +#include "../client/Systems/CorpseStateRefreshWindow.h"
 +
@@ -10814,12 +10814,16 @@ index 00000000..8124a28e
 +    CorpseStateRefreshWindow window;
 +    CHECK_FALSE(window.Observe(0, 7, 1, true, true, 0));
 +    CHECK_FALSE(window.Observe(0, 7, 1, true, true, 5000));
-+    CHECK_FALSE(window.Observe(42, 0, 1, true, true, 5000));
++    CHECK_FALSE(window.Observe(42, 0xFFFFFFFFu, 1, true, true, 5000));
 +    CHECK_FALSE(window.Observe(42, 7, 0, true, true, 5000));
 +    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 5000));
 +    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 1000));
 +    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 1999));
 +    REQUIRE(window.Observe(42, 7, 1, true, true, 2000));
++    // EnTT server entity zero is valid; only its null sentinel is invalid.
++    CorpseStateRefreshWindow zeroId;
++    CHECK_FALSE(zeroId.Observe(42, 0, 1, true, true, 0));
++    REQUIRE(zeroId.Observe(42, 0, 1, true, true, 1000));
 +}
 diff --git a/Code/tests/dropped_item_binding.cpp b/Code/tests/dropped_item_binding.cpp
 new file mode 100644
