@@ -146,7 +146,7 @@ jobs:
           Copy-Item fixes/coopfix4g-corpse5-state1s-loot2-v184.patch candidate/
           Copy-Item fixes/README-corpse5-state1s-loot2.zh-CN.md candidate/README.zh-CN.md
           Copy-Item fixes/corpse5-state1s-loot2-delta.patch, fixes/corpse5-state1s-loot2-source-review.json, fixes/corpse5-state1s-loot2-source-manifest.json candidate/
-          Copy-Item fixes/corpse5-state1s-loot2-round1-review.json candidate/round1-review.json
+          Copy-Item fixes/corpse5-state1s-loot2-delta.patch, fixes/corpse5-state1s-loot2-source-review.json, fixes/corpse5-state1s-loot2-source-manifest.json candidate/
           Copy-Item source/LICENSE candidate/LICENSE
           Copy-Item logs candidate/logs -Recurse
           $deliveryHashes = Get-ChildItem candidate -File -Recurse | Where-Object { $_.Name -ne 'SHA256.txt' } | Get-FileHash -Algorithm SHA256

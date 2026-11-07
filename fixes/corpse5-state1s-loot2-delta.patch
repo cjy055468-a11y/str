@@ -253,10 +253,36 @@ diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
 diff --git a/Code/encoding/Structs/OwnedInventory.h b/Code/encoding/Structs/OwnedInventory.h
 --- a/Code/encoding/Structs/OwnedInventory.h
 +++ b/Code/encoding/Structs/OwnedInventory.h
-@@ -15,6 +15,35 @@
+@@ -2,6 +2,7 @@
+ 
+ #include <Structs/Inventory.h>
+ #include <algorithm>
++#include <cstddef>
+ #include <cstdint>
+ 
+ // A native drop has already happened on its owning client. The server cache
+@@ -15,6 +16,53 @@
          if (entry.BaseId == acBase)
              count += entry.Count;
      return count;
++}
++
++inline bool HasSameInventoryEntryContents(const Inventory::Entry& acLeft, const Inventory::Entry& acRight) noexcept
++{
++    if (acLeft.BaseId != acRight.BaseId || !acLeft.IsExtraDataEquals(acRight)
++        || acLeft.EnchantData.IsWeapon != acRight.EnchantData.IsWeapon
++        || acLeft.EnchantData.Effects.size() != acRight.EnchantData.Effects.size())
++        return false;
++
++    for (std::size_t i = 0; i < acLeft.EnchantData.Effects.size(); ++i)
++    {
++        const auto& left = acLeft.EnchantData.Effects[i];
++        const auto& right = acRight.EnchantData.Effects[i];
++        if (left.Magnitude != right.Magnitude || left.Area != right.Area || left.Duration != right.Duration
++            || left.RawCost != right.RawCost || left.EffectId != right.EffectId)
++            return false;
++    }
++    return true;
 +}
 +
 +inline bool HasSameInventoryContents(const Inventory& acLeft, const Inventory& acRight) noexcept
@@ -269,10 +295,10 @@ diff --git a/Code/encoding/Structs/OwnedInventory.h b/Code/encoding/Structs/Owne
 +        int64_t countA = 0;
 +        int64_t countB = 0;
 +        for (const auto& entry : acA.Entries)
-+            if (entry.CanBeMerged(acKey))
++            if (HasSameInventoryEntryContents(entry, acKey))
 +                countA += entry.Count;
 +        for (const auto& entry : acB.Entries)
-+            if (entry.CanBeMerged(acKey))
++            if (HasSameInventoryEntryContents(entry, acKey))
 +                countB += entry.Count;
 +        return countA == countB;
 +    };
@@ -356,7 +382,7 @@ new file mode 100644
 diff --git a/Code/tests/owned_inventory.cpp b/Code/tests/owned_inventory.cpp
 --- a/Code/tests/owned_inventory.cpp
 +++ b/Code/tests/owned_inventory.cpp
-@@ -55,6 +55,22 @@
+@@ -55,6 +55,47 @@
      REQUIRE(DebitOwnedDropCache(inventory, Item(-1)) == 0);
  }
  
@@ -373,6 +399,31 @@ diff --git a/Code/tests/owned_inventory.cpp b/Code/tests/owned_inventory.cpp
 +    owner.Entries = {worn, Item(2)};
 +    REQUIRE_FALSE(HasSameInventoryContents(current, owner));
 +    current.Entries = {worn, Item(2)};
++    REQUIRE(HasSameInventoryContents(current, owner));
++}
++
++TEST_CASE("Equivalent NPC inventory snapshots retain custom enchantment identity", "[actors][inventory]")
++{
++    Inventory::Entry currentItem = Item();
++    currentItem.ExtraEnchantId = GameId(0xFFFFFFFF, 1);
++    currentItem.EnchantData.IsWeapon = true;
++    Inventory::EffectItem currentEffect;
++    currentEffect.Magnitude = 12.f;
++    currentEffect.Area = 3;
++    currentEffect.Duration = 4;
++    currentEffect.RawCost = 5.f;
++    currentEffect.EffectId = GameId(0, 0x1234);
++    currentItem.EnchantData.Effects.push_back(currentEffect);
++
++    auto ownerItem = currentItem;
++    ownerItem.EnchantData.Effects[0].Magnitude = 13.f;
++    Inventory current;
++    current.Entries = {currentItem};
++    Inventory owner;
++    owner.Entries = {ownerItem};
++    REQUIRE_FALSE(HasSameInventoryContents(current, owner));
++
++    owner.Entries[0].EnchantData.Effects[0].Magnitude = 12.f;
 +    REQUIRE(HasSameInventoryContents(current, owner));
 +}
 +

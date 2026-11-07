@@ -80,7 +80,7 @@
   "Code/encoding/Structs/MissivesData.cpp": "87664b4e0c31c20f6a75dd3957ef14d62662a3b59efa3425abf7a28c734f6bd0",
   "Code/encoding/Structs/MissivesData.h": "b6a4787d9a16ad8b6c583bcb068bb83734570cfae3b1f24dd2f917808815ed85",
   "Code/encoding/Structs/NpcInventorySnapshot.h": "893a799172f8baf50b5399349c128af880066df380d9cb9498f24e672227b8ba",
-  "Code/encoding/Structs/OwnedInventory.h": "4257fdee310b663f46d20e57271f4c438107da71ff1396c332f26151c0ce6d18",
+  "Code/encoding/Structs/OwnedInventory.h": "64502301347be8a88f780ae9175103a07bd6af84e92658c02dcae850d822a32d",
   "Code/server/Game/Inventory/DroppedItemLedger.h": "6bbe7bab35f82a357f1014db076b9f9e8f6632431788657bd83b521a91dabdd8",
   "Code/server/Game/Inventory/MissivesLedger.h": "633783c77b34a178cd3834df2838f2585f8426de36d6cfb3af8ce7b1f1620eb1",
   "Code/server/GameServer.cpp": "e7c9de9f5e3fee2fefe0353ba78aa7f118fd955f7cae2c5b4f1dc824c379ed70",
@@ -102,7 +102,7 @@
   "Code/tests/dropped_items.cpp": "027ae992ee747bfc20a3e66fc77582c9237380e1cadc9a969da0ac8c1231d504",
   "Code/tests/missives.cpp": "de83cd00c1c69b5d29f0cd445e7b1022b7d0e151c5ce2990365c4b38b22e9c43",
   "Code/tests/npc_inventory_snapshot.cpp": "ddddf8bf08b275d9ada6bb552542d820ed4537bc319f1b1d9dcf08e081f67b42",
-  "Code/tests/owned_inventory.cpp": "d4ba1c0dd3758c0d82ec27a6f11ef793823e4e06c50f33b404c6dba4c8aeaad9",
+  "Code/tests/owned_inventory.cpp": "67238b9df6b5160f606af5e31ca7d9c2cdcff178b80c6bb6060f59c09f6d11ed",
   "Code/tests/proxy_furniture_timing.cpp": "e8b766f2250c57c32685ad47bf9358d34ba1e75c169eeaa39a5df41a5412369e",
   "Code/tests/xmake.lua": "033f7b675a2381bb2318786e2ac42776aacb6760cf5b252d56aa35d10c7fb9f4"
 }

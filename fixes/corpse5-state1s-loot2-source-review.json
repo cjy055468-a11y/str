@@ -2,13 +2,8 @@
   "exact_baseline": "STR-coopfix4g-corpse4-test.zip",
   "cumulative_tested_base": "STR-coopfix4g-corpse5-state1s-test.zip",
   "baseline_source_commit": "f282f95cacaa33b179bc9da5d49496508f3367e2",
-  "user_gameplay_feedback": {
-    "corpse_search": "User confirmed the corpse5 build solved the unsearchable corpse issue.",
-    "equipment": "The same item changes from count 1 to count 2; the issue predates corpse5 one-second refresh."
-  },
-  "hypothesis": "Remote NPC 3D initialization unconditionally calls SetActorInventory with the owner snapshot, even when the local inventory already matches. The new content comparison skips this redundant clear-and-reapply. This is a source-based hypothesis; the equipment result remains unverified in game.",
-  "behavior": "Compare grouped equivalent inventory stacks and magic equipment. Skip SetActorInventory for equivalent content. Reconcile only when actual contents differ. No one-item clamp and no automatic removal of existing duplicates.",
-  "changed_from_exact_corpse4_baseline": [
+  "baseline_patch_sha256": "02d78b3a78327b72f466ccb7b607eeaf983c93679917a8ec5f5467a018545805",
+  "changed_from_baseline": [
     "Code/client/Components.h",
     "Code/client/Components/CorpseStateRefreshComponent.h",
     "Code/client/Services/CharacterService.h",
@@ -20,10 +15,11 @@
     "Code/tests/corpse_state_refresh_window.cpp",
     "Code/tests/owned_inventory.cpp"
   ],
-  "unrelated_corpse4_files_preserved": true,
+  "other_baseline_changed_files_preserved": 96,
+  "equipment_report": "User confirms one identical item becomes two; this predates the corpse5 second-kill/search workaround.",
+  "hypothesis": "Remote NPC 3D initialization can reapply the owner inventory even when the local inventory is already equivalent. This patch skips redundant clear/reload after comparing grouped stacks, all metadata including custom enchantment effects, and magic equipment.",
+  "gameplay_test": "not run; hypothesis remains unverified in game",
   "new_engine_offsets": 0,
   "new_engine_hooks": 0,
-  "new_engine_layouts": 0,
-  "two_source_reviews_requested": true,
-  "gameplay_test_of_loot2": false
+  "new_engine_layouts": 0
 }

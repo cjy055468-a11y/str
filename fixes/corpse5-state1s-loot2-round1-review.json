@@ -1,14 +1,14 @@
 {
-  "review": "round 1: source and behavioral review",
+  "review": "round 1: source and behavioral review, updated after comparator edge-case audit",
   "status": "pass",
   "findings": [
-    "Inventory matching is read-only and groups split stacks by base form plus complete merge metadata.",
-    "Magic equipment is part of the equality check.",
-    "Initial 3D setup and ownership reconciliation skip SetActorInventory only when the actor already matches the owner snapshot.",
-    "A real count, worn-state, item metadata, or spell difference still takes the existing authoritative reconciliation path.",
-    "No item-count clamp, inventory deletion, new engine offset, hook, or memory layout was introduced.",
-    "One pure test covers reordered and split stacks and detects a worn-state difference."
+    "Inventory matching is read-only and sums equivalent stacks independent of entry order or network stack splitting.",
+    "Entry identity includes BaseId, normal extra-data metadata, and the full custom enchantment effect payload; magic equipment is compared separately.",
+    "Initial 3D setup and ownership reconciliation skip SetActorInventory only when the local copy matches the authoritative owner snapshot.",
+    "Different counts, worn state, item metadata, custom enchantment effects, or spells still use the existing reconciliation path.",
+    "No item-count clamp, inventory deletion, engine offset, hook, or memory layout was introduced.",
+    "Two pure tests cover split/reordered stacks, worn-state changes, and custom enchantment differences."
   ],
-  "scope": "Only the corpse5 inventory guard and its test/version metadata differ from the tested corpse5 package.",
-  "limitation": "Source review cannot prove the in-game duplicate count is caused by redundant SetActorInventory; loot2 still needs a two-client test."
+  "scope": "The incremental change from the tested corpse5 package is an inventory-equivalence helper, its use at two remote NPC snapshot application points, tests, and version metadata.",
+  "limitation": "This source hypothesis is not confirmed by a game test. The user reports that the duplicate count predates the corpse5 second-kill/search workaround."
 }

@@ -5,6 +5,7 @@ from pathlib import Path
 
 expected = {
     "Equivalent NPC inventory snapshots ignore entry order and split stacks",
+    "Equivalent NPC inventory snapshots retain custom enchantment identity",
     'Corpse refresh waits one second and fires only once per authoritative death',
     'Unready corpses retain the deadline without consuming the attempt',
     'An authoritative resurrection cancels the old corpse refresh deadline',
@@ -94,7 +95,7 @@ expected = {
 }
 root = ET.parse(Path(sys.argv[1])).getroot()
 cases = root.findall('.//testcase')
-assert len(cases)>=109, 'Expected all 103 baseline, 5 refresh, and 1 inventory guard test'
+assert len(cases)>=110, 'Expected all 103 baseline, 5 refresh, and 2 inventory comparison tests'
 assert not root.findall('.//failure'), 'Test assertion failure'
 assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
