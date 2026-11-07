@@ -1,0 +1,97 @@
+{
+  "compiled_scripts": 18,
+  "skyrim_pex_version": "3.2",
+  "files": [
+    {
+      "file": "_M_ActivatorScript.pex",
+      "bytes": 5629,
+      "sha256": "8564f7a34e585f76e4361f48bb320d3ae9c9bb3af81b703a7fad6ad910208ce5"
+    },
+    {
+      "file": "_M_AliasDeliveryScript.pex",
+      "bytes": 1250,
+      "sha256": "3b1eeac948a93be418f6d27376c63b299e8b6388b33a093b02fbbad696814f32"
+    },
+    {
+      "file": "_M_AliasItemScript.pex",
+      "bytes": 1235,
+      "sha256": "98655fa02da6001f437f742947d4d7fee5f3d29c1618c79776fe03d5d809fffd"
+    },
+    {
+      "file": "_M_AliasMissiveDeliverScript.pex",
+      "bytes": 2239,
+      "sha256": "3ae89b54fa63ef74e7256233208972d58d9a90b2a3d9e01651c54c0dad30bd21"
+    },
+    {
+      "file": "_M_AliasMissiveScript.pex",
+      "bytes": 2119,
+      "sha256": "65b143c03d9c2999141a2ba9b4f213ae4cdfbfb02ba067b019786fe77fa6d103"
+    },
+    {
+      "file": "_M_AliasPlayerCourier.pex",
+      "bytes": 1181,
+      "sha256": "771ac513da66041293e6e1970160294f125eb2f842c3c0ad3307060b542cfec5"
+    },
+    {
+      "file": "_M_AliasPlayerGather.pex",
+      "bytes": 2545,
+      "sha256": "945f4a606e88d00042b017e59b79a0690c0bcf239382c86358a50f231937e2cd"
+    },
+    {
+      "file": "_M_QuestCourierScript.pex",
+      "bytes": 3941,
+      "sha256": "1e1397f99ef3ea7c10f5ad58dcd0365f7319155e4c8b20531eaf8e3c1bf0d1b1"
+    },
+    {
+      "file": "_M_QuestDialogue100.pex",
+      "bytes": 848,
+      "sha256": "91146be50272a1fe4bfb85ae9115c819b9117e5585ffd931f1464fa7360f921b"
+    },
+    {
+      "file": "_M_QuestDialogue30.pex",
+      "bytes": 846,
+      "sha256": "f2247830d254345ecae929ea7fdf7d5fe6e3d0db97ebe70840d643d15ed59cbd"
+    },
+    {
+      "file": "_M_QuestGatherInnScript.pex",
+      "bytes": 3512,
+      "sha256": "118fe59fe842b6bd9eddc606db69826b578cf946d386077e0cb53986b49a36f7"
+    },
+    {
+      "file": "_M_QuestGatherScript.pex",
+      "bytes": 3456,
+      "sha256": "615f85f7e2084d9ed6e5bbf96b33cb276411ddd8ed10dc35c9a813cd7f90afd5"
+    },
+    {
+      "file": "_M_QuestKillScript.pex",
+      "bytes": 2793,
+      "sha256": "757c3843545b46adfbfece2dc78fd29c14526bbe3204e1ce16aecb04080b025d"
+    },
+    {
+      "file": "_M_QuestRetrieveScript.pex",
+      "bytes": 3318,
+      "sha256": "f94708791c846aad5f21d03c850ec9496222498eb1fff2042985dcf158e5c59b"
+    },
+    {
+      "file": "_M_QuestTrackFugitiveScript.pex",
+      "bytes": 3206,
+      "sha256": "b656a57aeb26358bed8d542c3f577440eae01cf351a3f992d583ad12a5f2f435"
+    },
+    {
+      "file": "_M_QuestTrackThiefScript.pex",
+      "bytes": 3099,
+      "sha256": "8d748137f809cf49f11c3bde291073c92fac138753a5282153bf412f400bb050"
+    },
+    {
+      "file": "_M_QuestTrackVampire.pex",
+      "bytes": 2828,
+      "sha256": "f6282f86c2ca5509d90ad0912b2741c3a78fe31309c25727ad5f5ffada5ab280"
+    },
+    {
+      "file": "STRMissivesBridge.pex",
+      "bytes": 4488,
+      "sha256": "cb7bacfaecb94ed5d030daa5fd3c5d652cd4ca74c3f83be260f153ff562a6ab6"
+    }
+  ]
+}
+
