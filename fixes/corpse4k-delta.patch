@@ -1,0 +1,340 @@
+diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
+index 8aeb94d3..c66b78f0 100644
+--- a/Code/client/Games/Skyrim/Actor.cpp
++++ b/Code/client/Games/Skyrim/Actor.cpp
+@@ -862,9 +862,29 @@ void Actor::Kill() noexcept
+     if (pExtension->IsPlayer())
+         return;
+ 
++    const bool cRemoteNpc = pExtension->IsRemote();
++    if (cRemoteNpc)
++    {
++        // The remote actor-process hook normally suppresses native processing.
++        // Arm only the dying/dead path before KillImpl starts that transition.
++        pExtension->SetNativeCorpseProcess(true);
++        spdlog::info("STR remote NPC KillImpl begin: local_player {}, actor {:X}, dead {}, virt_dead {}, health {}, state ({:X}, {:X}), has_3d {}, attached {}, runtime {:X}",
++            World::Get().GetTransport().GetLocalPlayerId(), formID, IsDead(), VirtIsDead(false), GetActorValue(ActorValueInfo::kHealth), actorState.flags1, actorState.flags2,
++            GetNiNode() != nullptr, parentCell && parentCell->IsAttached(), unk10);
++    }
++
+     // TODO: these args are kind of bogus of course
+     KillImpl(nullptr, 100.f, true, true);
+ 
++    if (cRemoteNpc)
++    {
++        const bool cHas3D = GetNiNode() != nullptr;
++        const bool cRagdoll = cHas3D && IsInRagdollState();
++        spdlog::info("STR remote NPC KillImpl end: local_player {}, actor {:X}, dead {}, virt_dead {}, ragdoll {}, health {}, state ({:X}, {:X}), has_3d {}, native_process {}",
++            World::Get().GetTransport().GetLocalPlayerId(), formID, IsDead(), VirtIsDead(false), cRagdoll, GetActorValue(ActorValueInfo::kHealth), actorState.flags1,
++            actorState.flags2, cHas3D, pExtension->CanRunNativeCorpseProcess());
++    }
++
+     // Papyrus kill will not go through if it is queued by a kill move
+     /*
+     PAPYRUS_FUNCTION(void, Actor, Kill, void*);
+@@ -889,6 +909,7 @@ bool Actor::PlayIdle(TESIdleForm* apIdle) noexcept
+ 
+ void Actor::Respawn() noexcept
+ {
++    GetExtension()->SetNativeCorpseProcess(false);
+     Resurrect(false);
+     Reset();
+ }
+@@ -1009,6 +1030,14 @@ bool TP_MAKE_THISCALL(HookDamageActor, Actor, float aDamage, Actor* apHitter, bo
+     bool wouldKill = (currentHealth - realDamage) <= 0.f;
+ 
+     const auto* pExHittee = apThis->GetExtension();
++    if (wouldKill && !pExHittee->IsPlayer())
++    {
++        const auto* pHitterExtension = apHitter ? apHitter->GetExtension() : nullptr;
++        spdlog::info("STR corpse lethal hit entry: local_player {}, victim {:X}, victim_remote {}, victim_local {}, hitter {:X}, hitter_local {}, hitter_remote {}, health {}, damage {}, flags ({:X}, {:X})",
++            World::Get().GetTransport().GetLocalPlayerId(), apThis->formID, pExHittee->IsRemote(), pExHittee->IsLocal(), apHitter ? apHitter->formID : 0,
++            pHitterExtension && pHitterExtension->IsLocalPlayer(), pHitterExtension && pHitterExtension->IsRemotePlayer(),
++            currentHealth, realDamage, apThis->actorState.flags1, apThis->actorState.flags2);
++    }
+     if (pExHittee->IsLocalPlayer())
+     {
+         if (!World::Get().GetServerSettings().PvpEnabled)
+@@ -1030,22 +1059,44 @@ bool TP_MAKE_THISCALL(HookDamageActor, Actor, float aDamage, Actor* apHitter, bo
+         const auto* pExHitter = apHitter->GetExtension();
+         if (pExHitter->IsLocalPlayer())
+         {
++            if (wouldKill && !pExHittee->IsPlayer())
++                spdlog::info("STR corpse lethal hit path: local player runs native DamageActor, victim {:X}, victim_remote {}",
++                    apThis->formID, pExHittee->IsRemote());
+             World::Get().GetRunner().Trigger(HealthChangeEvent(apThis->formID, -realDamage));
+-            return TiltedPhoques::ThisCall(RealDamageActor, apThis, aDamage, apHitter, aKillMove);
++            const bool cResult = TiltedPhoques::ThisCall(RealDamageActor, apThis, aDamage, apHitter, aKillMove);
++            if (wouldKill && !pExHittee->IsPlayer())
++                spdlog::info("STR corpse native DamageActor result: victim {:X}, victim_remote {}, dead {}, virt_dead {}, health {}, flags ({:X}, {:X}), result {}",
++                    apThis->formID, pExHittee->IsRemote(), apThis->IsDead(), apThis->VirtIsDead(false),
++                    apThis->GetActorValue(ActorValueInfo::kHealth), apThis->actorState.flags1, apThis->actorState.flags2, cResult);
++            return cResult;
+         }
+         if (pExHitter->IsRemotePlayer())
+         {
++            if (wouldKill && !pExHittee->IsPlayer())
++                spdlog::info("STR corpse lethal hit path: remote player hit; native DamageActor skipped, victim {:X}, victim_local {}",
++                    apThis->formID, pExHittee->IsLocal());
+             return wouldKill;
+         }
+     }
+ 
+     if (pExHittee->IsLocal())
+     {
++        if (wouldKill && !pExHittee->IsPlayer())
++            spdlog::info("STR corpse lethal hit path: local actor runs native DamageActor, victim {:X}, hitter {:X}",
++                apThis->formID, apHitter ? apHitter->formID : 0);
+         World::Get().GetRunner().Trigger(HealthChangeEvent(apThis->formID, -realDamage));
+-        return TiltedPhoques::ThisCall(RealDamageActor, apThis, aDamage, apHitter, aKillMove);
++        const bool cResult = TiltedPhoques::ThisCall(RealDamageActor, apThis, aDamage, apHitter, aKillMove);
++        if (wouldKill && !pExHittee->IsPlayer())
++            spdlog::info("STR corpse native DamageActor result: victim {:X}, victim_remote {}, dead {}, virt_dead {}, health {}, flags ({:X}, {:X}), result {}",
++                apThis->formID, pExHittee->IsRemote(), apThis->IsDead(), apThis->VirtIsDead(false),
++                apThis->GetActorValue(ActorValueInfo::kHealth), apThis->actorState.flags1, apThis->actorState.flags2, cResult);
++        return cResult;
+     }
+     else
+     {
++        if (wouldKill && !pExHittee->IsPlayer())
++            spdlog::info("STR corpse lethal hit path: remote actor receives no native DamageActor, victim {:X}, hitter {:X}",
++                apThis->formID, apHitter ? apHitter->formID : 0);
+         return wouldKill;
+     }
+ }
+diff --git a/Code/client/Services/Generic/ActorValueService.cpp b/Code/client/Services/Generic/ActorValueService.cpp
+index 765a6783..7a8623a4 100644
+--- a/Code/client/Services/Generic/ActorValueService.cpp
++++ b/Code/client/Services/Generic/ActorValueService.cpp
+@@ -295,16 +295,36 @@ void ActorValueService::OnHealthChangeBroadcast(const NotifyHealthChangeBroadcas
+         return;
+     }
+ 
+-    const float newHealth = pActor->GetActorValue(ActorValueInfo::kHealth) + acMessage.DeltaHealth;
++    const float cOldHealth = pActor->GetActorValue(ActorValueInfo::kHealth);
++    const bool cRemoteNpc = pActor->GetExtension()->IsRemote() && !pActor->GetExtension()->IsPlayer();
++    const bool cWasDead = pActor->IsDead();
++    const bool cVirtWasDead = pActor->VirtIsDead(false);
++    const uint32_t cFlagsBefore = pActor->actorState.flags1;
++    const float newHealth = cOldHealth + acMessage.DeltaHealth;
+     pActor->ForceActorValue(ActorValueOwner::ForceMode::DAMAGE, ActorValueInfo::kHealth, newHealth);
+ 
+     const float health = pActor->GetActorValue(ActorValueInfo::kHealth);
+-    if (!pActor->IsDead() && health <= 0.f)
++    const bool cIsDeadBeforeKill = pActor->IsDead();
++    const bool cKillPath = !cIsDeadBeforeKill && health <= 0.f && !pActor->GetExtension()->IsPlayer();
++    if (cRemoteNpc && (health <= 0.f || cWasDead || cIsDeadBeforeKill))
++        spdlog::info("STR corpse health relay: local_player {}, server {:X}, form {:X}, delta {}, health {} -> {}, dead {} -> {}, virt_dead {} -> {}, flags {:X} -> {:X}, kill_path {}",
++            m_transport.GetLocalPlayerId(), acMessage.Id, pActor->formID, acMessage.DeltaHealth, cOldHealth, health, cWasDead, cIsDeadBeforeKill,
++            cVirtWasDead, pActor->VirtIsDead(false), cFlagsBefore, pActor->actorState.flags1, cKillPath);
++    if (cKillPath)
+     {
+         ActorExtension* pExtension = pActor->GetExtension();
+         // Players should never be killed
+         if (!pExtension->IsPlayer())
++        {
++            if (cRemoteNpc)
++                spdlog::info("STR corpse health relay invoking Kill: local_player {}, server {:X}, form {:X}, health {}, flags ({:X}, {:X})",
++                    m_transport.GetLocalPlayerId(), acMessage.Id, pActor->formID, health, pActor->actorState.flags1, pActor->actorState.flags2);
+             pActor->Kill();
++            if (cRemoteNpc)
++                spdlog::info("STR corpse health relay Kill result: local_player {}, server {:X}, form {:X}, dead {}, virt_dead {}, health {}, flags ({:X}, {:X})",
++                    m_transport.GetLocalPlayerId(), acMessage.Id, pActor->formID, pActor->IsDead(), pActor->VirtIsDead(false),
++                    pActor->GetActorValue(ActorValueInfo::kHealth), pActor->actorState.flags1, pActor->actorState.flags2);
++        }
+     }
+ 
+     // TODO(cosideci): find fix for player health sync so this can be used again
+@@ -422,10 +442,19 @@ void ActorValueService::OnDeathStateChange(const NotifyDeathStateChange& acMessa
+     if (pExtension->IsPlayer())
+         return;
+ 
++    const bool cDeadBefore = pActor->IsDead();
++    const bool cVirtDeadBefore = pActor->VirtIsDead(false);
++    const uint32_t cStateBefore = pActor->actorState.flags1;
+     pExtension->SetNativeCorpseProcess(false);
++    spdlog::info("STR corpse death notify: local_player {}, server {:X}, epoch {}, form {:X}, message_dead {}, dead {}, virt_dead {}, health {}, flags {:X}, kill_path {}",
++        m_transport.GetLocalPlayerId(), acMessage.Id, acMessage.OwnershipEpoch, pActor->formID, acMessage.IsDead, cDeadBefore,
++        cVirtDeadBefore, pActor->GetActorValue(ActorValueInfo::kHealth), cStateBefore, cDeadBefore != acMessage.IsDead);
+     if (pActor->IsDead() != acMessage.IsDead)
+     {
+         spdlog::info("Applying death state {} to remote actor {:X}, server id: {:X}", acMessage.IsDead, pActor->formID, acMessage.Id);
+         acMessage.IsDead ? pActor->Kill() : pActor->Respawn();
++        spdlog::info("STR corpse death notify applied: local_player {}, server {:X}, form {:X}, dead {}, virt_dead {}, health {}, flags ({:X}, {:X})",
++            m_transport.GetLocalPlayerId(), acMessage.Id, pActor->formID, pActor->IsDead(), pActor->VirtIsDead(false),
++            pActor->GetActorValue(ActorValueInfo::kHealth), pActor->actorState.flags1, pActor->actorState.flags2);
+     }
+ }
+diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
+index 2bd1a8de..1fb6918d 100644
+--- a/Code/client/Services/Generic/CharacterService.cpp
++++ b/Code/client/Services/Generic/CharacterService.cpp
+@@ -2091,8 +2091,10 @@ void CharacterService::RunRemoteUpdates() noexcept
+             const bool cHas3D = pActor->GetNiNode() != nullptr;
+             const bool cAttached = pActor->parentCell && pActor->parentCell->IsAttached();
+             const bool cDeathTransition = IsNativeDeathTransition(pActor->actorState.flags1);
+-            const bool cAllowNative = pExtension->IsRemote() && !pExtension->IsPlayer() && cConfirmedDeath && cDeathTransition &&
+-                cHas3D && cAttached && pActor->currentProcess && pActor->unk10 != 0xFFFF;
++            const bool cKillTransitionArmed = pExtension->IsRemote() && !pExtension->IsPlayer() &&
++                pExtension->CanRunNativeCorpseProcess() && cDeathTransition;
++            const bool cAllowNative = cKillTransitionArmed || (pExtension->IsRemote() && !pExtension->IsPlayer() && cConfirmedDeath && cDeathTransition &&
++                cHas3D && cAttached && pActor->currentProcess && pActor->unk10 != 0xFFFF);
+             const bool cWasAllowed = pExtension->CanRunNativeCorpseProcess();
+             pExtension->SetNativeCorpseProcess(cAllowNative);
+             if (cWasAllowed != cAllowNative)
+diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
+index a5996339..0370d9fe 100644
+--- a/Code/client/Services/Generic/ObjectService.cpp
++++ b/Code/client/Services/Generic/ObjectService.cpp
+@@ -24,6 +24,7 @@
+ #include <Forms/BGSEncounterZone.h>
+ #include <Forms/TESFaction.h>
+ #include <Games/TES.h>
++#include <Games/Skyrim/Actor.h>
+ 
+ #include <inttypes.h>
+ 
+@@ -260,6 +261,12 @@ entt::entity ObjectService::CreateObjectEntity(const uint32_t acFormId, const ui
+ 
+ void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
+ {
++    if (auto* pActor = Cast<Actor>(acEvent.pObject); pActor && pActor->IsDead() && pActor->GetExtension()->IsRemote() && !pActor->GetExtension()->IsPlayer())
++        spdlog::info("STR corpse activate event: local_player {}, form {:X}, dead {}, virt_dead {}, flags ({:X}, {:X}), ref ({}, {}, {}), activator {:X}",
++            m_transport.GetLocalPlayerId(), pActor->formID, pActor->IsDead(), pActor->VirtIsDead(false), pActor->actorState.flags1,
++            pActor->actorState.flags2, pActor->position.x, pActor->position.y, pActor->position.z,
++            acEvent.pActivator ? acEvent.pActivator->formID : 0);
++
+     if (m_transport.IsConnected() && MissivesCompat::IsBoard(acEvent.pObject))
+         MissivesCompat::AuditBoard(acEvent.pObject, "activate");
+ 
+diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
+index 987e145b..a1d60088 100644
+--- a/Code/client/Systems/AnimationSystem.cpp
++++ b/Code/client/Systems/AnimationSystem.cpp
+@@ -1,6 +1,7 @@
+ #include <TiltedOnlinePCH.h>
+ 
+ #include <Systems/AnimationSystem.h>
++#include <Systems/CorpseDeathTransition.h>
+ #include <Systems/CorpseLifeState.h>
+ 
+ #include <Games/Animation/TESActionData.h>
+@@ -51,17 +52,28 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+         }
+         const auto& first = *it;
+ 
++        const auto* pExtension = apActor->GetExtension();
++        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
++        if (ShouldDeferRemoteNpcTerminalDeathAction(cRemoteNpc, first.EventName, first.State1))
++        {
++            spdlog::info("STR corpse terminal action deferred: local_player {}, actor {:X}, event {}, incoming_life_state {}, native_dead {}, virt_dead {}, native_state {:X}, queue {}",
++                aWorld.GetTransport().GetLocalPlayerId(), apActor->formID, first.EventName.c_str(), (first.State1 & 0x01E00000) >> 21,
++                apActor->IsDead(), apActor->VirtIsDead(false), apActor->actorState.flags1, actions.size());
++            if (aAnimationComponent.ReplayCount > 0)
++                aAnimationComponent.ReplayCount--;
++            actions.pop_front();
++            return;
++        }
++
+         const auto actionId = first.ActionId;
+         const auto targetId = first.TargetId;
+ 
+         const auto pAction = Cast<BGSAction>(TESForm::GetById(actionId));
+         const auto pTarget = Cast<TESObjectREFR>(TESForm::GetById(targetId));
+ 
+-        const auto* pExtension = apActor->GetExtension();
+-        const bool cWasCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
++        const bool cWasCorpse = cRemoteNpc && apActor->VirtIsDead(false);
+ 
+         const uint32_t cNativeState = apActor->actorState.flags1;
+-        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
+         const uint32_t cAppliedState = cRemoteNpc ? PreserveRemoteNpcDeathTransition(cNativeState, first.State1, aConfirmedDeath) : first.State1;
+         apActor->actorState.flags1 = cAppliedState;
+         apActor->actorState.flags2 = first.State2;
+diff --git a/Code/client/Systems/CorpseDeathTransition.h b/Code/client/Systems/CorpseDeathTransition.h
+new file mode 100644
+index 00000000..ff700c5e
+--- /dev/null
++++ b/Code/client/Systems/CorpseDeathTransition.h
+@@ -0,0 +1,18 @@
++#pragma once
++
++#include <Systems/CorpseLifeState.h>
++
++#include <cstdint>
++#include <string_view>
++
++// A remote actor's terminal ragdoll action is a pose notification, not a
++// substitute for the local engine death transition. Let the health/death
++// message invoke KillImpl first when the owner snapshot carries dying/dead.
++inline bool ShouldDeferRemoteNpcTerminalDeathAction(const bool aRemoteNpc, const std::string_view acEventName,
++                                                    const uint32_t aState1) noexcept
++{
++    if (!aRemoteNpc || (acEventName != "Ragdoll" && acEventName != "RagdollInstant"))
++        return false;
++
++    return IsNativeDeathTransition(aState1);
++}
+diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
+index 74713340..8a281dda 100644
+--- a/Code/common/BuildInfo.h.in
++++ b/Code/common/BuildInfo.h.in
+@@ -1,4 +1,4 @@
+ #pragma once
+ // This file was autogenerated by xmake
+ #define BUILD_BRANCH "${GIT_BRANCH}"
+-#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4-loot1"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4k-native-death"
+diff --git a/Code/server/Services/ActorValueService.cpp b/Code/server/Services/ActorValueService.cpp
+index bf711b5d..a2bcf90d 100644
+--- a/Code/server/Services/ActorValueService.cpp
++++ b/Code/server/Services/ActorValueService.cpp
+@@ -87,6 +87,14 @@ void ActorValueService::OnHealthChangeBroadcast(const PacketEvent<RequestHealthC
+     {
+         auto& actorValuesComponent = actorValuesView.get<ActorValuesComponent>(*it);
+         auto currentHealth = actorValuesComponent.CurrentActorValues.ActorValuesList[24];
++        if (message.DeltaHealth < 0.f && currentHealth + message.DeltaHealth <= 0.f)
++        {
++            const auto& ownerComponent = actorValuesView.get<OwnerComponent>(*it);
++            spdlog::info("STR corpse server health relay: actor {:X}, sender {:X}, owner {:X}, epoch {}, old_health {}, delta {}, receiver_health {}",
++                message.Id, acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0,
++                ownerComponent.GetOwner() ? ownerComponent.GetOwner()->GetId() : 0,
++                ownerComponent.OwnershipEpoch, currentHealth, message.DeltaHealth, currentHealth + message.DeltaHealth);
++        }
+         actorValuesComponent.CurrentActorValues.ActorValuesList[24] = currentHealth - message.DeltaHealth;
+     }
+ 
+@@ -111,6 +119,11 @@ void ActorValueService::OnDeathStateChange(const PacketEvent<RequestDeathStateCh
+         return;
+ 
+     auto& characterComponent = characterView.get<CharacterComponent>(*it);
++    const auto& ownerComponent = characterView.get<OwnerComponent>(*it);
++    spdlog::info("STR corpse server death relay: actor {:X}, sender {:X}, owner {:X}, epoch {}, dead {} -> {}",
++        message.Id, acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0,
++        ownerComponent.GetOwner() ? ownerComponent.GetOwner()->GetId() : 0,
++        ownerComponent.OwnershipEpoch, characterComponent.IsDead(), message.IsDead);
+     characterComponent.SetDead(message.IsDead);
+     spdlog::debug("Updating death state {:x}:{}", message.Id, message.IsDead);
+ 
+diff --git a/Code/tests/corpse_death_transition.cpp b/Code/tests/corpse_death_transition.cpp
+new file mode 100644
+index 00000000..483ce80d
+--- /dev/null
++++ b/Code/tests/corpse_death_transition.cpp
+@@ -0,0 +1,16 @@
++#include <catch2/catch.hpp>
++
++#include "../client/Systems/CorpseDeathTransition.h"
++
++TEST_CASE("Remote NPC terminal ragdoll actions defer to the native death message", "[corpse][death-order]")
++{
++    constexpr uint32_t kDying = 1u << 21;
++    constexpr uint32_t kDead = 2u << 21;
++
++    CHECK(ShouldDeferRemoteNpcTerminalDeathAction(true, "Ragdoll", kDying));
++    CHECK(ShouldDeferRemoteNpcTerminalDeathAction(true, "RagdollInstant", kDead));
++
++    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(true, "Ragdoll", 0));
++    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(true, "AttackStart", kDying));
++    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(false, "Ragdoll", kDead));
++}

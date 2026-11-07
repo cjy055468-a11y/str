@@ -1,0 +1,18 @@
+{
+  "baseline": "STR-coopfix4g-corpse4-test",
+  "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "baseline_patch_sha256": "02d78b3a78327b72f466ccb7b607eeaf983c93679917a8ec5f5467a018545805",
+  "delta_patch_sha256": "7962a49cad387ad6695ef65361b3ab44a33fb8d29d54d206757afc91be7d2f2a",
+  "full_patch_sha256": "8c8cb23c4c838db704de4a66038f7d4620f805ace8b996c0fea92167b8afce2e",
+  "delta_files": [
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Services/Generic/ActorValueService.cpp",
+    "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Services/Generic/ObjectService.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/CorpseDeathTransition.h",
+    "Code/common/BuildInfo.h.in",
+    "Code/server/Services/ActorValueService.cpp",
+    "Code/tests/corpse_death_transition.cpp"
+  ]
+}
