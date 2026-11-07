@@ -1,0 +1,14 @@
+{
+  "review": "round 1: source and behavioral review",
+  "status": "pass",
+  "findings": [
+    "Inventory matching is read-only and groups split stacks by base form plus complete merge metadata.",
+    "Magic equipment is part of the equality check.",
+    "Initial 3D setup and ownership reconciliation skip SetActorInventory only when the actor already matches the owner snapshot.",
+    "A real count, worn-state, item metadata, or spell difference still takes the existing authoritative reconciliation path.",
+    "No item-count clamp, inventory deletion, new engine offset, hook, or memory layout was introduced.",
+    "One pure test covers reordered and split stacks and detects a worn-state difference."
+  ],
+  "scope": "Only the corpse5 inventory guard and its test/version metadata differ from the tested corpse5 package.",
+  "limitation": "Source review cannot prove the in-game duplicate count is caused by redundant SetActorInventory; loot2 still needs a two-client test."
+}

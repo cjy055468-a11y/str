@@ -1,0 +1,381 @@
+diff --git a/Code/client/Components.h b/Code/client/Components.h
+--- a/Code/client/Components.h
++++ b/Code/client/Components.h
+@@ -20,5 +20,6 @@
+ #include <Components/PlayerComponent.h>
+ #include <Components/CombatComponent.h>
+ #include <Components/CorpseSpeechComponent.h>
++#include <Components/CorpseStateRefreshComponent.h>
+ 
+ #undef TP_INTERNAL_COMPONENTS_GUARD
+diff --git a/Code/client/Components/CorpseStateRefreshComponent.h b/Code/client/Components/CorpseStateRefreshComponent.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/Components/CorpseStateRefreshComponent.h
+@@ -0,0 +1,12 @@
++#pragma once
++
++#ifndef TP_INTERNAL_COMPONENTS_GUARD
++#error Include Components.h instead
++#endif
++
++#include <Systems/CorpseStateRefreshWindow.h>
++
++struct CorpseStateRefreshComponent
++{
++    CorpseStateRefreshWindow Window;
++};
+diff --git a/Code/client/Services/CharacterService.h b/Code/client/Services/CharacterService.h
+--- a/Code/client/Services/CharacterService.h
++++ b/Code/client/Services/CharacterService.h
+@@ -113,6 +113,7 @@
+     void ApplyCachedWeaponDraws(const UpdateEvent& acUpdateEvent) noexcept;
+     bool UpdateCorpseSpeech(entt::entity aEntity, Actor* apActor) noexcept;
+     void RunCorpseSpeechUpdates() noexcept;
++    void RunCorpseStateRefreshUpdates() noexcept;
+ 
+     World& m_world;
+     entt::dispatcher& m_dispatcher;
+diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
+--- a/Code/client/Services/Generic/CharacterService.cpp
++++ b/Code/client/Services/Generic/CharacterService.cpp
+@@ -68,6 +68,7 @@
+ #include <Messages/SubtitleRequest.h>
+ #include <Messages/NotifySubtitle.h>
+ #include <Messages/NotifyActorTeleport.h>
++#include <Structs/OwnedInventory.h>
+ 
+ #include <World.h>
+ #include <Games/TES.h>
+@@ -119,7 +120,7 @@
+ 
+ void CharacterService::DeleteRemoteEntityComponents(entt::entity aEntity) const noexcept
+ {
+-    m_world.remove<FaceGenComponent, InterpolationComponent, RemoteAnimationComponent, RemoteComponent, CacheComponent, WaitingFor3D, PlayerComponent>(aEntity);
++    m_world.remove<FaceGenComponent, InterpolationComponent, RemoteAnimationComponent, RemoteComponent, CacheComponent, WaitingFor3D, PlayerComponent, CorpseStateRefreshComponent>(aEntity);
+ }
+ 
+ void CharacterService::DeclineOwnership(const uint32_t aServerId, const uint32_t aOwnershipEpoch) const noexcept
+@@ -155,7 +156,7 @@
+     if (aApplyInventory)
+     {
+         const Inventory currentInventory = apActor->GetActorInventory();
+-        if (currentInventory.Entries != acActorData.InitialInventory.Entries || currentInventory.CurrentMagicEquipment != acActorData.InitialInventory.CurrentMagicEquipment)
++        if (!HasSameInventoryContents(currentInventory, acActorData.InitialInventory))
+             apActor->SetActorInventory(acActorData.InitialInventory);
+     }
+ 
+@@ -318,6 +319,7 @@
+ 
+     m_world.remove<EarlyAnimationBufferComponent>(cId);
+     m_world.remove<CorpseSpeechComponent>(cId);
++    m_world.remove<CorpseStateRefreshComponent>(cId);
+ 
+     if (m_world.all_of<FormIdComponent>(cId))
+         m_world.remove<FormIdComponent>(cId);
+@@ -338,6 +340,7 @@
+     ApplyCachedWeaponDraws(acUpdateEvent);
+     ProcessLeveledConforms();
+     RunCorpseSpeechUpdates();
++    RunCorpseStateRefreshUpdates();
+ }
+ 
+ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const noexcept
+@@ -369,6 +372,7 @@
+         if (auto* pActor = Cast<Actor>(TESForm::GetById(m_world.get<FormIdComponent>(entity).Id)))
+             pActor->GetExtension()->SetDeadSpeechMuted(false);
+     m_world.clear<CorpseSpeechComponent>();
++    m_world.clear<CorpseStateRefreshComponent>();
+     m_actorIdentities.Clear();
+     auto remoteView = m_world.view<FormIdComponent, RemoteComponent>();
+     for (auto entity : remoteView)
+@@ -1252,6 +1256,73 @@
+         return true;
+ 
+     return !IsPhaseStuckOnRemotePackage(pScene, cPhase);
++}
++
++void CharacterService::RunCorpseStateRefreshUpdates() noexcept
++{
++    if (!m_transport.IsConnected())
++        return;
++    const UI* pUI = UI::Get();
++    if (pUI && pUI->numPausesGame != 0)
++        return;
++
++    const uint64_t cNow = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
++        std::chrono::steady_clock::now().time_since_epoch()).count());
++    auto view = m_world.view<RemoteComponent, FormIdComponent>(entt::exclude<LocalComponent, PlayerComponent, WaitingFor3D>);
++    for (auto entity : view)
++    {
++        auto* pActor = Cast<Actor>(TESForm::GetById(view.get<FormIdComponent>(entity).Id));
++        if (!pActor || pActor->IsDeleted())
++            continue;
++        auto* pExtension = pActor->GetExtension();
++        if (!pExtension->IsRemote() || pExtension->IsPlayer())
++            continue;
++
++        const auto& remote = view.get<RemoteComponent>(entity);
++        const bool cConfirmedDead = remote.AuthoritativeDeath.value_or(false);
++        auto* pRefresh = m_world.try_get<CorpseStateRefreshComponent>(entity);
++        if (!pRefresh && !cConfirmedDead)
++            continue;
++        if (!pRefresh)
++            pRefresh = &m_world.emplace<CorpseStateRefreshComponent>(entity);
++
++        // Use the accepted network death, not local IsDead/completion, to arm
++        // recovery: the local death state is precisely what may be stuck.
++        const bool cReady = pActor->GetNiNode() && pActor->parentCell && pActor->parentCell->IsAttached() &&
++            pActor->currentProcess && pActor->animationGraphHolder.IsReady() && pActor->unk10 != 0xFFFF;
++        const uint32_t cHandle = pActor->GetHandle().handle.iBits;
++        if (!pRefresh->Window.Observe(cHandle, remote.Id, remote.OwnershipEpoch, cConfirmedDead, cReady, cNow))
++            continue;
++
++        // Source-only experiment based on E5F7B's successful Ragdoll transition:
++        // state 0x01000041 carries lifeState 8 (bleedout), not alive/resurrected.
++        // Change only that life field, then call the existing native death path
++        // synchronously. Never leave an update/frame with a scheduled get-up.
++        // Do not replay graph actions, Resurrect, Reset, move, or refill loot.
++        constexpr uint32_t cLifeMask = 0x01E00000u;
++        constexpr uint32_t cBleedout = 8u << 21;
++        const uint32_t cBefore = pActor->actorState.flags1;
++        const NiPoint3 cBeforePosition = pActor->position;
++        const bool cBeforeRagdoll = pActor->IsInRagdollState();
++        pActor->actorState.flags1 = (cBefore & ~cLifeMask) | cBleedout;
++        const bool cTransitionDead = pActor->IsDead();
++        // Keep the actor remote: the existing remote death-loot hook remains
++        // active, and this client does not publish a resurrection to the server.
++        pActor->Kill();
++        const bool cAfterDead = pActor->IsDead();
++        if (!cAfterDead)
++        {
++            // A refused native death must not leave our artificial bleedout
++            // state behind. Roll back only the field we changed; never retry.
++            pActor->actorState.flags1 = (pActor->actorState.flags1 & ~cLifeMask) | (cBefore & cLifeMask);
++            spdlog::warn("STR corpse state refresh native death refused: actor {:X}, server {:X}, epoch {}, handle {:X}",
++                pActor->formID, remote.Id, remote.OwnershipEpoch, cHandle);
++        }
++        spdlog::info("STR corpse state refresh 1s: actor {:X}, server {:X}, epoch {}, handle {:X}, before {:X}, bleedout_dead {}, native_after_dead {}, after {:X}, ragdoll {}->{}, position ({}, {}, {})->({}, {}, {})",
++            pActor->formID, remote.Id, remote.OwnershipEpoch, cHandle, cBefore, cTransitionDead, cAfterDead,
++            pActor->actorState.flags1, cBeforeRagdoll, pActor->IsInRagdollState(),
++            cBeforePosition.x, cBeforePosition.y, cBeforePosition.z, pActor->position.x, pActor->position.y, pActor->position.z);
++    }
+ }
+ 
+ bool CharacterService::UpdateCorpseSpeech(const entt::entity aEntity, Actor* apActor) noexcept
+@@ -2161,7 +2232,18 @@
+ 
+         // By now, the actor has materialized in the world and is ready for further setup
+ 
+-        pActor->SetActorInventory(waitingFor3D.SpawnRequest.InventoryContent);
++        const auto& desiredInventory = waitingFor3D.SpawnRequest.InventoryContent;
++        const Inventory currentInventory = pActor->GetActorInventory();
++        if (HasSameInventoryContents(currentInventory, desiredInventory))
++        {
++            spdlog::info("STR remote NPC inventory already matches: actor {:X}, entries {}", pActor->formID, desiredInventory.Entries.size());
++        }
++        else
++        {
++            spdlog::info("STR remote NPC inventory reconciled: actor {:X}, current entries {}, owner entries {}",
++                pActor->formID, currentInventory.Entries.size(), desiredInventory.Entries.size());
++            pActor->SetActorInventory(desiredInventory);
++        }
+         pActor->SetFactions(waitingFor3D.SpawnRequest.FactionsContent);
+ 
+         if (!waitingFor3D.SpawnRequest.ActionsToReplay.Actions.empty())
+diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
+--- a/Code/client/Services/Generic/ObjectService.cpp
++++ b/Code/client/Services/Generic/ObjectService.cpp
+@@ -330,7 +330,8 @@
+     TESObjectREFR* pObject = Cast<TESObjectREFR>(TESForm::GetById(cObjectId));
+     if (!pObject)
+     {
+-        spdlog::error("Failed to retrieve object to activate.");
++        spdlog::error("Failed to retrieve object to activate: mod {:X}, base {:X}, local form {:X}, activator server {:X}.",
++            acMessage.Id.ModId, acMessage.Id.BaseId, cObjectId, acMessage.ActivatorId);
+         return;
+     }
+ 
+diff --git a/Code/client/Systems/CorpseStateRefreshWindow.h b/Code/client/Systems/CorpseStateRefreshWindow.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/Systems/CorpseStateRefreshWindow.h
+@@ -0,0 +1,40 @@
++#pragma once
++
++#include <cstdint>
++#include <optional>
++
++// Pure lifetime/timing policy. Native IsDead is deliberately not an input:
++// our brief local transition must not schedule another refresh for this death.
++class CorpseStateRefreshWindow
++{
++public:
++    static constexpr uint64_t kDelayMilliseconds = 1000;
++
++    bool Observe(uint32_t aHandle, uint32_t aServerId, uint32_t aEpoch, bool aConfirmedDead, bool aReady, uint64_t aNow) noexcept
++    {
++        if (m_handle != aHandle || m_serverId != aServerId || m_epoch != aEpoch || !aConfirmedDead)
++        {
++            m_handle = aHandle;
++            m_serverId = aServerId;
++            m_epoch = aEpoch;
++            m_deadSince.reset();
++            m_consumed = false;
++        }
++        if (!aConfirmedDead || aHandle == 0 || aServerId == 0xFFFFFFFFu || aEpoch == 0 || m_consumed)
++            return false;
++        if (!m_deadSince || aNow < *m_deadSince)
++            m_deadSince = aNow;
++        if (!aReady || aNow - *m_deadSince < kDelayMilliseconds)
++            return false;
++        // Consume before entering the engine, including if the attempt fails.
++        m_consumed = true;
++        return true;
++    }
++
++private:
++    uint32_t m_handle{};
++    uint32_t m_serverId{};
++    uint32_t m_epoch{};
++    std::optional<uint64_t> m_deadSince;
++    bool m_consumed{};
++};
+diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
+--- a/Code/common/BuildInfo.h.in
++++ b/Code/common/BuildInfo.h.in
+@@ -1,4 +1,4 @@
+ #pragma once
+ // This file was autogenerated by xmake
+ #define BUILD_BRANCH "${GIT_BRANCH}"
+-#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4-loot1"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse5-state1s-loot2"
+diff --git a/Code/encoding/Structs/OwnedInventory.h b/Code/encoding/Structs/OwnedInventory.h
+--- a/Code/encoding/Structs/OwnedInventory.h
++++ b/Code/encoding/Structs/OwnedInventory.h
+@@ -15,6 +15,35 @@
+         if (entry.BaseId == acBase)
+             count += entry.Count;
+     return count;
++}
++
++inline bool HasSameInventoryContents(const Inventory& acLeft, const Inventory& acRight) noexcept
++{
++    if (acLeft.CurrentMagicEquipment != acRight.CurrentMagicEquipment)
++        return false;
++
++    const auto sameCountsFor = [](const Inventory& acA, const Inventory& acB, const Inventory::Entry& acKey)
++    {
++        int64_t countA = 0;
++        int64_t countB = 0;
++        for (const auto& entry : acA.Entries)
++            if (entry.CanBeMerged(acKey))
++                countA += entry.Count;
++        for (const auto& entry : acB.Entries)
++            if (entry.CanBeMerged(acKey))
++                countB += entry.Count;
++        return countA == countB;
++    };
++
++    // Entry order and stack splitting may differ after a network round trip.
++    // Avoid clearing and re-equipping an actor when equivalent stacks already match.
++    for (const auto& entry : acLeft.Entries)
++        if (!sameCountsFor(acLeft, acRight, entry))
++            return false;
++    for (const auto& entry : acRight.Entries)
++        if (!sameCountsFor(acLeft, acRight, entry))
++            return false;
++    return true;
+ }
+ 
+ inline int32_t DebitOwnedDropCache(Inventory& aInventory, const Inventory::Entry& acItem) noexcept
+diff --git a/Code/tests/corpse_state_refresh_window.cpp b/Code/tests/corpse_state_refresh_window.cpp
+new file mode 100644
+--- /dev/null
++++ b/Code/tests/corpse_state_refresh_window.cpp
+@@ -0,0 +1,59 @@
++#include <catch2/catch.hpp>
++#include "../client/Systems/CorpseStateRefreshWindow.h"
++
++TEST_CASE("Corpse refresh waits one second and fires only once per authoritative death", "[corpse.refresh]")
++{
++    CorpseStateRefreshWindow window;
++    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 100));
++    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 1099));
++    REQUIRE(window.Observe(42, 7, 1, true, true, 1100));
++    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 100000));
++}
++
++TEST_CASE("Unready corpses retain the deadline without consuming the attempt", "[corpse.refresh]")
++{
++    CorpseStateRefreshWindow window;
++    CHECK_FALSE(window.Observe(42, 7, 1, true, false, 100));
++    CHECK_FALSE(window.Observe(42, 7, 1, true, false, 5000));
++    REQUIRE(window.Observe(42, 7, 1, true, true, 5001));
++}
++
++TEST_CASE("An authoritative resurrection cancels the old corpse refresh deadline", "[corpse.refresh]")
++{
++    CorpseStateRefreshWindow window;
++    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 0));
++    CHECK_FALSE(window.Observe(42, 7, 1, false, true, 1000));
++    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 2000));
++    REQUIRE(window.Observe(42, 7, 1, true, true, 3000));
++}
++
++TEST_CASE("Recycled corpse handles and ownership epochs cannot inherit an old timer", "[corpse.refresh]")
++{
++    for (int identity = 0; identity < 3; ++identity)
++    {
++        CorpseStateRefreshWindow window;
++        CHECK_FALSE(window.Observe(42, 7, 1, true, true, 0));
++        const uint32_t handle = identity == 0 ? 43 : 42;
++        const uint32_t server = identity == 1 ? 8 : 7;
++        const uint32_t epoch = identity == 2 ? 2 : 1;
++        CHECK_FALSE(window.Observe(handle, server, epoch, true, true, 1000));
++        REQUIRE(window.Observe(handle, server, epoch, true, true, 2000));
++    }
++}
++
++TEST_CASE("Invalid corpse identities and backwards clocks cannot trigger a refresh", "[corpse.refresh]")
++{
++    CorpseStateRefreshWindow window;
++    CHECK_FALSE(window.Observe(0, 7, 1, true, true, 0));
++    CHECK_FALSE(window.Observe(0, 7, 1, true, true, 5000));
++    CHECK_FALSE(window.Observe(42, 0xFFFFFFFFu, 1, true, true, 5000));
++    CHECK_FALSE(window.Observe(42, 7, 0, true, true, 5000));
++    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 5000));
++    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 1000));
++    CHECK_FALSE(window.Observe(42, 7, 1, true, true, 1999));
++    REQUIRE(window.Observe(42, 7, 1, true, true, 2000));
++    // EnTT server entity zero is valid; only its null sentinel is invalid.
++    CorpseStateRefreshWindow zeroId;
++    CHECK_FALSE(zeroId.Observe(42, 0, 1, true, true, 0));
++    REQUIRE(zeroId.Observe(42, 0, 1, true, true, 1000));
++}
+diff --git a/Code/tests/owned_inventory.cpp b/Code/tests/owned_inventory.cpp
+--- a/Code/tests/owned_inventory.cpp
++++ b/Code/tests/owned_inventory.cpp
+@@ -55,6 +55,22 @@
+     REQUIRE(DebitOwnedDropCache(inventory, Item(-1)) == 0);
+ }
+ 
++TEST_CASE("Equivalent NPC inventory snapshots ignore entry order and split stacks", "[actors][inventory]")
++{
++    Inventory current;
++    current.Entries = {Item(1), Item(2)};
++    Inventory owner;
++    owner.Entries = {Item(3)};
++    REQUIRE(HasSameInventoryContents(current, owner));
++
++    auto worn = Item(1);
++    worn.ExtraWorn = true;
++    owner.Entries = {worn, Item(2)};
++    REQUIRE_FALSE(HasSameInventoryContents(current, owner));
++    current.Entries = {worn, Item(2)};
++    REQUIRE(HasSameInventoryContents(current, owner));
++}
++
+ TEST_CASE("Equipment snapshots replace stale worn metadata without duplicating a cached item", "[equipment][inventory]")
+ {
+     Inventory inventory;
