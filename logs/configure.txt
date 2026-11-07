@@ -15,16 +15,14 @@
 [0mchecking for gzip ... [32;1mC:\Program Files\Git\usr\bin\gzip.exe[0m
 [0mchecking for tar ... [32;1mC:\Windows\System32\tar.exe[0m
 [0mchecking for curl ... [32;1mC:\hostedtoolcache\windows\xmake\3.1.0\x64\winenv\bin\curl[0m
-pinging the host(gitlab.com) ... 70 ms
-pinging the host(github.com) ... 99 ms
+pinging the host(gitlab.com) ... 51 ms
+pinging the host(github.com) ... 85 ms
 pinging the host(gitee.com) ... 65535 ms
-pinging the host(gitcode.com) ... 659 ms
+pinging the host(gitcode.com) ... 796 ms
 updating repositories .. 
 cloning repository(build-artifacts): https://gitlab.com/xmake-mirror/build-artifacts.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts ..
 Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts'...
-Updating files:  18% (455/2445)
-Updating files:  19% (465/2445)
-Updating files:  20% (489/2445)
+Updating files:  20% (496/2445)
 Updating files:  21% (514/2445)
 Updating files:  22% (538/2445)
 Updating files:  23% (563/2445)
@@ -50,7 +48,6 @@ Updating files:  42% (1027/2445)
 Updating files:  43% (1052/2445)
 Updating files:  44% (1076/2445)
 Updating files:  45% (1101/2445)
-Updating files:  45% (1123/2445)
 Updating files:  46% (1125/2445)
 Updating files:  47% (1150/2445)
 Updating files:  48% (1174/2445)
@@ -61,6 +58,7 @@ Updating files:  52% (1272/2445)
 Updating files:  53% (1296/2445)
 Updating files:  54% (1321/2445)
 Updating files:  55% (1345/2445)
+Updating files:  55% (1346/2445)
 Updating files:  56% (1370/2445)
 Updating files:  57% (1394/2445)
 Updating files:  58% (1419/2445)
@@ -69,7 +67,6 @@ Updating files:  60% (1467/2445)
 Updating files:  61% (1492/2445)
 Updating files:  62% (1516/2445)
 Updating files:  63% (1541/2445)
-Updating files:  63% (1542/2445)
 Updating files:  64% (1565/2445)
 Updating files:  65% (1590/2445)
 Updating files:  66% (1614/2445)
@@ -82,6 +79,7 @@ Updating files:  72% (1761/2445)
 Updating files:  73% (1785/2445)
 Updating files:  74% (1810/2445)
 Updating files:  75% (1834/2445)
+Updating files:  75% (1848/2445)
 Updating files:  76% (1859/2445)
 Updating files:  77% (1883/2445)
 Updating files:  78% (1908/2445)
@@ -103,7 +101,6 @@ Updating files:  93% (2274/2445)
 Updating files:  94% (2299/2445)
 Updating files:  95% (2323/2445)
 Updating files:  96% (2348/2445)
-Updating files:  96% (2368/2445)
 Updating files:  97% (2372/2445)
 Updating files:  98% (2397/2445)
 Updating files:  99% (2421/2445)
@@ -111,7 +108,12 @@ Updating files: 100% (2445/2445)
 Updating files: 100% (2445/2445), done.
 cloning repository(xmake-repo): https://gitlab.com/tboox/xmake-repo.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo ..
 Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo'...
-Updating files:  25% (737/2943)
+Updating files:  20% (608/2943)
+Updating files:  21% (619/2943)
+Updating files:  22% (648/2943)
+Updating files:  23% (677/2943)
+Updating files:  24% (707/2943)
+Updating files:  25% (736/2943)
 Updating files:  26% (766/2943)
 Updating files:  27% (795/2943)
 Updating files:  28% (825/2943)
@@ -141,13 +143,13 @@ Updating files:  51% (1501/2943)
 Updating files:  52% (1531/2943)
 Updating files:  53% (1560/2943)
 Updating files:  54% (1590/2943)
+Updating files:  54% (1606/2943)
 Updating files:  55% (1619/2943)
 Updating files:  56% (1649/2943)
 Updating files:  57% (1678/2943)
 Updating files:  58% (1707/2943)
 Updating files:  59% (1737/2943)
 Updating files:  60% (1766/2943)
-Updating files:  60% (1769/2943)
 Updating files:  61% (1796/2943)
 Updating files:  62% (1825/2943)
 Updating files:  63% (1855/2943)
@@ -172,7 +174,6 @@ Updating files:  81% (2384/2943)
 Updating files:  82% (2414/2943)
 Updating files:  83% (2443/2943)
 Updating files:  84% (2473/2943)
-Updating files:  84% (2475/2943)
 Updating files:  85% (2502/2943)
 Updating files:  86% (2531/2943)
 Updating files:  87% (2561/2943)
@@ -261,18 +262,18 @@ finding imgui from xmake ..
 [0mgenerating Code\common\BuildInfo.h.in ... [32;1mok[0m
 configure
 {
-    dotnet_sdkver = 10.0.403
-    plat = windows
-    kind = static
-    ndk_stdcxx = true
-    skyrim_version = 1.6.1170
-    mode = release
-    host = windows
-    vs = 2022
-    builddir = build
     arch = x64
-    ccache = true
+    dotnet_sdkver = 10.0.403
+    builddir = build
+    vs = 2022
+    skyrim_version = 1.6.1170
+    plat = windows
+    host = windows
     dotnet = C:\Program Files\dotnet\sdk\10.0.403
+    ndk_stdcxx = true
+    kind = static
+    mode = release
+    ccache = true
 }
 [0m[1;33;1mwarning: [33;1mplease use add_configs("runtimes") instead of add_configs("vs_runtime").[0m
 

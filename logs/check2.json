@@ -1,8 +1,35 @@
-Traceback (most recent call last):
-  File "D:\a\str\str\tools\check-corpse4j-pe.py", line 9, in <module>
-    reports = [inspect(path) for path in files]
-               ^^^^^^^^^^^^^
-  File "D:\a\str\str\tools\check-pe.py", line 27, in inspect
-    raise ValueError(f"{path.name}: missing a recognized Skyrim Together build marker")
-ValueError: SkyrimTogether.exe: missing a recognized Skyrim Together build marker
+[
+  {
+    "file": "SkyrimTogether.exe",
+    "bytes": 6716416,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": false,
+    "sha256": "99248058fcbf06c068dd2adc83b5d39d2378312cb55d316c930d8915a9bf1557"
+  },
+  {
+    "file": "EarlyLoad.dll",
+    "bytes": 103424,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": true,
+    "sha256": "e28882aedb9787f94449237a82cf946356d87db285193241826a68319ec9cbb6"
+  },
+  {
+    "file": "STServer.dll",
+    "bytes": 7409664,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": true,
+    "sha256": "ce8a67d41c5afbf32d6b6f40004bbbb5411bbc226c91da142c66aec4c785b8a3"
+  },
+  {
+    "file": "SkyrimTogetherServer.exe",
+    "bytes": 875008,
+    "machine": "AMD64",
+    "format": "PE32+",
+    "dll": false,
+    "sha256": "e6736a418f07188daf8cbc28307cf5224863f70b04cf7d51c4ad0a5670200cdd"
+  }
+]
 
