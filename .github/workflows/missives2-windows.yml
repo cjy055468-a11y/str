@@ -152,7 +152,7 @@ jobs:
       - name: Upload candidate after all three checks pass
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-SSE-161170-missives2
+          name: STR-v184-SSE-161170-missives2-r2
           path: candidate/
           if-no-files-found: error
           retention-days: 14
@@ -160,7 +160,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: STR-v184-missives2-diagnostics
+          name: STR-v184-missives2-r2-diagnostics
           path: logs/
           if-no-files-found: warn
           retention-days: 14
