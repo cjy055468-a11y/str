@@ -183,18 +183,20 @@ index 2bd1a8de050388edf5467e55afc53847d4feef22..1fb6918deebc023c99ccc52c030b8e41
              pExtension->SetNativeCorpseProcess(cAllowNative);
              if (cWasAllowed != cAllowNative)
 diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
-index a599633945a85f171c04e0e2621b6f46449ba59b..0370d9fe41406f036dc25d8d199c183a9bd3b004 100644
+index a599633945a85f171c04e0e2621b6f46449ba59b..314033dea5c173249d924e42fbd4523956fc9904 100644
 --- a/Code/client/Services/Generic/ObjectService.cpp
 +++ b/Code/client/Services/Generic/ObjectService.cpp
-@@ -24,6 +24,7 @@
+@@ -23,7 +23,9 @@
+ #include <Forms/TESWorldSpace.h>
  #include <Forms/BGSEncounterZone.h>
  #include <Forms/TESFaction.h>
++#include <Games/ActorExtension.h>
  #include <Games/TES.h>
 +#include <Games/Skyrim/Actor.h>
  
  #include <inttypes.h>
  
-@@ -260,6 +261,12 @@ entt::entity ObjectService::CreateObjectEntity(const uint32_t acFormId, const ui
+@@ -260,6 +262,12 @@ entt::entity ObjectService::CreateObjectEntity(const uint32_t acFormId, const ui
  
  void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
  {

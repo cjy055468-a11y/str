@@ -7506,7 +7506,7 @@ index 0000000000000000000000000000000000000000..3e1f3610f916e7d26bd2ce2b3828d7db
 +    Cache(cQuest, *pSpec, &post);
 +}
 diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
-index b2140e2edaf0e9ab94a41acf5de95e06db0f0a93..0370d9fe41406f036dc25d8d199c183a9bd3b004 100644
+index b2140e2edaf0e9ab94a41acf5de95e06db0f0a93..314033dea5c173249d924e42fbd4523956fc9904 100644
 --- a/Code/client/Services/Generic/ObjectService.cpp
 +++ b/Code/client/Services/Generic/ObjectService.cpp
 @@ -1,4 +1,5 @@
@@ -7515,15 +7515,17 @@ index b2140e2edaf0e9ab94a41acf5de95e06db0f0a93..0370d9fe41406f036dc25d8d199c183a
  
  #include <World.h>
  #include <Events/DisconnectedEvent.h>
-@@ -23,6 +24,7 @@
+@@ -22,7 +23,9 @@
+ #include <Forms/TESWorldSpace.h>
  #include <Forms/BGSEncounterZone.h>
  #include <Forms/TESFaction.h>
++#include <Games/ActorExtension.h>
  #include <Games/TES.h>
 +#include <Games/Skyrim/Actor.h>
  
  #include <inttypes.h>
  
-@@ -96,6 +98,9 @@ bool ShouldSyncObject(const TESObjectREFR* apObject, const Set<const TESObjectRE
+@@ -96,6 +99,9 @@ bool ShouldSyncObject(const TESObjectREFR* apObject, const Set<const TESObjectRE
      if (acPlayerStashContainers.contains(apObject))
          return false;
  
@@ -7533,7 +7535,7 @@ index b2140e2edaf0e9ab94a41acf5de95e06db0f0a93..0370d9fe41406f036dc25d8d199c183a
      // Quest chests that take the player's whole inventory without going through faction crime data.
      switch (apObject->formID)
      {
-@@ -199,6 +204,9 @@ void ObjectService::OnAssignObjectsResponse(const AssignObjectsResponse& acMessa
+@@ -199,6 +205,9 @@ void ObjectService::OnAssignObjectsResponse(const AssignObjectsResponse& acMessa
  
          CreateObjectEntity(pObject->formID, objectData.ServerId);
  
@@ -7543,7 +7545,7 @@ index b2140e2edaf0e9ab94a41acf5de95e06db0f0a93..0370d9fe41406f036dc25d8d199c183a
          if (objectData.IsSenderFirst)
              continue;
  
-@@ -227,6 +235,9 @@ void ObjectService::OnAssignObjectsResponse(const AssignObjectsResponse& acMessa
+@@ -227,6 +236,9 @@ void ObjectService::OnAssignObjectsResponse(const AssignObjectsResponse& acMessa
              else
                  pObject->SetInventory(objectData.CurrentInventory);
          }
@@ -7553,7 +7555,7 @@ index b2140e2edaf0e9ab94a41acf5de95e06db0f0a93..0370d9fe41406f036dc25d8d199c183a
      }
  }
  
-@@ -250,6 +261,15 @@ entt::entity ObjectService::CreateObjectEntity(const uint32_t acFormId, const ui
+@@ -250,6 +262,15 @@ entt::entity ObjectService::CreateObjectEntity(const uint32_t acFormId, const ui
  
  void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
  {

@@ -2,8 +2,8 @@
   "baseline": "STR-coopfix4g-corpse4-test",
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "baseline_patch_sha256": "02d78b3a78327b72f466ccb7b607eeaf983c93679917a8ec5f5467a018545805",
-  "delta_patch_sha256": "673eca8ce423976d7096d9b169f9b5deacaddfb03f1f0299d71d1df1e626539d",
-  "full_patch_sha256": "05c10e8973281e22992c52d228bd270a7b873072eca352dd5d41b190c227415c",
+  "delta_patch_sha256": "8e8325d84aac28c58e5fe6c2998c9e02925485ad633f134b95977363e5e14979",
+  "full_patch_sha256": "3a4579e114d4d1e57b43a87310bdaca37eb78ffd1ffe33c6c378847070b7ac8a",
   "delta_files": [
     "Code/client/Games/Skyrim/Actor.cpp",
     "Code/client/Services/Generic/ActorValueService.cpp",
