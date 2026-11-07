@@ -25,9 +25,9 @@
 
 ## 构建和测试状态
 
-`corpse4k` 尚未完成 Windows x64 构建和 Skyrim 双人测试前，不应当作修复成品安装。源码差异已能应用到指定的官方 1.8.4 提交；独立 C++ 检查覆盖终结动作筛选条件。GitHub Actions 还会检查固定子模块、回退 4g 精确基线、编译客户端/服务器与 Papyrus、执行全部单测、核验四个 PE32+ x64 文件和 SHA256。
+Windows x64 / Skyrim 1.6.1170 构建已通过：[GitHub Actions run 42377200870](https://github.com/cjy055468-a11y/str/actions/runs/42377200870)。客户端和服务器均通过 MSVC 编译/链接；服务器配置生成 smoke test 通过；104/104 个 Catch2 测例通过；四个 PE 文件均核验为 AMD64/PE32+，构建标记和 SHA256 匹配。构建结果不等于游戏内问题已解决：目前还没有双人实测，也没有在 1.6.1170 二进制上用 IDA/Ghidra 验证引擎内部行为。
 
-若 Actions 构建通过，双方客户端必须同时替换 `SkyrimTogether.exe`、`EarlyLoad.dll`，服务器同时替换 `STServer.dll`、`SkyrimTogetherServer.exe`；四件需来自同一 `coopfix4g-corpse4k-native-death` 包。保留配置、UI/资源、存档、Missives.esp/汉化和 4g 的 Missives r1 兼容文件。不要混用其他 STR 构建。
+测试包中的客户端文件是 `SkyrimTogether.exe`、`EarlyLoad.dll`；把服务器文件 `STServer.dll`、`SkyrimTogetherServer.exe` 放到服务器程序目录。所有文件都来自同一次 `coopfix4g-corpse4k-native-death` 构建。保留原配置、UI/资源和存档。`MissivesCompat` 目录只在启用 Missives 2.03 时安装；其中 ESP/PEX 取代 4g 中的对应兼容文件。不要混用其他 STR 构建。
 
 ## 双人验收
 
