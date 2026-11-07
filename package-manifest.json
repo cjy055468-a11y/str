@@ -1,0 +1,10 @@
+{
+  "file": "STR-coopfix4g-corpse5-state1s-test.zip",
+  "bytes": 6647685,
+  "sha256": "2f872670f30e34d91c4c783a7f563260f814d6c6db776f94aff32749e4e5ed82",
+  "source_revision": "a7f7594b59f57f330cc1844132dc1d8a13721d0e",
+  "run_id": "42417590788",
+  "checks": 2,
+  "tests": 108,
+  "game_tested": false
+}

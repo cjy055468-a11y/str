@@ -1,0 +1,28 @@
+{
+  "round": 1,
+  "passed": true,
+  "baseline_sha256": "d9543b5e9efc16a0c8c6cc9cde71668a516db26e333ac128192def8e4eea0d83",
+  "changed_files": [
+    "Code/client/Components.h",
+    "Code/client/Components/CorpseStateRefreshComponent.h",
+    "Code/client/Services/CharacterService.h",
+    "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Services/Generic/ObjectService.cpp",
+    "Code/client/Systems/CorpseStateRefreshWindow.h",
+    "Code/common/BuildInfo.h.in",
+    "Code/tests/corpse_state_refresh_window.cpp"
+  ],
+  "unrelated_baseline_source_preserved": true,
+  "remote_npc_only": true,
+  "trigger_uses_network_death_not_local_anomaly_detection": true,
+  "delay_ms": 1000,
+  "consume_before_engine_call": true,
+  "same_synchronous_call_bleedout_then_native_kill": true,
+  "no_explicit_resurrection_reset_getup_graph_replay_movement_or_inventory_replacement": true,
+  "new_engine_hooks_offsets_layouts": 0,
+  "limitations": [
+    "Native Kill may still trigger engine/Papyrus side effects; source-only experiment authorized by user.",
+    "No source-level guarantee against a visible get-up/twitch; game observation is required.",
+    "Native dead/ragdoll flags do not prove search interaction works."
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "round": 2,
+  "passed": true,
+  "source_revision": "a7f7594b59f57f330cc1844132dc1d8a13721d0e",
+  "run_id": "42417590788",
+  "msvc_client_server_build": true,
+  "matching_server_config_smoke": true,
+  "baseline_tests_preserved": 103,
+  "total_tests_passed": 108,
+  "compiled_pex_count": 18,
+  "missives_r1_plugin_and_script_sources_preserved": true,
+  "clean_official_reconstruction_matches_built_patch_and_native_source": true,
+  "verified_source_files": 106,
+  "binary_abi_and_hashes": [
+    {
+      "file": "SkyrimTogether.exe",
+      "exports_match_corpse4": true,
+      "import_dlls_match_corpse4": true,
+      "sha256": "86f35750ca11b1f0f04923f42bf9b361c516fbe7a5406ff25ce657108f83c85e"
+    },
+    {
+      "file": "EarlyLoad.dll",
+      "exports_match_corpse4": true,
+      "import_dlls_match_corpse4": true,
+      "sha256": "3c7997dd423d724e9b017d87b6a08f3cf446fd6dd102f62c387071165a2994f9"
+    },
+    {
+      "file": "STServer.dll",
+      "exports_match_corpse4": true,
+      "import_dlls_match_corpse4": true,
+      "sha256": "3dc50482aa3ab92a563fe3d15acb830acf92325b7adc4b5add11ff3c149a5b3d"
+    },
+    {
+      "file": "SkyrimTogetherServer.exe",
+      "exports_match_corpse4": true,
+      "import_dlls_match_corpse4": true,
+      "sha256": "cf3fa689c20daf99f8d94ec2473ad79952648c1960347ae61b75710c2fc65dce"
+    }
+  ],
+  "game_tested": false,
+  "no_getup_or_search_success_guarantee_without_game_test": true
+}
