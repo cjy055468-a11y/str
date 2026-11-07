@@ -1,0 +1,1082 @@
+diff --git a/Code/client/Components/RemoteAnimationComponent.h b/Code/client/Components/RemoteAnimationComponent.h
+index 26ff80d..1e34af4 100644
+--- a/Code/client/Components/RemoteAnimationComponent.h
++++ b/Code/client/Components/RemoteAnimationComponent.h
+@@ -11,4 +11,6 @@ struct RemoteAnimationComponent
+     ActionEvent LastProcessedAction;
+     uint32_t ReplayCount;
+     bool ResetAnimationGraphForReplay{false};
++    uint64_t LastLoggedCorpseGraphWaitTick{};
++    bool HasLoggedCorpseGraphWait{};
+ };
+diff --git a/Code/client/Components/RemoteComponent.h b/Code/client/Components/RemoteComponent.h
+index d5c3ae1..d8b36ef 100644
+--- a/Code/client/Components/RemoteComponent.h
++++ b/Code/client/Components/RemoteComponent.h
+@@ -21,4 +21,7 @@ struct RemoteComponent
+     uint32_t OwnershipEpoch;
+     // Client-only snapshot; never inferred from a remote animation's state.
+     std::optional<bool> AuthoritativeDeath;
++    // Last locally observed corpse diagnostic bits. This is not serialized.
++    uint32_t CorpseDiagnosticState{};
++    bool HasCorpseDiagnosticState{};
+ };
+diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExtension.cpp
+index 2841162..68a29b9 100644
+--- a/Code/client/Games/ActorExtension.cpp
++++ b/Code/client/Games/ActorExtension.cpp
+@@ -46,9 +46,61 @@ bool ActorExtension::CanRunNativeCorpseProcess() const noexcept
+ void ActorExtension::SetNativeCorpseProcess(bool aSet) noexcept
+ {
+     if (aSet)
+-        std::atomic_ref<uint32_t>(onlineFlags).fetch_or(kNativeCorpseProcess, std::memory_order_relaxed);
++    {
++        auto flags = std::atomic_ref<uint32_t>(onlineFlags);
++        uint32_t current = flags.load(std::memory_order_relaxed);
++        for (;;)
++        {
++            if (current & kNativeCorpseProcess)
++                break;
++            const uint32_t desired = (current | kNativeCorpseProcess) &
++                ~(kNativeCorpseProcessObserved | kNativeCorpseProcessSuppressedObserved);
++            if (flags.compare_exchange_weak(current, desired, std::memory_order_relaxed))
++                break;
++        }
++    }
+     else
+-        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kNativeCorpseProcess, std::memory_order_relaxed);
++    {
++        auto flags = std::atomic_ref<uint32_t>(onlineFlags);
++        uint32_t current = flags.load(std::memory_order_relaxed);
++        for (;;)
++        {
++            if (!(current & kNativeCorpseProcess))
++                break;
++            const uint32_t desired = current &
++                ~(kNativeCorpseProcess | kNativeCorpseProcessObserved | kNativeCorpseProcessSuppressedObserved);
++            if (flags.compare_exchange_weak(current, desired, std::memory_order_relaxed))
++                break;
++        }
++    }
++}
++
++bool ActorExtension::TryMarkNativeCorpseProcessObserved() const noexcept
++{
++    auto flags = std::atomic_ref<uint32_t>(onlineFlags);
++    uint32_t current = flags.load(std::memory_order_relaxed);
++    while (current & kNativeCorpseProcess)
++    {
++        if (current & kNativeCorpseProcessObserved)
++            return false;
++        if (flags.compare_exchange_weak(current, current | kNativeCorpseProcessObserved, std::memory_order_relaxed))
++            return true;
++    }
++    return false;
++}
++
++bool ActorExtension::TryMarkNativeCorpseProcessSuppressedObserved() const noexcept
++{
++    auto flags = std::atomic_ref<uint32_t>(onlineFlags);
++    uint32_t current = flags.load(std::memory_order_relaxed);
++    while (!(current & kNativeCorpseProcess))
++    {
++        if (current & kNativeCorpseProcessSuppressedObserved)
++            return false;
++        if (flags.compare_exchange_weak(current, current | kNativeCorpseProcessSuppressedObserved, std::memory_order_relaxed))
++            return true;
++    }
++    return false;
+ }
+ 
+ bool ActorExtension::IsPlayer() const noexcept
+@@ -71,7 +123,8 @@ void ActorExtension::SetRemote(bool aSet) noexcept
+     if (aSet)
+         std::atomic_ref<uint32_t>(onlineFlags).fetch_or(kRemote, std::memory_order_relaxed);
+     else
+-        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~(kRemote | kNativeCorpseProcess), std::memory_order_relaxed);
++        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~(kRemote | kNativeCorpseProcess | kNativeCorpseProcessObserved |
++                                                              kNativeCorpseProcessSuppressedObserved), std::memory_order_relaxed);
+ }
+ 
+ void ActorExtension::SetPlayer(bool aSet) noexcept
+diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtension.h
+index 970d31e..7ac25cd 100644
+--- a/Code/client/Games/ActorExtension.h
++++ b/Code/client/Games/ActorExtension.h
+@@ -11,6 +11,8 @@ struct ActorExtension
+         kNetworkNpcReplica = 1 << 2,
+         kDeadSpeechMuted = 1 << 3,
+         kNativeCorpseProcess = 1 << 4,
++        kNativeCorpseProcessObserved = 1 << 5,
++        kNativeCorpseProcessSuppressedObserved = 1 << 6,
+     };
+ 
+     enum class ReconciliationStage
+@@ -33,6 +35,8 @@ struct ActorExtension
+     void SetDeadSpeechMuted(bool aSet) noexcept;
+     bool CanRunNativeCorpseProcess() const noexcept;
+     void SetNativeCorpseProcess(bool aSet) noexcept;
++    bool TryMarkNativeCorpseProcessObserved() const noexcept;
++    bool TryMarkNativeCorpseProcessSuppressedObserved() const noexcept;
+ 
+     ActionEvent LatestAnimation{};
+     size_t GraphDescriptorHash = 0;
+diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
+index c66b78f..002e580 100644
+--- a/Code/client/Games/Skyrim/Actor.cpp
++++ b/Code/client/Games/Skyrim/Actor.cpp
+@@ -24,6 +24,7 @@
+ 
+ #include <Games/TES.h>
+ #include <World.h>
++#include <Utils.h>
+ #include <Services/PapyrusService.h>
+ #include <Services/DroppedItemService.h>
+ #include <ModCompat/NetworkActorSavePolicy.h>
+@@ -865,11 +866,14 @@ void Actor::Kill() noexcept
+     const bool cRemoteNpc = pExtension->IsRemote();
+     if (cRemoteNpc)
+     {
++        const auto cOwnership = Utils::GetRemoteOwnershipToken(formID);
++        const char* cActorName = baseForm ? baseForm->GetName() : nullptr;
+         // The remote actor-process hook normally suppresses native processing.
+         // Arm only the dying/dead path before KillImpl starts that transition.
+         pExtension->SetNativeCorpseProcess(true);
+-        spdlog::info("STR remote NPC KillImpl begin: local_player {}, actor {:X}, dead {}, virt_dead {}, health {}, state ({:X}, {:X}), has_3d {}, attached {}, runtime {:X}",
+-            World::Get().GetTransport().GetLocalPlayerId(), formID, IsDead(), VirtIsDead(false), GetActorValue(ActorValueInfo::kHealth), actorState.flags1, actorState.flags2,
++        spdlog::info("STR corpse local KillImpl begin: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', dead {}, virt_dead {}, health {}, state ({:X}, {:X}), has_3d {}, attached {}, runtime {:X}",
++            World::Get().GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++            formID, baseForm ? baseForm->formID : 0, cActorName ? cActorName : "", IsDead(), VirtIsDead(false), GetActorValue(ActorValueInfo::kHealth), actorState.flags1, actorState.flags2,
+             GetNiNode() != nullptr, parentCell && parentCell->IsAttached(), unk10);
+     }
+ 
+@@ -878,11 +882,16 @@ void Actor::Kill() noexcept
+ 
+     if (cRemoteNpc)
+     {
++        const auto cOwnership = Utils::GetRemoteOwnershipToken(formID);
++        const char* cActorName = baseForm ? baseForm->GetName() : nullptr;
+         const bool cHas3D = GetNiNode() != nullptr;
+         const bool cRagdoll = cHas3D && IsInRagdollState();
+-        spdlog::info("STR remote NPC KillImpl end: local_player {}, actor {:X}, dead {}, virt_dead {}, ragdoll {}, health {}, state ({:X}, {:X}), has_3d {}, native_process {}",
+-            World::Get().GetTransport().GetLocalPlayerId(), formID, IsDead(), VirtIsDead(false), cRagdoll, GetActorValue(ActorValueInfo::kHealth), actorState.flags1,
+-            actorState.flags2, cHas3D, pExtension->CanRunNativeCorpseProcess());
++        auto* pRoot = cHas3D ? GetNiNode() : nullptr;
++        spdlog::info("STR corpse local KillImpl end: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', dead {}, virt_dead {}, ragdoll {}, health {}, state ({:X}, {:X}), has_3d {}, root_collision {}, native_process {}",
++            World::Get().GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++            formID, baseForm ? baseForm->formID : 0, cActorName ? cActorName : "", IsDead(), VirtIsDead(false), cRagdoll,
++            GetActorValue(ActorValueInfo::kHealth), actorState.flags1, actorState.flags2, cHas3D, pRoot && pRoot->GetCollisionObject() != nullptr,
++            pExtension->CanRunNativeCorpseProcess());
+     }
+ 
+     // Papyrus kill will not go through if it is queued by a kill move
+@@ -1376,8 +1385,25 @@ char TP_MAKE_THISCALL(HookActorProcess, Actor, float aDeltaTime)
+         // Main-thread state validation enables only dying/dead, confirmed NPC
+         // deaths with attached 3D. Do not query ragdoll/graph/UI on this worker.
+         const auto* pExtension = apThis->GetExtension();
+-        if (pExtension->CanRunNativeCorpseProcess() && !pExtension->IsPlayer() && IsNativeDeathTransition(apThis->actorState.flags1))
+-            return TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
++        const bool cNativeDeathTransition = IsNativeDeathTransition(apThis->actorState.flags1);
++        if (pExtension->CanRunNativeCorpseProcess() && !pExtension->IsPlayer() && cNativeDeathTransition)
++        {
++            const bool cFirstNativePass = pExtension->TryMarkNativeCorpseProcessObserved();
++            const uint32_t cStateBefore = apThis->actorState.flags1;
++            if (cFirstNativePass)
++                spdlog::info("STR corpse guest native ActorProcess begin: ref {:X}, state {:X}, delta {}, has_process {}",
++                    apThis->formID, cStateBefore, aDeltaTime, apThis->currentProcess != nullptr);
++
++            const char cResult = TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
++            if (cFirstNativePass)
++                spdlog::info("STR corpse guest native ActorProcess end: ref {:X}, result {}, state {:X} -> {:X}",
++                    apThis->formID, static_cast<int>(cResult), cStateBefore, apThis->actorState.flags1);
++            return cResult;
++        }
++
++        if (!pExtension->IsPlayer() && cNativeDeathTransition && pExtension->TryMarkNativeCorpseProcessSuppressedObserved())
++            spdlog::info("STR corpse guest native ActorProcess suppressed: ref {:X}, state ({:X}, {:X}), delta {}, has_process {}",
++                apThis->formID, apThis->actorState.flags1, apThis->actorState.flags2, aDeltaTime, apThis->currentProcess != nullptr);
+ 
+         if (apThis->currentProcess)
+         {
+diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+index e42b1fb..e62c385 100644
+--- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
++++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+@@ -7,7 +7,11 @@
+ #include <Games/Overrides.h>
+ 
+ #include <World.h>
++#include <Utils.h>
+ #include <Services/PapyrusService.h>
++#include <Games/Skyrim/NetImmerse/NiAVObject.h>
++#include <Systems/CorpseLifeState.h>
++#include <Components.h>
+ #include <Events/ActivateEvent.h>
+ #include <Events/InventoryChangeEvent.h>
+ #include <Events/ScriptAnimationEvent.h>
+@@ -1062,6 +1066,29 @@ bool TP_MAKE_THISCALL(HookPlayAnimation, void, uint32_t auiStackID, TESObjectREF
+ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, uint8_t aUnk1, TESBoundObject* apObjectToGet, int32_t aCount, char aDefaultProcessing)
+ {
+     Actor* pActivator = Cast<Actor>(apActivator);
++    Actor* pTarget = Cast<Actor>(apThis);
++    const bool cRemoteNpcTarget = pTarget && pTarget->GetExtension()->IsRemote() && !pTarget->GetExtension()->IsPlayer();
++    const auto cOwnership = cRemoteNpcTarget ? Utils::GetRemoteOwnershipToken(pTarget->formID) : std::nullopt;
++    bool cConfirmedDeath = false;
++    if (cOwnership)
++        if (const auto cEntity = Utils::FindEntityByServerId(cOwnership->ServerId))
++            if (const auto* pRemote = World::Get().try_get<RemoteComponent>(*cEntity))
++                cConfirmedDeath = pRemote->AuthoritativeDeath.value_or(false);
++    const bool cCorpseTarget = cRemoteNpcTarget && (pTarget->IsDead() || pTarget->VirtIsDead(false) ||
++        IsNativeDeathTransition(pTarget->actorState.flags1) || cConfirmedDeath);
++    const char* cActorName = cRemoteNpcTarget && pTarget->baseForm ? pTarget->baseForm->GetName() : nullptr;
++    if (cRemoteNpcTarget && pActivator == PlayerCharacter::Get())
++    {
++        const bool cHas3D = pTarget->GetNiNode() != nullptr;
++        auto* pRoot = cHas3D ? pTarget->GetNiNode() : nullptr;
++        spdlog::info("STR remote NPC Skyrim Activate hook: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', corpse_candidate {}, confirmed_death {}, target_dead {}, target_virt_dead {}, ragdoll {}, has_3d {}, root_collision {}, native_process {}, target_state ({:X}, {:X}), target_pos ({}, {}, {}), activator {:X}, count {}, default_processing {}, unk1 {}, object_to_get {:X}",
++            World::Get().GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++            pTarget->formID, pTarget->baseForm ? pTarget->baseForm->formID : 0, cActorName ? cActorName : "", cCorpseTarget, cConfirmedDeath, pTarget->IsDead(),
++            pTarget->VirtIsDead(false), cHas3D && pTarget->IsInRagdollState(), cHas3D, pRoot && pRoot->GetCollisionObject() != nullptr,
++            pTarget->GetExtension()->CanRunNativeCorpseProcess(), pTarget->actorState.flags1, pTarget->actorState.flags2,
++            pTarget->position.x, pTarget->position.y, pTarget->position.z, pActivator->formID, aCount, aDefaultProcessing, aUnk1,
++            apObjectToGet ? apObjectToGet->formID : 0);
++    }
+ 
+     // Block the native sneak-activation path before it opens a teammate's
+     // inventory or emits an activation event. NPC interaction is unchanged.
+@@ -1096,7 +1123,13 @@ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, u
+         );
+     }
+ 
+-    return TiltedPhoques::ThisCall(RealActivate, apThis, apActivator, aUnk1, apObjectToGet, aCount, aDefaultProcessing);
++    const bool cResult = TiltedPhoques::ThisCall(RealActivate, apThis, apActivator, aUnk1, apObjectToGet, aCount, aDefaultProcessing);
++    if (cRemoteNpcTarget && pActivator == PlayerCharacter::Get())
++        spdlog::info("STR remote NPC Skyrim Activate result: local_player {}, server {:X}, epoch {}, ref {:X}, name '{}', result {}, state ({:X}, {:X}), dead {}, virt_dead {}",
++            World::Get().GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++            pTarget->formID, cActorName ? cActorName : "", cResult, pTarget->actorState.flags1, pTarget->actorState.flags2,
++            pTarget->IsDead(), pTarget->VirtIsDead(false));
++    return cResult;
+ }
+ 
+ void TP_MAKE_THISCALL(HookAddInventoryItem, TESObjectREFR, TESBoundObject* apItem, ExtraDataList* apExtraData, int32_t aCount, TESObjectREFR* apOldOwner)
+diff --git a/Code/client/Services/Generic/ActorValueService.cpp b/Code/client/Services/Generic/ActorValueService.cpp
+index 7a8623a..d630150 100644
+--- a/Code/client/Services/Generic/ActorValueService.cpp
++++ b/Code/client/Services/Generic/ActorValueService.cpp
+@@ -6,6 +6,7 @@
+ #include <Forms/ActorValueInfo.h>
+ #include <Games/References.h>
+ #include <Components.h>
++#include <Utils.h>
+ 
+ #include <Events/UpdateEvent.h>
+ #include <Events/ActorRemovedEvent.h>
+@@ -200,6 +201,22 @@ void ActorValueService::OnHealthChange(const HealthChangeEvent& acEvent) noexcep
+     requestHealthChange.Id = serverId;
+     requestHealthChange.DeltaHealth = acEvent.DeltaHealth;
+ 
++    Actor* pActor = Cast<Actor>(TESForm::GetById(acEvent.HitteeId));
++    if (pActor && !pActor->GetExtension()->IsPlayer())
++    {
++        const float cHealth = pActor->GetActorValue(ActorValueInfo::kHealth);
++        const float cHealthWithDelta = cHealth + acEvent.DeltaHealth;
++        if (pActor->IsDead() || cHealth <= 0.f || (acEvent.DeltaHealth < 0.f && cHealthWithDelta <= 0.f))
++        {
++            const auto cOwnership = Utils::GetLocalOwnershipToken(pActor->formID);
++            const char* cActorName = pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
++            spdlog::info("STR corpse owner health tx: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', delta {}, dead {}, virt_dead {}, observed_health {}, health_with_delta {}, state ({:X}, {:X})",
++                m_transport.GetLocalPlayerId(), serverId, cOwnership ? cOwnership->OwnershipEpoch : 0, pActor->formID,
++                pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "", acEvent.DeltaHealth,
++                pActor->IsDead(), pActor->VirtIsDead(false), cHealth, cHealthWithDelta, pActor->actorState.flags1, pActor->actorState.flags2);
++        }
++    }
++
+     m_transport.Send(requestHealthChange);
+ 
+     spdlog::debug("Sent out delta health through collection: {:X}:{:f}", serverId, acEvent.DeltaHealth);
+@@ -259,8 +276,11 @@ void ActorValueService::RunDeathStateUpdates() noexcept
+         if (isDead != localComponent.IsDead)
+         {
+             localComponent.IsDead = isDead;
+-
+-            spdlog::info("Sending death state {} for local actor {:X}, server id: {:X}", isDead, pActor->formID, localComponent.Id);
++            const char* cActorName = pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
++            spdlog::info("STR corpse local death tx: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', dead {}, virt_dead {}, health {}, state ({:X}, {:X})",
++                m_transport.GetLocalPlayerId(), localComponent.Id, localComponent.OwnershipEpoch, pActor->formID,
++                pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "", isDead,
++                pActor->VirtIsDead(false), pActor->GetActorValue(ActorValueInfo::kHealth), pActor->actorState.flags1, pActor->actorState.flags2);
+ 
+             RequestDeathStateChange requestChange;
+             requestChange.Id = localComponent.Id;
+@@ -300,6 +320,8 @@ void ActorValueService::OnHealthChangeBroadcast(const NotifyHealthChangeBroadcas
+     const bool cWasDead = pActor->IsDead();
+     const bool cVirtWasDead = pActor->VirtIsDead(false);
+     const uint32_t cFlagsBefore = pActor->actorState.flags1;
++    const auto cOwnership = cRemoteNpc ? Utils::GetRemoteOwnershipToken(pActor->formID) : std::nullopt;
++    const char* cActorName = pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
+     const float newHealth = cOldHealth + acMessage.DeltaHealth;
+     pActor->ForceActorValue(ActorValueOwner::ForceMode::DAMAGE, ActorValueInfo::kHealth, newHealth);
+ 
+@@ -307,8 +329,9 @@ void ActorValueService::OnHealthChangeBroadcast(const NotifyHealthChangeBroadcas
+     const bool cIsDeadBeforeKill = pActor->IsDead();
+     const bool cKillPath = !cIsDeadBeforeKill && health <= 0.f && !pActor->GetExtension()->IsPlayer();
+     if (cRemoteNpc && (health <= 0.f || cWasDead || cIsDeadBeforeKill))
+-        spdlog::info("STR corpse health relay: local_player {}, server {:X}, form {:X}, delta {}, health {} -> {}, dead {} -> {}, virt_dead {} -> {}, flags {:X} -> {:X}, kill_path {}",
+-            m_transport.GetLocalPlayerId(), acMessage.Id, pActor->formID, acMessage.DeltaHealth, cOldHealth, health, cWasDead, cIsDeadBeforeKill,
++        spdlog::info("STR corpse health rx: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', delta {}, health {} -> {}, dead {} -> {}, virt_dead {} -> {}, flags {:X} -> {:X}, kill_path {}",
++            m_transport.GetLocalPlayerId(), acMessage.Id, cOwnership ? cOwnership->OwnershipEpoch : 0, pActor->formID,
++            pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "", acMessage.DeltaHealth, cOldHealth, health, cWasDead, cIsDeadBeforeKill,
+             cVirtWasDead, pActor->VirtIsDead(false), cFlagsBefore, pActor->actorState.flags1, cKillPath);
+     if (cKillPath)
+     {
+@@ -317,12 +340,14 @@ void ActorValueService::OnHealthChangeBroadcast(const NotifyHealthChangeBroadcas
+         if (!pExtension->IsPlayer())
+         {
+             if (cRemoteNpc)
+-                spdlog::info("STR corpse health relay invoking Kill: local_player {}, server {:X}, form {:X}, health {}, flags ({:X}, {:X})",
+-                    m_transport.GetLocalPlayerId(), acMessage.Id, pActor->formID, health, pActor->actorState.flags1, pActor->actorState.flags2);
++                spdlog::info("STR corpse health rx invokes Kill: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', health {}, flags ({:X}, {:X})",
++                    m_transport.GetLocalPlayerId(), acMessage.Id, cOwnership ? cOwnership->OwnershipEpoch : 0, pActor->formID,
++                    pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "", health, pActor->actorState.flags1, pActor->actorState.flags2);
+             pActor->Kill();
+             if (cRemoteNpc)
+-                spdlog::info("STR corpse health relay Kill result: local_player {}, server {:X}, form {:X}, dead {}, virt_dead {}, health {}, flags ({:X}, {:X})",
+-                    m_transport.GetLocalPlayerId(), acMessage.Id, pActor->formID, pActor->IsDead(), pActor->VirtIsDead(false),
++                spdlog::info("STR corpse health rx Kill result: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', dead {}, virt_dead {}, health {}, flags ({:X}, {:X})",
++                    m_transport.GetLocalPlayerId(), acMessage.Id, cOwnership ? cOwnership->OwnershipEpoch : 0, pActor->formID,
++                    pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "", pActor->IsDead(), pActor->VirtIsDead(false),
+                     pActor->GetActorValue(ActorValueInfo::kHealth), pActor->actorState.flags1, pActor->actorState.flags2);
+         }
+     }
+@@ -408,7 +433,8 @@ void ActorValueService::OnDeathStateChange(const NotifyDeathStateChange& acMessa
+             {
+                 if (auto* pRemote = m_world.try_get<RemoteComponent>(*entity); pRemote && pRemote->OwnershipEpoch == acMessage.OwnershipEpoch)
+                     pRemote->AuthoritativeDeath = acMessage.IsDead;
+-                spdlog::info("STR corpse pending death: actor {:X}, epoch {}, dead {}", acMessage.Id, acMessage.OwnershipEpoch, acMessage.IsDead);
++                spdlog::info("STR corpse death rx pending 3D: local_player {}, server {:X}, epoch {}, base {:X}, dead {}",
++                    m_transport.GetLocalPlayerId(), acMessage.Id, acMessage.OwnershipEpoch, pWaiting->SpawnRequest.BaseId.LogFormat(), acMessage.IsDead);
+                 return;
+             }
+ 
+@@ -423,8 +449,15 @@ void ActorValueService::OnDeathStateChange(const NotifyDeathStateChange& acMessa
+     if (it == std::end(view))
+     {
+         const auto cEntity = Utils::FindEntityByServerId(acMessage.Id);
+-        spdlog::info(
+-            "Dropped death state {} for server id {:X} at epoch {}, entity found: {}, has form id: {}, waiting for 3D: {}", acMessage.IsDead, acMessage.Id, acMessage.OwnershipEpoch,
++        const auto* pRemote = cEntity ? m_world.try_get<RemoteComponent>(*cEntity) : nullptr;
++        const auto* pFormId = cEntity ? m_world.try_get<FormIdComponent>(*cEntity) : nullptr;
++        Actor* pActor = pFormId ? Cast<Actor>(TESForm::GetById(pFormId->Id)) : nullptr;
++        const char* cActorName = pActor && pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
++    spdlog::info(
++            "STR corpse death rx unresolved: local_player {}, dead {}, server {:X}, incoming_epoch {}, current_epoch {}, ref {:X}, base {:X}, name '{}', native_dead {}, virt_dead {}, state {:X}, entity_found {}, has_form_id {}, waiting_for_3d {}",
++            m_transport.GetLocalPlayerId(), acMessage.IsDead, acMessage.Id, acMessage.OwnershipEpoch, pRemote ? pRemote->OwnershipEpoch : 0,
++            pActor ? pActor->formID : 0, pActor && pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "",
++            pActor && pActor->IsDead(), pActor && pActor->VirtIsDead(false), pActor ? pActor->actorState.flags1 : 0,
+             cEntity.has_value(), cEntity && m_world.all_of<FormIdComponent>(*cEntity), cEntity && m_world.all_of<WaitingFor3D>(*cEntity));
+         return;
+     }
+@@ -435,7 +468,11 @@ void ActorValueService::OnDeathStateChange(const NotifyDeathStateChange& acMessa
+     Actor* pActor = Cast<Actor>(TESForm::GetById(formIdComponent.Id));
+ 
+     if (!pActor)
++    {
++        spdlog::info("STR corpse death rx unresolved: local_player {}, server {:X}, epoch {}, ref {:X}, reason actor reference not loaded",
++            m_transport.GetLocalPlayerId(), acMessage.Id, acMessage.OwnershipEpoch, formIdComponent.Id);
+         return;
++    }
+ 
+     ActorExtension* pExtension = pActor->GetExtension();
+     // Players should never be killed
+@@ -445,16 +482,19 @@ void ActorValueService::OnDeathStateChange(const NotifyDeathStateChange& acMessa
+     const bool cDeadBefore = pActor->IsDead();
+     const bool cVirtDeadBefore = pActor->VirtIsDead(false);
+     const uint32_t cStateBefore = pActor->actorState.flags1;
++    const char* cActorName = pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
+     pExtension->SetNativeCorpseProcess(false);
+-    spdlog::info("STR corpse death notify: local_player {}, server {:X}, epoch {}, form {:X}, message_dead {}, dead {}, virt_dead {}, health {}, flags {:X}, kill_path {}",
+-        m_transport.GetLocalPlayerId(), acMessage.Id, acMessage.OwnershipEpoch, pActor->formID, acMessage.IsDead, cDeadBefore,
++    spdlog::info("STR corpse death rx: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', message_dead {}, dead {}, virt_dead {}, health {}, flags {:X}, kill_path {}",
++        m_transport.GetLocalPlayerId(), acMessage.Id, acMessage.OwnershipEpoch, pActor->formID, pActor->baseForm ? pActor->baseForm->formID : 0,
++        cActorName ? cActorName : "", acMessage.IsDead, cDeadBefore,
+         cVirtDeadBefore, pActor->GetActorValue(ActorValueInfo::kHealth), cStateBefore, cDeadBefore != acMessage.IsDead);
+     if (pActor->IsDead() != acMessage.IsDead)
+     {
+-        spdlog::info("Applying death state {} to remote actor {:X}, server id: {:X}", acMessage.IsDead, pActor->formID, acMessage.Id);
++        spdlog::info("STR corpse death rx applies native transition: local_player {}, server {:X}, epoch {}, ref {:X}, name '{}', dead {} -> {}",
++            m_transport.GetLocalPlayerId(), acMessage.Id, acMessage.OwnershipEpoch, pActor->formID, cActorName ? cActorName : "", cDeadBefore, acMessage.IsDead);
+         acMessage.IsDead ? pActor->Kill() : pActor->Respawn();
+-        spdlog::info("STR corpse death notify applied: local_player {}, server {:X}, form {:X}, dead {}, virt_dead {}, health {}, flags ({:X}, {:X})",
+-            m_transport.GetLocalPlayerId(), acMessage.Id, pActor->formID, pActor->IsDead(), pActor->VirtIsDead(false),
++        spdlog::info("STR corpse death rx transition result: local_player {}, server {:X}, epoch {}, ref {:X}, name '{}', dead {}, virt_dead {}, health {}, flags ({:X}, {:X})",
++            m_transport.GetLocalPlayerId(), acMessage.Id, acMessage.OwnershipEpoch, pActor->formID, cActorName ? cActorName : "", pActor->IsDead(), pActor->VirtIsDead(false),
+             pActor->GetActorValue(ActorValueInfo::kHealth), pActor->actorState.flags1, pActor->actorState.flags2);
+     }
+ }
+diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
+index 1fb6918..24992c0 100644
+--- a/Code/client/Services/Generic/CharacterService.cpp
++++ b/Code/client/Services/Generic/CharacterService.cpp
+@@ -12,6 +12,7 @@
+ #include <Games/References.h>
+ #include <Games/Misc/SubtitleManager.h>
+ #include <Games/Misc/MenuTopicManager.h>
++#include <Games/Skyrim/NetImmerse/NiAVObject.h>
+ 
+ #include <Forms/TESNPC.h>
+ #include <Interface/UI.h>
+@@ -781,13 +782,30 @@ void CharacterService::OnNotifyActionEvents(const NotifyActionEvents& acMessage)
+         auto itor = std::find_if(std::begin(view), std::end(view), [serverId = serverId, view](entt::entity entity) { return view.get<RemoteComponent>(entity).Id == serverId; });
+ 
+         if (itor == std::end(view))
++        {
++            for (const auto& action : actions)
++                if (action.EventName == "Ragdoll" || action.EventName == "RagdollInstant")
++                    spdlog::info("STR corpse ragdoll action rx unresolved: local_player {}, server {:X}, event {}, tick {}, state ({:X}, {:X})",
++                        m_transport.GetLocalPlayerId(), serverId, action.EventName.c_str(), action.Tick, action.State1, action.State2);
+             continue;
++        }
+ 
++        const auto* pFormId = m_world.try_get<FormIdComponent>(*itor);
++        const auto& remote = view.get<RemoteComponent>(*itor);
++        Actor* pActor = pFormId ? Cast<Actor>(TESForm::GetById(pFormId->Id)) : nullptr;
+         auto& animationComponent = view.get<RemoteAnimationComponent>(*itor);
+ 
+         // Played once the actor's playback clock reaches their tick, in step with its movement
+         for (const auto& action : actions)
+         {
++            if (action.EventName == "Ragdoll" || action.EventName == "RagdollInstant")
++            {
++                const char* cActorName = pActor && pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
++                spdlog::info("STR corpse ragdoll action rx: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', event {}, tick {}, state ({:X}, {:X}), confirmed_death {}",
++                    m_transport.GetLocalPlayerId(), serverId, remote.OwnershipEpoch, pFormId ? pFormId->Id : 0,
++                    pActor && pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "", action.EventName.c_str(),
++                    action.Tick, action.State1, action.State2, remote.AuthoritativeDeath.value_or(false));
++            }
+             animationComponent.TimePoints.push_back(action);
+         }
+     }
+@@ -2038,6 +2056,17 @@ void CharacterService::RunLocalUpdates() const noexcept
+ 
+         // Remote clients play actions on the same timeline as movement, by the time playback reaches an action it waits
+         // for the snapshot after it anyway, so sending actions along with that snapshot doesn't delay them
++        for (const auto& action : animationComponent.Actions)
++        {
++            if (action.EventName == "Ragdoll" || action.EventName == "RagdollInstant")
++            {
++                const char* cActorName = pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
++                spdlog::info("STR corpse owner ragdoll action tx: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', event {}, tick {}, state ({:X}, {:X})",
++                    m_transport.GetLocalPlayerId(), localComponent.Id, localComponent.OwnershipEpoch, pActor->formID,
++                    pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "", action.EventName.c_str(),
++                    action.Tick, action.State1, action.State2);
++            }
++        }
+         AnimationSystem::SerializeActions(actionsMessage, localComponent, animationComponent);
+ 
+         if (!cIsFullSnapshot && pActor != pPlayer && !pActor->IsMount() && !pActor->IsInCombat())
+@@ -2084,23 +2113,62 @@ void CharacterService::RunRemoteUpdates() noexcept
+         if (pActor)
+         {
+             ActorExtension* pExtension = pActor->GetExtension();
+-            const auto& remote = interpolatedEntities.get<RemoteComponent>(entity);
++            auto& remote = interpolatedEntities.get<RemoteComponent>(entity);
+             const bool cConfirmedDeath = remote.AuthoritativeDeath.value_or(false);
+             const bool cNativeDead = !pExtension->IsPlayer() && pActor->VirtIsDead(false);
+             const bool cCompletedDeath = IsCompletedCorpseLifeState(pActor->actorState.flags1);
+             const bool cHas3D = pActor->GetNiNode() != nullptr;
+             const bool cAttached = pActor->parentCell && pActor->parentCell->IsAttached();
+             const bool cDeathTransition = IsNativeDeathTransition(pActor->actorState.flags1);
++            const bool cCorpseCandidate = !pExtension->IsPlayer() &&
++                (cConfirmedDeath || cNativeDead || pActor->IsDead() || cDeathTransition || cCompletedDeath);
+             const bool cKillTransitionArmed = pExtension->IsRemote() && !pExtension->IsPlayer() &&
+                 pExtension->CanRunNativeCorpseProcess() && cDeathTransition;
+             const bool cAllowNative = cKillTransitionArmed || (pExtension->IsRemote() && !pExtension->IsPlayer() && cConfirmedDeath && cDeathTransition &&
+                 cHas3D && cAttached && pActor->currentProcess && pActor->unk10 != 0xFFFF);
+             const bool cWasAllowed = pExtension->CanRunNativeCorpseProcess();
+             pExtension->SetNativeCorpseProcess(cAllowNative);
++
++            if (cCorpseCandidate)
++            {
++                const bool cIsDead = pActor->IsDead();
++                const bool cRagdoll = cHas3D && pActor->IsInRagdollState();
++                auto* pRoot = cHas3D ? pActor->GetNiNode() : nullptr;
++                const bool cRootCollision = pRoot && pRoot->GetCollisionObject() != nullptr;
++                const uint32_t cLifeBits = pActor->actorState.flags1 & 0x01E00000;
++                const uint32_t cDiagnosticState = (cConfirmedDeath ? 1u : 0u) | (cIsDead ? 1u << 1 : 0u) |
++                    (cNativeDead ? 1u << 2 : 0u) | (cDeathTransition ? 1u << 3 : 0u) |
++                    (cCompletedDeath ? 1u << 4 : 0u) | (cRagdoll ? 1u << 5 : 0u) |
++                    (cHas3D ? 1u << 6 : 0u) | (cRootCollision ? 1u << 7 : 0u) |
++                    (cAllowNative ? 1u << 8 : 0u) | (cAttached ? 1u << 9 : 0u) | ((cLifeBits >> 21) << 10);
++                if (!remote.HasCorpseDiagnosticState || remote.CorpseDiagnosticState != cDiagnosticState)
++                {
++                    const char* cActorName = pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
++                    spdlog::info("STR corpse guest state: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', changed {:X}->{:X}, confirmed {}, dead {}, virt_dead {}, death_transition {}, completed {}, ragdoll {}, has_3d {}, root_collision {}, native_process {}, attached {}, health {}, state ({:X}, {:X}), position ({}, {}, {})",
++                        m_transport.GetLocalPlayerId(), remote.Id, remote.OwnershipEpoch, pActor->formID, pActor->baseForm ? pActor->baseForm->formID : 0,
++                        cActorName ? cActorName : "", remote.HasCorpseDiagnosticState ? remote.CorpseDiagnosticState : 0, cDiagnosticState,
++                        cConfirmedDeath, cIsDead, cNativeDead, cDeathTransition, cCompletedDeath, cRagdoll, cHas3D, cRootCollision, cAllowNative,
++                        cAttached, pActor->GetActorValue(ActorValueInfo::kHealth), pActor->actorState.flags1, pActor->actorState.flags2,
++                        pActor->position.x, pActor->position.y, pActor->position.z);
++                    remote.CorpseDiagnosticState = cDiagnosticState;
++                    remote.HasCorpseDiagnosticState = true;
++                }
++            }
++            else if (remote.HasCorpseDiagnosticState)
++            {
++                const char* cActorName = pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
++                spdlog::info("STR corpse guest state cleared: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', previous {:X}, state ({:X}, {:X})",
++                    m_transport.GetLocalPlayerId(), remote.Id, remote.OwnershipEpoch, pActor->formID, pActor->baseForm ? pActor->baseForm->formID : 0,
++                    cActorName ? cActorName : "", remote.CorpseDiagnosticState, pActor->actorState.flags1, pActor->actorState.flags2);
++                remote.CorpseDiagnosticState = 0;
++                remote.HasCorpseDiagnosticState = false;
++            }
++
+             if (cWasAllowed != cAllowNative)
+             {
+-                spdlog::info("STR corpse native process eligibility: actor {:X}, enabled {}, confirmed {}, native_dead {}, completed {}, has_3d {}, attached {}, runtime {:X}",
+-                    pActor->formID, cAllowNative, cConfirmedDeath, cNativeDead, cCompletedDeath, cHas3D, cAttached, pActor->unk10);
++                spdlog::info("STR corpse native process eligibility: local_player {}, server {:X}, epoch {}, ref {:X}, enabled {}, confirmed {}, native_dead {}, completed {}, has_3d {}, attached {}, runtime {:X}",
++                    m_transport.GetLocalPlayerId(), remote.Id, remote.OwnershipEpoch, pActor->formID, cAllowNative, cConfirmedDeath,
++                    cNativeDead, cCompletedDeath, cHas3D, cAttached, pActor->unk10);
+                 // Read only: distinguish a frozen animation-driven pose from
+                 // a corpse whose native physics update is now allowed to run.
+                 BSFixedString variable("bAnimationDriven");
+diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
+index 314033d..91301a0 100644
+--- a/Code/client/Services/Generic/ObjectService.cpp
++++ b/Code/client/Services/Generic/ObjectService.cpp
+@@ -26,9 +26,34 @@
+ #include <Games/ActorExtension.h>
+ #include <Games/TES.h>
+ #include <Games/Skyrim/Actor.h>
++#include <Games/Skyrim/NetImmerse/NiAVObject.h>
++#include <Systems/CorpseLifeState.h>
++#include <Utils.h>
++#include <Components.h>
+ 
+ #include <inttypes.h>
+ 
++namespace
++{
++bool IsRemoteCorpseCandidate(Actor* apActor) noexcept
++{
++    if (!apActor || !apActor->GetExtension()->IsRemote() || apActor->GetExtension()->IsPlayer())
++        return false;
++
++    if (apActor->IsDead() || apActor->VirtIsDead(false) || IsNativeDeathTransition(apActor->actorState.flags1))
++        return true;
++
++    const auto ownership = Utils::GetRemoteOwnershipToken(apActor->formID);
++    if (!ownership)
++        return false;
++
++    if (const auto entity = Utils::FindEntityByServerId(ownership->ServerId))
++        if (const auto* pRemote = World::Get().try_get<RemoteComponent>(*entity))
++            return pRemote->AuthoritativeDeath.value_or(false);
++    return false;
++}
++} // namespace
++
+ ObjectService::ObjectService(World& aWorld, entt::dispatcher& aDispatcher, TransportService& aTransport)
+     : m_world(aWorld)
+     , m_transport(aTransport)
+@@ -262,11 +287,23 @@ entt::entity ObjectService::CreateObjectEntity(const uint32_t acFormId, const ui
+ 
+ void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
+ {
+-    if (auto* pActor = Cast<Actor>(acEvent.pObject); pActor && pActor->IsDead() && pActor->GetExtension()->IsRemote() && !pActor->GetExtension()->IsPlayer())
+-        spdlog::info("STR corpse activate event: local_player {}, form {:X}, dead {}, virt_dead {}, flags ({:X}, {:X}), ref ({}, {}, {}), activator {:X}",
+-            m_transport.GetLocalPlayerId(), pActor->formID, pActor->IsDead(), pActor->VirtIsDead(false), pActor->actorState.flags1,
+-            pActor->actorState.flags2, pActor->position.x, pActor->position.y, pActor->position.z,
+-            acEvent.pActivator ? acEvent.pActivator->formID : 0);
++    Actor* pCorpse = Cast<Actor>(acEvent.pObject);
++    const bool cRemoteNpc = pCorpse && pCorpse->GetExtension()->IsRemote() && !pCorpse->GetExtension()->IsPlayer();
++    const bool cRemoteCorpse = cRemoteNpc && IsRemoteCorpseCandidate(pCorpse);
++    const auto cOwnership = cRemoteNpc ? Utils::GetRemoteOwnershipToken(pCorpse->formID) : std::nullopt;
++    const char* cActorName = cRemoteNpc && pCorpse->baseForm ? pCorpse->baseForm->GetName() : nullptr;
++    if (cRemoteNpc)
++    {
++        const bool cHas3D = pCorpse->GetNiNode() != nullptr;
++        auto* pRoot = cHas3D ? pCorpse->GetNiNode() : nullptr;
++        spdlog::info("STR remote NPC activate event: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', corpse_candidate {}, dead {}, virt_dead {}, ragdoll {}, has_3d {}, root_collision {}, state ({:X}, {:X}), position ({}, {}, {}), activator {:X}, activate_flag {}, default_processing {}, unk1 {}, count {}, pre_open_state {}",
++            m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++            pCorpse->formID, pCorpse->baseForm ? pCorpse->baseForm->formID : 0, cActorName ? cActorName : "", cRemoteCorpse, pCorpse->IsDead(),
++            pCorpse->VirtIsDead(false), cHas3D && pCorpse->IsInRagdollState(), cHas3D, pRoot && pRoot->GetCollisionObject() != nullptr,
++            pCorpse->actorState.flags1, pCorpse->actorState.flags2, pCorpse->position.x, pCorpse->position.y, pCorpse->position.z,
++            acEvent.pActivator ? acEvent.pActivator->formID : 0, acEvent.ActivateFlag, acEvent.DefaultProcessing, acEvent.Unk1, acEvent.Count,
++            static_cast<int>(acEvent.PreActivationOpenState));
++    }
+ 
+     if (m_transport.IsConnected() && MissivesCompat::IsBoard(acEvent.pObject))
+         MissivesCompat::AuditBoard(acEvent.pObject, "activate");
+@@ -277,18 +314,31 @@ void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
+     }
+ 
+     if (!m_transport.IsConnected())
++    {
++        if (cRemoteNpc)
++            spdlog::info("STR remote NPC activate request not sent: local_player {}, server {:X}, ref {:X}, corpse_candidate {}, reason disconnected",
++                m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, pCorpse->formID, cRemoteCorpse);
+         return;
++    }
+ 
+     if (Lock* pLock = acEvent.pObject->GetLock())
+     {
+         if (pLock->flags & 0xFF)
++        {
++            if (cRemoteNpc)
++                spdlog::info("STR remote NPC activate request not sent: local_player {}, server {:X}, ref {:X}, corpse_candidate {}, reason locked, lock_flags {:X}",
++                    m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, pCorpse->formID, cRemoteCorpse, pLock->flags);
+             return;
++        }
+     }
+ 
+     ActivateRequest request;
+ 
+     if (!m_world.GetModSystem().GetServerModId(acEvent.pObject->formID, request.Id))
+     {
++        if (cRemoteNpc)
++            spdlog::info("STR remote NPC activate request not sent: local_player {}, server {:X}, ref {:X}, corpse_candidate {}, reason missing server reference mapping",
++                m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, pCorpse->formID, cRemoteCorpse);
+         spdlog::error("Server form id not found for object form id {:X}", acEvent.pObject->formID);
+         return;
+     }
+@@ -296,12 +346,18 @@ void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
+     TESObjectCELL* pCell = acEvent.pObject->GetParentCellEx();
+     if (!pCell)
+     {
++        if (cRemoteNpc)
++            spdlog::info("STR remote NPC activate request not sent: local_player {}, server {:X}, ref {:X}, corpse_candidate {}, reason missing parent cell",
++                m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, pCorpse->formID, cRemoteCorpse);
+         spdlog::error("Activated object has no parent cell: {:X}", acEvent.pObject->formID);
+         return;
+     }
+ 
+     if (!m_world.GetModSystem().GetServerModId(pCell->formID, request.CellId))
+     {
++        if (cRemoteNpc)
++            spdlog::info("STR remote NPC activate request not sent: local_player {}, server {:X}, ref {:X}, corpse_candidate {}, reason missing cell mapping, cell {:X}",
++                m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, pCorpse->formID, cRemoteCorpse, pCell->formID);
+         spdlog::error("Server cell id not found for cell form id {:X}", pCell->formID);
+         return;
+     }
+@@ -311,17 +367,29 @@ void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
+ 
+     if (pEntity == std::end(view))
+     {
++        if (cRemoteNpc)
++            spdlog::info("STR remote NPC activate request not sent: local_player {}, server {:X}, ref {:X}, corpse_candidate {}, reason activator has no local entity, activator {:X}",
++                m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, pCorpse->formID, cRemoteCorpse, acEvent.pActivator ? acEvent.pActivator->formID : 0);
+         // spdlog::error("Activator entity not found for form id {:X}", acEvent.pActivator->formID);
+         return;
+     }
+ 
+     std::optional<uint32_t> serverIdRes = Utils::GetServerId(*pEntity);
+     if (!serverIdRes.has_value())
++    {
++        if (cRemoteNpc)
++            spdlog::info("STR remote NPC activate request not sent: local_player {}, server {:X}, ref {:X}, corpse_candidate {}, reason activator has no server id",
++                m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, pCorpse->formID, cRemoteCorpse);
+         return;
++    }
+ 
+     request.ActivatorId = serverIdRes.value();
+     request.PreActivationOpenState = acEvent.PreActivationOpenState;
+ 
++    if (cRemoteNpc)
++        spdlog::info("STR remote NPC activate request tx: local_player {}, corpse_server {:X}, corpse_epoch {}, ref {:X}, name '{}', corpse_candidate {}, object {:016X}, cell {:016X}, activator_server {:X}, activator_ref {:X}",
++            m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0, pCorpse->formID,
++            cActorName ? cActorName : "", cRemoteCorpse, request.Id.LogFormat(), request.CellId.LogFormat(), request.ActivatorId, acEvent.pActivator->formID);
+     m_transport.Send(request);
+ }
+ 
+@@ -330,6 +398,8 @@ void ObjectService::OnActivateNotify(const NotifyActivate& acMessage) noexcept
+     Actor* pActor = Utils::GetByServerId<Actor>(acMessage.ActivatorId);
+     if (!pActor)
+     {
++        spdlog::info("STR activate notify target unresolved: local_player {}, object {}, activator_server {:X}, reason activator actor not loaded",
++            m_transport.GetLocalPlayerId(), acMessage.Id.LogFormat(), acMessage.ActivatorId);
+         spdlog::error("{}: could not find actor server id {:X}", __FUNCTION__, acMessage.ActivatorId);
+         return;
+     }
+@@ -338,10 +408,28 @@ void ObjectService::OnActivateNotify(const NotifyActivate& acMessage) noexcept
+     TESObjectREFR* pObject = Cast<TESObjectREFR>(TESForm::GetById(cObjectId));
+     if (!pObject)
+     {
++        spdlog::info("STR activate notify target unresolved: local_player {}, object {}, activator_server {:X}, local_ref {:X}, reason target reference not loaded",
++            m_transport.GetLocalPlayerId(), acMessage.Id.LogFormat(), acMessage.ActivatorId, cObjectId);
+         spdlog::error("Failed to retrieve object to activate.");
+         return;
+     }
+ 
++    Actor* pCorpse = Cast<Actor>(pObject);
++    const bool cRemoteNpc = pCorpse && pCorpse->GetExtension()->IsRemote() && !pCorpse->GetExtension()->IsPlayer();
++    const bool cRemoteCorpse = cRemoteNpc && IsRemoteCorpseCandidate(pCorpse);
++    const auto cOwnership = cRemoteNpc ? Utils::GetRemoteOwnershipToken(pCorpse->formID) : std::nullopt;
++    const char* cActorName = cRemoteNpc && pCorpse->baseForm ? pCorpse->baseForm->GetName() : nullptr;
++    if (cRemoteNpc)
++    {
++        const bool cHas3D = pCorpse->GetNiNode() != nullptr;
++        auto* pRoot = cHas3D ? pCorpse->GetNiNode() : nullptr;
++        spdlog::info("STR remote NPC activate notify rx: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', corpse_candidate {}, activator_server {:X}, dead {}, virt_dead {}, ragdoll {}, has_3d {}, root_collision {}, state ({:X}, {:X})",
++            m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++            pCorpse->formID, pCorpse->baseForm ? pCorpse->baseForm->formID : 0, cActorName ? cActorName : "", cRemoteCorpse, acMessage.ActivatorId,
++            pCorpse->IsDead(), pCorpse->VirtIsDead(false), cHas3D && pCorpse->IsInRagdollState(), cHas3D,
++            pRoot && pRoot->GetCollisionObject() != nullptr, pCorpse->actorState.flags1, pCorpse->actorState.flags2);
++    }
++
+     if (pObject->baseForm->formType == FormType::Door)
+     {
+         auto remotePreActivationState = static_cast<TESObjectREFR::OpenState>(acMessage.PreActivationOpenState);
+@@ -357,7 +445,12 @@ void ObjectService::OnActivateNotify(const NotifyActivate& acMessage) noexcept
+ 
+     // unsure if these flags are the best, but these are passed with the papyrus Activate fn
+     // might be an idea to have the client send the flags through NotifyActivate
+-    pObject->Activate(pActor, 0, nullptr, 1, 0);
++    const bool cResult = pObject->Activate(pActor, 0, nullptr, 1, 0);
++    if (cRemoteNpc)
++        spdlog::info("STR remote NPC activate notify result: local_player {}, server {:X}, epoch {}, ref {:X}, name '{}', corpse_candidate {}, activator_server {:X}, result {}, dead {}, virt_dead {}, state ({:X}, {:X})",
++            m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++            pCorpse->formID, cActorName ? cActorName : "", cRemoteCorpse, acMessage.ActivatorId, cResult, pCorpse->IsDead(), pCorpse->VirtIsDead(false),
++            pCorpse->actorState.flags1, pCorpse->actorState.flags2);
+ }
+ 
+ void ObjectService::OnLockChange(const LockChangeEvent& acEvent) noexcept
+@@ -471,6 +564,23 @@ void ObjectService::OnNotifyScriptAnimation(const NotifyScriptAnimation& acMessa
+ 
+ BSTEventResult ObjectService::OnEvent(const TESActivateEvent* acEvent, const EventDispatcher<TESActivateEvent>* aDispatcher)
+ {
++    if (acEvent && acEvent->object)
++    {
++        if (auto* pActor = Cast<Actor>(acEvent->object); pActor && pActor->GetExtension()->IsRemote() && !pActor->GetExtension()->IsPlayer())
++        {
++            const bool cCorpseCandidate = IsRemoteCorpseCandidate(pActor);
++            const auto cOwnership = Utils::GetRemoteOwnershipToken(pActor->formID);
++            const char* cActorName = pActor->baseForm ? pActor->baseForm->GetName() : nullptr;
++            const bool cHas3D = pActor->GetNiNode() != nullptr;
++            auto* pRoot = cHas3D ? pActor->GetNiNode() : nullptr;
++            spdlog::info("STR remote NPC Skyrim TESActivateEvent rx: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', corpse_candidate {}, dead {}, virt_dead {}, ragdoll {}, has_3d {}, root_collision {}, state ({:X}, {:X}), position ({}, {}, {})",
++                m_transport.GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++                pActor->formID, pActor->baseForm ? pActor->baseForm->formID : 0, cActorName ? cActorName : "", cCorpseCandidate, pActor->IsDead(),
++                pActor->VirtIsDead(false), cHas3D && pActor->IsInRagdollState(), cHas3D, pRoot && pRoot->GetCollisionObject() != nullptr,
++                pActor->actorState.flags1, pActor->actorState.flags2, pActor->position.x, pActor->position.y, pActor->position.z);
++        }
++    }
++
+ #if ENVIRONMENT_DEBUG
+     auto view = m_world.view<ObjectComponent>();
+ 
+diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
+index 2a0e89c..5419cd2 100644
+--- a/Code/client/Systems/AnimationSystem.cpp
++++ b/Code/client/Systems/AnimationSystem.cpp
+@@ -18,6 +18,8 @@
+ 
+ #include <Components.h>
+ #include <World.h>
++#include <Utils.h>
++#include <Games/Skyrim/NetImmerse/NiAVObject.h>
+ 
+ #include <Forms/TESObjectCELL.h>
+ #include <Forms/TESWorldSpace.h>
+@@ -44,25 +46,47 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+     const auto it = std::begin(actions);
+     if (it != std::end(actions) && it->Tick <= aTick)
+     {
++        const auto& first = *it;
+         // Check if animation graph is ready before attempting to play animations
+         if (!apActor->animationGraphHolder.IsReady())
+         {
++            const auto* pExtension = apActor->GetExtension();
++            const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
++            const bool cRagdollAction = first.EventName == "Ragdoll" || first.EventName == "RagdollInstant";
++            if (cRemoteNpc && cRagdollAction &&
++                (!aAnimationComponent.HasLoggedCorpseGraphWait || aAnimationComponent.LastLoggedCorpseGraphWaitTick != first.Tick))
++            {
++                const auto cOwnership = Utils::GetRemoteOwnershipToken(apActor->formID);
++                const char* cActorName = apActor->baseForm ? apActor->baseForm->GetName() : nullptr;
++                spdlog::info("STR corpse ragdoll action waiting for graph: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', event {}, tick {}, playback_tick {}, queue {}, confirmed {}, dead {}, virt_dead {}, state ({:X}, {:X})",
++                    aWorld.GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++                    apActor->formID, apActor->baseForm ? apActor->baseForm->formID : 0, cActorName ? cActorName : "", first.EventName.c_str(),
++                    first.Tick, aTick, actions.size(), aConfirmedDeath, apActor->IsDead(), apActor->VirtIsDead(false),
++                    apActor->actorState.flags1, apActor->actorState.flags2);
++                aAnimationComponent.LastLoggedCorpseGraphWaitTick = first.Tick;
++                aAnimationComponent.HasLoggedCorpseGraphWait = true;
++            }
+             // Animation graph not ready, keep the action in queue and try again later
+             return;
+         }
+-        const auto& first = *it;
+ 
+         const auto* pExtension = apActor->GetExtension();
+         const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
+         const bool cWasCorpse = cRemoteNpc && apActor->VirtIsDead(false);
++        const bool cIsRagdollAction = first.EventName == "Ragdoll" || first.EventName == "RagdollInstant";
++        const auto cOwnership = cRemoteNpc ? Utils::GetRemoteOwnershipToken(apActor->formID) : std::nullopt;
++        const char* cActorName = apActor->baseForm ? apActor->baseForm->GetName() : nullptr;
+         if (ShouldDeferRemoteNpcRagdollAction(cRemoteNpc, first.EventName, first.State1, cWasCorpse, aConfirmedDeath))
+         {
+-            spdlog::info("STR corpse ragdoll action deferred: local_player {}, actor {:X}, event {}, incoming_life_state {}, confirmed_death {}, native_corpse {}, native_dead {}, virt_dead {}, native_state {:X}, queue {}",
+-                aWorld.GetTransport().GetLocalPlayerId(), apActor->formID, first.EventName.c_str(), (first.State1 & 0x01E00000) >> 21,
++            spdlog::info("STR corpse ragdoll action deferred: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', event {}, tick {}, incoming_life_state {}, confirmed_death {}, native_corpse {}, native_dead {}, virt_dead {}, native_state {:X}, queue {}",
++                aWorld.GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++                apActor->formID, apActor->baseForm ? apActor->baseForm->formID : 0, cActorName ? cActorName : "", first.EventName.c_str(), first.Tick,
++                (first.State1 & 0x01E00000) >> 21,
+                 aConfirmedDeath, cWasCorpse, apActor->IsDead(), apActor->VirtIsDead(false), apActor->actorState.flags1, actions.size());
+             if (aAnimationComponent.ReplayCount > 0)
+                 aAnimationComponent.ReplayCount--;
+             actions.pop_front();
++            aAnimationComponent.HasLoggedCorpseGraphWait = false;
+             return;
+         }
+ 
+@@ -78,8 +102,9 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+         apActor->actorState.flags2 = first.State2;
+ 
+         if (cAppliedState != first.State1)
+-            spdlog::info("STR corpse life-state guard: actor {:X}, native {:X}, incoming {:X}, applied {:X}, event {}",
+-                apActor->formID, cNativeState, first.State1, cAppliedState, first.EventName.c_str());
++            spdlog::info("STR corpse life-state guard: local_player {}, server {:X}, epoch {}, ref {:X}, name '{}', native {:X}, incoming {:X}, applied {:X}, event {}",
++                aWorld.GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++                apActor->formID, cActorName ? cActorName : "", cNativeState, first.State1, cAppliedState, first.EventName.c_str());
+ 
+         apActor->LoadAnimationVariables(first.Variables);
+ 
+@@ -92,16 +117,31 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+         actionData.idleForm = Cast<TESIdleForm>(TESForm::GetById(first.IdleId));
+         actionData.someFlag = ((first.Type & 0x4) != 0) ? 1 : 0;
+ 
++        if (cIsRagdollAction)
++        {
++            const bool cHas3D = apActor->GetNiNode() != nullptr;
++            auto* pRoot = cHas3D ? apActor->GetNiNode() : nullptr;
++            spdlog::info("STR corpse ragdoll action apply: local_player {}, server {:X}, epoch {}, ref {:X}, base {:X}, name '{}', event {}, tick {}, confirmed {}, native_dead {}, virt_dead {}, ragdoll {}, has_3d {}, root_collision {}, action_found {}, target_found {}, state ({:X}, {:X}), position ({}, {}, {})",
++                aWorld.GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++                apActor->formID, apActor->baseForm ? apActor->baseForm->formID : 0, cActorName ? cActorName : "", first.EventName.c_str(), first.Tick,
++                aConfirmedDeath, apActor->IsDead(), apActor->VirtIsDead(false), cHas3D && apActor->IsInRagdollState(), cHas3D,
++                pRoot && pRoot->GetCollisionObject() != nullptr, pAction != nullptr, pTarget != nullptr, apActor->actorState.flags1,
++                apActor->actorState.flags2, apActor->position.x, apActor->position.y, apActor->position.z);
++        }
++
+         const auto result = ActorMediator::Get()->ForceAction(&actionData);
+ 
+-        if (cWasCorpse)
+-            spdlog::info("STR corpse action replay: actor {:X}, action {:X}, event {}, state ({:X}, {:X}), result {}",
+-                apActor->formID, actionId, first.EventName.c_str(), first.State1, first.State2, result);
++        if (cIsRagdollAction)
++            spdlog::info("STR corpse ragdoll action result: local_player {}, server {:X}, epoch {}, ref {:X}, event {}, result {}, state ({:X}, {:X}), dead {}, virt_dead {}, ragdoll {}",
++                aWorld.GetTransport().GetLocalPlayerId(), cOwnership ? cOwnership->ServerId : 0, cOwnership ? cOwnership->OwnershipEpoch : 0,
++                apActor->formID, first.EventName.c_str(), result, apActor->actorState.flags1, apActor->actorState.flags2,
++                apActor->IsDead(), apActor->VirtIsDead(false), apActor->GetNiNode() && apActor->IsInRagdollState());
+ 
+         if (aAnimationComponent.ReplayCount > 0)
+             aAnimationComponent.ReplayCount--;
+ 
+         actions.pop_front();
++        aAnimationComponent.HasLoggedCorpseGraphWait = false;
+     }
+ }
+ 
+diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
+index 8a281dd..09dce8b 100644
+--- a/Code/common/BuildInfo.h.in
++++ b/Code/common/BuildInfo.h.in
+@@ -1,4 +1,4 @@
+ #pragma once
+ // This file was autogenerated by xmake
+ #define BUILD_BRANCH "${GIT_BRANCH}"
+-#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4k-native-death"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4l-corpse-diagnostics"
+diff --git a/Code/server/Services/ActorValueService.cpp b/Code/server/Services/ActorValueService.cpp
+index a2bcf90..8f3163b 100644
+--- a/Code/server/Services/ActorValueService.cpp
++++ b/Code/server/Services/ActorValueService.cpp
+@@ -80,6 +80,8 @@ void ActorValueService::OnHealthChangeBroadcast(const PacketEvent<RequestHealthC
+ 
+     // TODO(cosideci): should server side health not be updated?
+     auto actorValuesView = m_world.view<ActorValuesComponent, OwnerComponent>();
++    bool cPotentiallyLethal = false;
++    float cServerHealthAfter = 0.f;
+ 
+     auto it = actorValuesView.find(static_cast<entt::entity>(message.Id));
+ 
+@@ -89,11 +91,16 @@ void ActorValueService::OnHealthChangeBroadcast(const PacketEvent<RequestHealthC
+         auto currentHealth = actorValuesComponent.CurrentActorValues.ActorValuesList[24];
+         if (message.DeltaHealth < 0.f && currentHealth + message.DeltaHealth <= 0.f)
+         {
++            cPotentiallyLethal = true;
++            cServerHealthAfter = currentHealth + message.DeltaHealth;
+             const auto& ownerComponent = actorValuesView.get<OwnerComponent>(*it);
+-            spdlog::info("STR corpse server health relay: actor {:X}, sender {:X}, owner {:X}, epoch {}, old_health {}, delta {}, receiver_health {}",
+-                message.Id, acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0,
++            const auto* pCharacter = m_world.try_get<CharacterComponent>(*it);
++            const auto* pFormId = m_world.try_get<FormIdComponent>(*it);
++            spdlog::info("STR corpse server health relay: server {:X}, ref {:016X}, base {:016X}, sender {:X}, owner {:X}, epoch {}, server_dead {}, old_health {}, delta {}, receiver_health {}",
++                message.Id, pFormId ? pFormId->Id.LogFormat() : 0, pCharacter ? pCharacter->BaseId.Id.LogFormat() : 0,
++                acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0,
+                 ownerComponent.GetOwner() ? ownerComponent.GetOwner()->GetId() : 0,
+-                ownerComponent.OwnershipEpoch, currentHealth, message.DeltaHealth, currentHealth + message.DeltaHealth);
++                ownerComponent.OwnershipEpoch, pCharacter && pCharacter->IsDead(), currentHealth, message.DeltaHealth, currentHealth + message.DeltaHealth);
+         }
+         actorValuesComponent.CurrentActorValues.ActorValuesList[24] = currentHealth - message.DeltaHealth;
+     }
+@@ -103,7 +110,11 @@ void ActorValueService::OnHealthChangeBroadcast(const PacketEvent<RequestHealthC
+     notify.DeltaHealth = message.DeltaHealth;
+ 
+     const entt::entity cEntity = static_cast<entt::entity>(message.Id);
+-    if (!GameServer::Get()->SendToPlayersInRange(notify, cEntity, acMessage.pPlayer))
++    const bool cRelayed = GameServer::Get()->SendToPlayersInRange(notify, cEntity, acMessage.pPlayer);
++    if (cPotentiallyLethal)
++        spdlog::info("STR corpse health notify tx: server {:X}, sender {:X}, receiver_scope sent {}, delta {}, expected_health {}",
++            message.Id, acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0, cRelayed, message.DeltaHealth, cServerHealthAfter);
++    if (!cRelayed)
+         spdlog::error("{}: SendToPlayersInRange failed", __FUNCTION__);
+ }
+ 
+@@ -115,13 +126,30 @@ void ActorValueService::OnDeathStateChange(const PacketEvent<RequestDeathStateCh
+ 
+     const auto it = characterView.find(static_cast<entt::entity>(message.Id));
+ 
+-    if (it == characterView.end() || !characterView.get<OwnerComponent>(*it).IsCurrentOwner(acMessage.pPlayer, message.OwnershipEpoch))
++    if (it == characterView.end())
++    {
++        spdlog::info("STR corpse death request rejected: sender {:X}, server {:X}, requested_epoch {}, dead {}, reason actor missing",
++            acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0, message.Id, message.OwnershipEpoch, message.IsDead);
++        return;
++    }
++
++    if (!characterView.get<OwnerComponent>(*it).IsCurrentOwner(acMessage.pPlayer, message.OwnershipEpoch))
++    {
++        const auto& ownerComponent = characterView.get<OwnerComponent>(*it);
++        const auto* pFormId = m_world.try_get<FormIdComponent>(*it);
++        const auto& character = characterView.get<CharacterComponent>(*it);
++        spdlog::info("STR corpse death request rejected: sender {:X}, server {:X}, ref {:016X}, base {:016X}, requested_epoch {}, owner {:X}, owner_epoch {}, dead {}, reason ownership mismatch",
++            acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0, message.Id, pFormId ? pFormId->Id.LogFormat() : 0,
++            character.BaseId.Id.LogFormat(), message.OwnershipEpoch,
++            ownerComponent.GetOwner() ? ownerComponent.GetOwner()->GetId() : 0, ownerComponent.OwnershipEpoch, message.IsDead);
+         return;
++    }
+ 
+     auto& characterComponent = characterView.get<CharacterComponent>(*it);
+     const auto& ownerComponent = characterView.get<OwnerComponent>(*it);
+-    spdlog::info("STR corpse server death relay: actor {:X}, sender {:X}, owner {:X}, epoch {}, dead {} -> {}",
+-        message.Id, acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0,
++    const auto* pFormId = m_world.try_get<FormIdComponent>(*it);
++    spdlog::info("STR corpse death request rx: server {:X}, ref {:016X}, base {:016X}, sender {:X}, owner {:X}, epoch {}, dead {} -> {}",
++        message.Id, pFormId ? pFormId->Id.LogFormat() : 0, characterComponent.BaseId.Id.LogFormat(), acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0,
+         ownerComponent.GetOwner() ? ownerComponent.GetOwner()->GetId() : 0,
+         ownerComponent.OwnershipEpoch, characterComponent.IsDead(), message.IsDead);
+     characterComponent.SetDead(message.IsDead);
+@@ -133,6 +161,9 @@ void ActorValueService::OnDeathStateChange(const PacketEvent<RequestDeathStateCh
+     notify.IsDead = message.IsDead;
+ 
+     const entt::entity cEntity = static_cast<entt::entity>(message.Id);
+-    if (!GameServer::Get()->SendToPlayersInRange(notify, cEntity, acMessage.pPlayer))
++    const bool cRelayed = GameServer::Get()->SendToPlayersInRange(notify, cEntity, acMessage.pPlayer);
++    spdlog::info("STR corpse death notify tx: server {:X}, owner {:X}, epoch {}, dead {}, sent {}",
++        message.Id, acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0, message.OwnershipEpoch, message.IsDead, cRelayed);
++    if (!cRelayed)
+         spdlog::error("{}: SendToPlayersInRange failed", __FUNCTION__);
+ }
+diff --git a/Code/server/Services/CharacterService.cpp b/Code/server/Services/CharacterService.cpp
+index f15ba11..8731483 100644
+--- a/Code/server/Services/CharacterService.cpp
++++ b/Code/server/Services/CharacterService.cpp
+@@ -454,16 +454,33 @@ void CharacterService::OnActionEventsRequest(const PacketEvent<RequestActionEven
+         auto itor = view.find(entity);
+         if (itor == std::end(view))
+         {
++            for (const auto& action : actions)
++                if (action.EventName == "Ragdoll" || action.EventName == "RagdollInstant")
++                    spdlog::info("STR corpse ragdoll action rejected: sender {:X}, server {:X}, event {}, tick {}, state ({:X}, {:X}), reason actor missing or sender is not owner",
++                        acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0, id, action.EventName.c_str(), action.Tick, action.State1, action.State2);
+             spdlog::debug("{:x} requested actions of {:x} but does not exist", acMessage.pPlayer->GetConnectionId(), World::ToInteger(entity));
+             continue;
+         }
+ 
++        const auto& owner = view.get<OwnerComponent>(*itor);
++        const auto* pCharacter = m_world.try_get<CharacterComponent>(entity);
++        const auto* pFormId = m_world.try_get<FormIdComponent>(entity);
+         NotifyActionEvents notify;
+         auto& acceptedActions = notify.Actions[id];
++        uint32_t cRagdollCount = 0;
+ 
+         for (auto& action : actions)
+         {
+             auto [canceled, reason] = GameServer::Get()->GetWorld().GetScriptService().HandleCharacterMove(entity);
++            const bool cIsRagdoll = action.EventName == "Ragdoll" || action.EventName == "RagdollInstant";
++            if (cIsRagdoll)
++            {
++                ++cRagdollCount;
++                spdlog::info("STR corpse ragdoll action request rx: sender {:X}, owner {:X}, server {:X}, epoch {}, ref {:016X}, base {:016X}, server_dead {}, event {}, tick {}, state ({:X}, {:X}), canceled {}, reason {}",
++                    acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0, owner.GetOwner() ? owner.GetOwner()->GetId() : 0, id,
++                    owner.OwnershipEpoch, pFormId ? pFormId->Id.LogFormat() : 0, pCharacter ? pCharacter->BaseId.Id.LogFormat() : 0,
++                    pCharacter && pCharacter->IsDead(), action.EventName.c_str(), action.Tick, action.State1, action.State2, canceled, reason);
++            }
+             if (!canceled)
+                 acceptedActions.push_back(action);
+         }
+@@ -471,7 +488,18 @@ void CharacterService::OnActionEventsRequest(const PacketEvent<RequestActionEven
+         view.get<AnimationComponent>(*itor).ActionsReplayCache.AppendAll(actions);
+ 
+         if (!acceptedActions.empty())
+-            GameServer::Get()->SendToPlayersInRange(notify, entity, acMessage.pPlayer);
++        {
++            const bool cRelayed = GameServer::Get()->SendToPlayersInRange(notify, entity, acMessage.pPlayer);
++            if (cRagdollCount != 0)
++                spdlog::info("STR corpse ragdoll action relay: server {:X}, epoch {}, received {}, accepted {}, sent {}, sender {:X}",
++                    id, owner.OwnershipEpoch, cRagdollCount, std::count_if(acceptedActions.begin(), acceptedActions.end(), [](const ActionEvent& action)
++                    {
++                        return action.EventName == "Ragdoll" || action.EventName == "RagdollInstant";
++                    }), cRelayed, acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0);
++        }
++        else if (cRagdollCount != 0)
++            spdlog::info("STR corpse ragdoll action relay skipped: server {:X}, epoch {}, received {}, accepted 0, sender {:X}",
++                id, owner.OwnershipEpoch, cRagdollCount, acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0);
+     }
+ }
+ 
+diff --git a/Code/server/Services/ObjectService.cpp b/Code/server/Services/ObjectService.cpp
+index 2bd7d15..544ea98 100644
+--- a/Code/server/Services/ObjectService.cpp
++++ b/Code/server/Services/ObjectService.cpp
+@@ -124,13 +124,40 @@ void ObjectService::OnActivate(const PacketEvent<ActivateRequest>& acMessage) co
+     notifyActivate.ActivatorId = acMessage.Packet.ActivatorId;
+     notifyActivate.PreActivationOpenState = acMessage.Packet.PreActivationOpenState;
+ 
++    auto characterView = m_world.view<FormIdComponent, CharacterComponent, OwnerComponent>();
++    const auto characterIt = std::find_if(std::begin(characterView), std::end(characterView), [&packet = acMessage.Packet, characterView](entt::entity entity)
++    {
++        return characterView.get<FormIdComponent>(entity).Id == packet.Id &&
++            !characterView.get<CharacterComponent>(entity).IsPlayer();
++    });
++    const bool cIsNpcActivation = characterIt != std::end(characterView);
++    if (cIsNpcActivation)
++    {
++        const auto& character = characterView.get<CharacterComponent>(*characterIt);
++        const auto& owner = characterView.get<OwnerComponent>(*characterIt);
++        spdlog::info("STR NPC activate request rx: server {:X}, ref {:016X}, base {:016X}, sender {:X}, npc_owner {:X}, owner_epoch {}, activator {:X}, cell {:016X}, server_dead {}",
++            World::ToInteger(*characterIt), acMessage.Packet.Id.LogFormat(), character.BaseId.Id.LogFormat(),
++            acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0, owner.GetOwner() ? owner.GetOwner()->GetId() : 0,
++            owner.OwnershipEpoch, acMessage.Packet.ActivatorId, acMessage.Packet.CellId.LogFormat(), character.IsDead());
++    }
++
++    uint32_t cRecipientCount = 0;
+     for (auto pPlayer : m_world.GetPlayerManager())
+     {
+         if (pPlayer != acMessage.pPlayer && pPlayer->GetCellComponent().Cell == acMessage.Packet.CellId)
+         {
+             pPlayer->Send(notifyActivate);
++            ++cRecipientCount;
+         }
+     }
++    if (cIsNpcActivation)
++        spdlog::info("STR NPC activate request relay: server {:X}, npc_dead {}, target_count {}, cell {:016X}",
++            World::ToInteger(*characterIt), characterView.get<CharacterComponent>(*characterIt).IsDead(), cRecipientCount,
++            acMessage.Packet.CellId.LogFormat());
++    else
++        spdlog::info("STR activate request relay unclassified: object {}, sender {:X}, activator {:X}, target_count {}, cell {:016X}",
++            acMessage.Packet.Id.LogFormat(), acMessage.pPlayer ? acMessage.pPlayer->GetId() : 0, acMessage.Packet.ActivatorId,
++            cRecipientCount, acMessage.Packet.CellId.LogFormat());
+ }
+ 
+ void ObjectService::OnLockChange(const PacketEvent<LockChangeRequest>& acMessage) const noexcept
