@@ -31,7 +31,9 @@ Skyrim/STR 源码没有提供当前准星目标和“搜索”HUD 提示状态�
 3. 客机记录 NPC 名称和地点、是否有搜索提示、站姿/布娃娃表现；没有提示时仍按上节方法尝试交互两次。再交换角色测试由客机击杀。
 4. 复现后立即保存主机与客机的 `tp_client.log`、服务器的 `STServerOut.log`。记录哪一边击杀、哪一边无法搜索，以及最后一次按交互键的大致时间。不要裁掉前后几十秒日志。
 
-这是一份诊断包，不把编译成功当成游戏问题已修复。源码层静态日志检查和 Windows 构建会在交付前单独报告；是否解决仍需双人实测。
+这是一份诊断包，不把编译成功当成游戏问题已修复。GitHub Actions 的 Windows x64 / Skyrim 1.6.1170 构建已完成：客户端与服务器构建成功，Papyrus 编译成功，104 项自动测试全部通过，PE 检查确认客户端、加载器、服务端 DLL 和服务器程序均为 AMD64。配置日志前段包含 xmake 查找依赖时的试链接失败（例如尚未安装的 `lua.lib`）；随后依赖安装完成，最终 configure 与正式构建均成功。构建仍有原有 MSVC/Papyrus 警告，日志中没有正式编译错误。游戏内是否解决仍需双人实测。
+
+本轮构建记录：Actions run `42387608510`，源码提交 `c5390f5028803fa568bcdd4c7144a93755dcc9ae`。Windows 产物 SHA256：`SkyrimTogether.exe` `606dc798dcf20ffc48d57123148a45b63895114da4b1c66d5baed2e4388b4ce2`；`EarlyLoad.dll` `edda5a42a93d44a0a1c43841980f004809d6d3b72e799a427aff25a177077152`；`STServer.dll` `d69f882824fe73d5e4296ff10655355f9227a135e4313a0a1b968097ff991b3d`；`SkyrimTogetherServer.exe` `9d1511e0de8e2dec4b44b168c54da83cc30998eecf8fb7d255a3cee8b53f904a`。压缩包内 `SHA256.txt` 列出除清单自身外的每个包内文件；再次解压后的四个程序也已重验。
 
 ## 文件与安装
 

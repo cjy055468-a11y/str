@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="TPTests.exe" errors="0" failures="0" tests="700" hostname="tbd" time="0.012" timestamp="2026-11-07T16:04:33Z">
+  <testsuite name="TPTests.exe" errors="0" failures="0" tests="700" hostname="tbd" time="0.009" timestamp="2026-11-07T16:59:59Z">
     <testcase classname="TPTests.exe.global" name="Temporary actor identity survives discovery unload and ownership changes" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Recycled temporary form IDs and new connections cannot inherit actor identity" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Known temporary actor identity survives real assignment factory round trips" time="0.000" status="run"/>
@@ -28,7 +28,7 @@
     <testcase classname="TPTests.exe.global" name="Native corpse completion and actual resurrection supersede stale pose life bits" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Native death processing excludes living unconscious and essential down states" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Dropped instances retain distinct IDs and duplicate creation is idempotent" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.003" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.002" status="run"/>
     <testcase classname="TPTests.exe.global" name="Consumed drops stay absent from snapshots and creation retries" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Unacknowledged grants recover on reconnect without a second credit" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="An already applied recovered grant does not add to the new actor again" time="0.000" status="run"/>
@@ -65,7 +65,7 @@
     <testcase classname="TPTests.exe.global" name="Packets/Given: NotifyActionEvents" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="StringCache/Messages" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives publishes one canonical instance and preserves its claim tombstone" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Concurrent Missives claims elect exactly one personal recipient" time="0.002" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Concurrent Missives claims elect exactly one personal recipient" time="0.001" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives progress is claimant-only ordered and survives authority handoff" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives reservations and retired instances cannot generate a second personal mission" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Missives real factories retain canonical aliases globals and personal grants" time="0.000" status="run"/>
@@ -90,11 +90,11 @@
     <testcase classname="TPTests.exe.global" name="Visible drop geometry without collision does not consume physics setup attempts" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="A drop outfit refresh round trips without requesting another native equip action" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Stays well under the old fixed 300ms delay on a stable connection" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Playback clock/Buffers more on a jittery connection and rarely runs out of snapshots" time="0.002" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Buffers more on a jittery connection and rarely runs out of snapshots" time="0.001" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Plays low rate actors further behind instead of starving them" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Quickly plays further behind when the owner starts sending less often" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Keeps up with a 60 fps owner whose frame times vary" time="0.001" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Playback clock/Is not thrown off by a long frame on our side" time="0.001" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Playback clock/Is not thrown off by a long frame on our side" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/A long frame does not carry a catch-up past where playback should be" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Does not depend on the owner's clock matching ours" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Playback clock/Jumps instead of crawling when the owner's timeline jumps" time="0.000" status="run"/>
