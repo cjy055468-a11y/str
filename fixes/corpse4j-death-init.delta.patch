@@ -41,6 +41,16 @@ diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExten
  bool ActorExtension::IsPlayer() const noexcept
  {
      return std::atomic_ref<uint32_t>(onlineFlags).load(std::memory_order_relaxed) & kPlayer;
+@@ -69,7 +82,7 @@
+ void ActorExtension::SetRemote(bool aSet) noexcept
+ {
+     if (aSet)
+         std::atomic_ref<uint32_t>(onlineFlags).fetch_or(kRemote, std::memory_order_relaxed);
+     else
+-        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~(kRemote | kNativeCorpseProcess), std::memory_order_relaxed);
++        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~(kRemote | kNativeCorpseProcess | kKillImplInvoked), std::memory_order_relaxed);
+ }
+
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
