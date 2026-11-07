@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="TPTests.exe" errors="0" failures="0" tests="704" hostname="tbd" time="0.012" timestamp="2026-11-07T08:13:20Z">
+  <testsuite name="TPTests.exe" errors="0" failures="0" tests="709" hostname="tbd" time="0.011" timestamp="2026-11-07T09:40:56Z">
     <testcase classname="TPTests.exe.global" name="Temporary actor identity survives discovery unload and ownership changes" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Recycled temporary form IDs and new connections cannot inherit actor identity" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Known temporary actor identity survives real assignment factory round trips" time="0.000" status="run"/>
@@ -28,8 +28,9 @@
     <testcase classname="TPTests.exe.global" name="Native corpse completion and actual resurrection supersede stale pose life bits" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Native death processing excludes living unconscious and essential down states" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="A confirmed remote death invokes KillImpl once when IsDead was pre-set" time="0.000" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Remote NPC KillImpl waits for 3D, cell, and process readiness" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Dropped instances retain distinct IDs and duplicate creation is idempotent" time="0.000" status="run"/>
-    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.003" status="run"/>
+    <testcase classname="TPTests.exe.global" name="Concurrent drop claims produce exactly one first winner" time="0.002" status="run"/>
     <testcase classname="TPTests.exe.global" name="Consumed drops stay absent from snapshots and creation retries" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="Unacknowledged grants recover on reconnect without a second credit" time="0.000" status="run"/>
     <testcase classname="TPTests.exe.global" name="An already applied recovered grant does not add to the new actor again" time="0.000" status="run"/>

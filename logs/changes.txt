@@ -6,18 +6,18 @@
  Code/client/Games/ActorExtension.h                 |  23 +-
  Code/client/Games/Misc/BSScript.cpp                |   2 +
  Code/client/Games/Misc/SubtitleManager.cpp         |   3 +
- Code/client/Games/Skyrim/Actor.cpp                 | 115 +++++++-
+ Code/client/Games/Skyrim/Actor.cpp                 | 127 +++++++-
  Code/client/Games/Skyrim/Actor.h                   |  13 +-
  Code/client/Games/Skyrim/ExtraData/ExtraData.h     |   1 +
  Code/client/Games/Skyrim/Forms/TESForm.h           |   1 +
  Code/client/Games/Skyrim/Misc/MiddleProcess.h      |   6 +-
  Code/client/Games/Skyrim/NetImmerse/NiAVObject.h   |   3 +
  Code/client/Games/Skyrim/PlayerCharacter.cpp       |   4 +
- Code/client/Games/Skyrim/TESObjectREFR.cpp         | 158 ++++++++++-
+ Code/client/Games/Skyrim/TESObjectREFR.cpp         | 158 +++++++++-
  Code/client/Games/Skyrim/TESObjectREFR.h           |   2 +-
  Code/client/Services/CharacterService.h            |   6 +
  Code/client/Services/Generic/ActorValueService.cpp |  44 ++-
- Code/client/Services/Generic/CharacterService.cpp  | 311 ++++++++++++++++++++-
+ Code/client/Services/Generic/CharacterService.cpp  | 320 ++++++++++++++++++++-
  Code/client/Services/Generic/InventoryService.cpp  |  90 ++++--
  Code/client/Services/Generic/ObjectService.cpp     |  13 +
  Code/client/Services/Generic/QuestService.cpp      |  12 +-
@@ -46,5 +46,5 @@
  Code/server/Services/InventoryService.h            |   1 +
  Code/server/World.cpp                              |   4 +
  Code/tests/xmake.lua                               |   3 +-
- 48 files changed, 1044 insertions(+), 96 deletions(-)
+ 48 files changed, 1065 insertions(+), 96 deletions(-)
 

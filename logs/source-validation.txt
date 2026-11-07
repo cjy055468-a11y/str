@@ -1,12 +1,12 @@
 **********************
 PowerShell transcript start
-Start time: 20261107075025
+Start time: 20261107093150
 Username: runnervmquqza\runneradmin
 RunAs User: runnervmquqza\runneradmin
 Configuration Name: 
 Machine: runnervmquqza (Microsoft Windows NT 10.0.20348.0)
-Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\f012c761-968b-45c7-8145-ffeae94e0a78.ps1'
-Process ID: 6784
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\e9cadff4-d5b1-4411-ad96-1c8874b2b79d.ps1'
+Process ID: 1272
 PSVersion: 7.6.9
 PSEdition: Core
 GitCommitId: 7.6.9
@@ -36,7 +36,7 @@ Transcript started, output file is logs/source-validation.txt
     "Code/tests/corpse_speech_window.cpp",
     "Code/common/BuildInfo.h.in"
   ],
-  "candidate_delta_sha256": "0d5a841db482667be445f4102a3ab91e9c2bc031d920c5ced890902fbc7001f4",
+  "candidate_delta_sha256": "f6c3cdd2ea9ca550c9fb8b8b109c5d6e46344fdb87a2cd0661445ee988c7a9a7",
   "exact_corpse4i_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"
@@ -46,6 +46,6 @@ PS>$global:?
 True
 **********************
 PowerShell transcript end
-End time: 20261107075029
+End time: 20261107093155
 **********************
 
