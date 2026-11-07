@@ -18,7 +18,7 @@
  Code/client/Services/Generic/ActorValueService.cpp |  47 ++++-
  Code/client/Services/Generic/CharacterService.cpp  | 233 ++++++++++++++++++++-
  Code/client/Services/Generic/InventoryService.cpp  |  90 +++++---
- Code/client/Services/Generic/ObjectService.cpp     |  20 ++
+ Code/client/Services/Generic/ObjectService.cpp     |  21 ++
  Code/client/Services/Generic/QuestService.cpp      |  12 +-
  Code/client/Systems/AnimationSystem.cpp            |  50 ++++-
  Code/client/Systems/AnimationSystem.h              |   2 +-
@@ -46,5 +46,5 @@
  Code/server/Services/InventoryService.h            |   1 +
  Code/server/World.cpp                              |   4 +
  Code/tests/xmake.lua                               |   3 +-
- 48 files changed, 950 insertions(+), 82 deletions(-)
+ 48 files changed, 951 insertions(+), 82 deletions(-)
 
