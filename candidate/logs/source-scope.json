@@ -1,0 +1,16 @@
+{
+  "candidate_files": [
+    "Code/client/Games/ActorExtension.h",
+    "Code/client/Games/ActorExtension.cpp",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Services/Generic/ActorValueService.cpp",
+    "Code/client/Systems/CorpseLifeState.h",
+    "Code/tests/corpse_speech_window.cpp",
+    "Code/common/BuildInfo.h.in"
+  ],
+  "candidate_delta_sha256": "0d5a841db482667be445f4102a3ab91e9c2bc031d920c5ced890902fbc7001f4",
+  "exact_corpse4i_recovery": true,
+  "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "game_test": "not run"
+}

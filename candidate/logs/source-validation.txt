@@ -1,0 +1,50 @@
+**********************
+PowerShell transcript start
+Start time: 20261107075025
+Username: runnervmquqza\runneradmin
+RunAs User: runnervmquqza\runneradmin
+Configuration Name: 
+Machine: runnervmquqza (Microsoft Windows NT 10.0.20348.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\f012c761-968b-45c7-8145-ffeae94e0a78.ps1'
+Process ID: 6784
+PSVersion: 7.6.9
+PSEdition: Core
+GitCommitId: 7.6.9
+OS: Microsoft Windows 10.0.20348
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is logs/source-validation.txt
+ e6f5759364a64462e717db1153781a7eae26a13e Libraries/TiltedConnect (heads/master)
+ d7c175b86975679eb05883c097d7eb1c2165226a Libraries/TiltedHooks (heads/master)
+ 55ee3f29c62fea247148e57b94ec4941055139ed Libraries/TiltedReverse (heads/master)
+ 0bec46b174d730832cbe0a10e8162bf6b0d3d66b Libraries/TiltedUI (0bec46b)
+
+
+
+{
+  "candidate_files": [
+    "Code/client/Games/ActorExtension.h",
+    "Code/client/Games/ActorExtension.cpp",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Services/Generic/ActorValueService.cpp",
+    "Code/client/Systems/CorpseLifeState.h",
+    "Code/tests/corpse_speech_window.cpp",
+    "Code/common/BuildInfo.h.in"
+  ],
+  "candidate_delta_sha256": "0d5a841db482667be445f4102a3ab91e9c2bc031d920c5ced890902fbc7001f4",
+  "exact_corpse4i_recovery": true,
+  "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "game_test": "not run"
+}
+
+PS>$global:?
+True
+**********************
+PowerShell transcript end
+End time: 20261107075029
+**********************

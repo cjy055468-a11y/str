@@ -6,7 +6,7 @@
  Code/client/Games/ActorExtension.h                 |  23 +-
  Code/client/Games/Misc/BSScript.cpp                |   2 +
  Code/client/Games/Misc/SubtitleManager.cpp         |   3 +
- Code/client/Games/Skyrim/Actor.cpp                 | 114 +++++++-
+ Code/client/Games/Skyrim/Actor.cpp                 | 115 +++++++-
  Code/client/Games/Skyrim/Actor.h                   |  13 +-
  Code/client/Games/Skyrim/ExtraData/ExtraData.h     |   1 +
  Code/client/Games/Skyrim/Forms/TESForm.h           |   1 +
@@ -46,5 +46,5 @@
  Code/server/Services/InventoryService.h            |   1 +
  Code/server/World.cpp                              |   4 +
  Code/tests/xmake.lua                               |   3 +-
- 48 files changed, 1043 insertions(+), 96 deletions(-)
+ 48 files changed, 1044 insertions(+), 96 deletions(-)
 
