@@ -1,0 +1,26 @@
+Adding current working directory to import list: D:\a\str\str
+Adding import directory: D:\a\str\str\mods\missives2\Scripts\Source
+Adding import directory: D:\a\str\str\papyrus-imports
+Importing files...
+Imported 306 files.
+Compiling STRMissivesBridge.psc
+Compiling _M_ActivatorScript.psc
+Compiling _M_AliasDeliveryScript.psc
+Compiling _M_AliasItemScript.psc
+Compiling _M_AliasMissiveDeliverScript.psc
+Compiling _M_AliasMissiveScript.psc
+Compiling _M_AliasPlayerCourier.psc
+Compiling _M_AliasPlayerGather.psc
+Compiling _M_QuestCourierScript.psc
+Compiling _M_QuestDialogue100.psc
+Compiling _M_QuestDialogue30.psc
+Compiling _M_QuestGatherInnScript.psc
+Compiling _M_QuestGatherScript.psc
+Compiling _M_QuestKillScript.psc
+Compiling _M_QuestRetrieveScript.psc
+Compiling _M_QuestTrackFugitiveScript.psc
+Compiling _M_QuestTrackThiefScript.psc
+Compiling _M_QuestTrackVampire.psc
+_M_AliasPlayerGather.psc (18, 51:53): Warning W4001: Unnecessary cast from 'Form' to 'Form'.
+_M_AliasPlayerGather.psc (33, 51:53): Warning W4001: Unnecessary cast from 'Form' to 'Form'.
+

@@ -1,0 +1,107 @@
+[0m[33;1mDetecting Visual Studio environment (cached); run `xmake global --clean` first if vs updated.[0m
+[0mchecking for vswhere.exe ... [32;1mC:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe[0m
+[0m[2mdetecting vstudio environment ... [32;1m2022(17.0, toolset:14.44)[0m
+[0mchecking for cl.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe[0m
+[0mchecking for Microsoft C/C++ Compiler (x64) ... [32;1mok[0m
+[0mchecking for Microsoft Visual Studio (x64) version ... [32;1m2022[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(zig.exe version), No such file or directory[0m
+[0mchecking for zig ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(nim.exe --version), No such file or directory[0m
+[0mchecking for nim ... [31;1mno[0m
+[0mchecking for dotnet ... [32;1mC:\Program Files\dotnet\dotnet.exe[0m
+[0mchecking for .NET SDK version ... [32;1m10.0.403[0m
+[0mchecking for .NET SDK directory ... [32;1mC:\Program Files\dotnet\sdk\10.0.403[0m
+[0mchecking for git ... [32;1mC:\Program Files\Git\bin\git.exe[0m
+[0mchecking for gzip ... [32;1mC:\Program Files\Git\usr\bin\gzip.exe[0m
+[0mchecking for tar ... [32;1mC:\Windows\System32\tar.exe[0m
+[0mchecking for curl ... [32;1mC:\hostedtoolcache\windows\xmake\3.1.0\x64\winenv\bin\curl[0m
+pinging the host(github.com) ... 15 ms
+pinging the host(gitlab.com) ... 22 ms
+pinging the host(gitee.com) ... 65535 ms
+pinging the host(gitcode.com) ... 65535 ms
+updating repositories .. 
+cloning repository(build-artifacts): https://github.com/xmake-mirror/build-artifacts.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts ..
+Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts'...
+Updating files:  26% (655/2445)
+Updating files:  27% (661/2445)
+Updating files:  28% (685/2445)
+Updating files:  29% (710/2445)
+Updating files:  30% (734/2445)
+Updating files:  31% (758/2445)
+Updating files:  32% (783/2445)
+Updating files:  33% (807/2445)
+Updating files:  34% (832/2445)
+Updating files:  35% (856/2445)
+Updating files:  36% (881/2445)
+Updating files:  37% (905/2445)
+Updating files:  38% (930/2445)
+Updating files:  39% (954/2445)
+Updating files:  40% (978/2445)
+Updating files:  41% (1003/2445)
+Updating files:  42% (1027/2445)
+Updating files:  43% (1052/2445)
+Updating files:  44% (1076/2445)
+Updating files:  45% (1101/2445)
+Updating files:  46% (1125/2445)
+Updating files:  47% (1150/2445)
+Updating files:  48% (1174/2445)
+Updating files:  49% (1199/2445)
+Updating files:  49% (1200/2445)
+Updating files:  50% (1223/2445)
+Updating files:  51% (1247/2445)
+Updating files:  52% (1272/2445)
+Updating files:  53% (1296/2445)
+Updating files:  54% (1321/2445)
+Updating files:  55% (1345/2445)
+Updating files:  56% (1370/2445)
+Updating files:  57% (1394/2445)
+Updating files:  58% (1419/2445)
+Updating files:  59% (1443/2445)
+Updating files:  60% (1467/2445)
+Updating files:  61% (1492/2445)
+Updating files:  62% (1516/2445)
+Updating files:  63% (1541/2445)
+Updating files:  64% (1565/2445)
+Updating files:  65% (1590/2445)
+Updating files:  66% (1614/2445)
+Updating files:  67% (1639/2445)
+Updating files:  68% (1663/2445)
+Updating files:  69% (1688/2445)
+Updating files:  70% (1712/2445)
+Updating files:  71% (1736/2445)
+Updating files:  71% (1748/2445)
+Updating files:  72% (1761/2445)
+Updating files:  73% (1785/2445)
+Updating files:  74% (1810/2445)
+Updating files:  75% (1834/2445)
+Updating files:  76% (1859/2445)
+Updating files:  77% (1883/2445)
+Updating files:  78% (1908/2445)
+Updating files:  79% (1932/2445)
+Updating files:  80% (1956/2445)
+Updating files:  81% (1981/2445)
+Updating files:  82% (2005/2445)
+Updating files:  83% (2030/2445)
+Updating files:  84% (2054/2445)
+Updating files:  85% (2079/2445)
+Updating files:  85% (2080/2445)
+Updating files:  86% (2103/2445)
+Updating files:  87% (2128/2445)
+Updating files:  88% (2152/2445)
+Updating files:  89% (2177/2445)
+Updating files:  90% (2201/2445)
+Updating files:  91% (2225/2445)
+Updating files:  92% (2250/2445)
+Updating files:  93% (2274/2445)
+Updating files:  94% (2299/2445)
+Updating files:  95% (2323/2445)
+Updating files:  96% (2348/2445)
+Updating files:  97% (2372/2445)
+Updating files:  98% (2397/2445)
+Updating files:  99% (2421/2445)
+Updating files: 100% (2445/2445)
+Updating files: 100% (2445/2445), done.
+cloning repository(xmake-repo): https://github.com/xmake-io/xmake-repo.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo ..
+Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo'...
+fatal: fetch-pack: invalid index-pack output
+
