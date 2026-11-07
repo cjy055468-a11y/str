@@ -7,6 +7,6 @@ reports=[inspect(p) for p in files]
 for p in files:
  if p.name!='EarlyLoad.dll': assert b'v1.8.4-coopfix4g-corpse4k-native-death\0' in p.read_bytes(),p.name
 client=next(p for p in files if p.name=='SkyrimTogether.exe').read_bytes()
-for marker in [b'STR Missives',b'STR corpse life-state guard:',b'STR corpse terminal action deferred:',b'STR corpse health relay:',b'STR corpse death notify:',b'STR remote NPC KillImpl begin:',b'STR corpse activate event:',b'STR corpse native process eligibility:',b'STR corpse speech cleanup:',b'STR drop grant applied:',b'STR furniture recovery exit:']:
+for marker in [b'STR Missives',b'STR corpse life-state guard:',b'STR corpse ragdoll action deferred:',b'STR corpse health relay:',b'STR corpse death notify:',b'STR remote NPC KillImpl begin:',b'STR corpse activate event:',b'STR corpse native process eligibility:',b'STR corpse speech cleanup:',b'STR drop grant applied:',b'STR furniture recovery exit:']:
  assert marker in client,marker
 print(json.dumps(reports,indent=2))

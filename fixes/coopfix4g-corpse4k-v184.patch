@@ -1,5 +1,5 @@
 diff --git a/Code/client/Components.h b/Code/client/Components.h
-index 0de09050..5cc82c14 100644
+index 0de09050e30ced4848aecfb83edfc6d5d9156e86..5cc82c14651f02216414eff4951821b07c21aeba 100644
 --- a/Code/client/Components.h
 +++ b/Code/client/Components.h
 @@ -19,5 +19,6 @@
@@ -11,7 +11,7 @@ index 0de09050..5cc82c14 100644
  #undef TP_INTERNAL_COMPONENTS_GUARD
 diff --git a/Code/client/Components/CorpseSpeechComponent.h b/Code/client/Components/CorpseSpeechComponent.h
 new file mode 100644
-index 00000000..6e63bcd3
+index 0000000000000000000000000000000000000000..6e63bcd31f41fe87c50e6804de70054f1816c34e
 --- /dev/null
 +++ b/Code/client/Components/CorpseSpeechComponent.h
 @@ -0,0 +1,12 @@
@@ -28,7 +28,7 @@ index 00000000..6e63bcd3
 +    CorpseSpeechWindow Window;
 +};
 diff --git a/Code/client/Components/InterpolationComponent.h b/Code/client/Components/InterpolationComponent.h
-index 12bef56a..4fb3b74d 100644
+index 12bef56ae0e27fddeafd46f5ab2486d151bf5573..4fb3b74d5148388469936938339f0e266eec665e 100644
 --- a/Code/client/Components/InterpolationComponent.h
 +++ b/Code/client/Components/InterpolationComponent.h
 @@ -31,4 +31,7 @@ struct InterpolationComponent
@@ -40,7 +40,7 @@ index 12bef56a..4fb3b74d 100644
 +    bool CorpseRagdollObserved{false};
  };
 diff --git a/Code/client/Components/RemoteComponent.h b/Code/client/Components/RemoteComponent.h
-index 9704cca7..d5c3ae1e 100644
+index 9704cca749a2a22a22ad25389eb64d1b5fd1f653..d5c3ae1ec85b86ce902eca0bad349d1ea71ad074 100644
 --- a/Code/client/Components/RemoteComponent.h
 +++ b/Code/client/Components/RemoteComponent.h
 @@ -5,6 +5,7 @@
@@ -59,7 +59,7 @@ index 9704cca7..d5c3ae1e 100644
 +    std::optional<bool> AuthoritativeDeath;
  };
 diff --git a/Code/client/Components/WaitingForAssignmentComponent.h b/Code/client/Components/WaitingForAssignmentComponent.h
-index 1dfe4aff..20c63e27 100644
+index 1dfe4aff5984fd46938f9abfa0515df5eba0eca4..20c63e27a8958fab09d7b1d3dfe289c3f9eb7463 100644
 --- a/Code/client/Components/WaitingForAssignmentComponent.h
 +++ b/Code/client/Components/WaitingForAssignmentComponent.h
 @@ -1,4 +1,5 @@
@@ -77,7 +77,7 @@ index 1dfe4aff..20c63e27 100644
 +    std::optional<uint32_t> KnownServerId{};
  };
 diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExtension.cpp
-index d70627f9..2841162a 100644
+index d70627f997f99d5b05599acbe73b486541ccee58..2841162ab541dd07d754c370221863ec279c0025 100644
 --- a/Code/client/Games/ActorExtension.cpp
 +++ b/Code/client/Games/ActorExtension.cpp
 @@ -1,10 +1,36 @@
@@ -163,7 +163,7 @@ index d70627f9..2841162a 100644
 +        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kPlayer, std::memory_order_relaxed);
  }
 diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtension.h
-index 83f38a6c..970d31ee 100644
+index 83f38a6c8b47871eb7ea64cf85302e9a969e9d36..970d31ee95050c39cd2484afec2102386204145a 100644
 --- a/Code/client/Games/ActorExtension.h
 +++ b/Code/client/Games/ActorExtension.h
 @@ -8,6 +8,9 @@ struct ActorExtension
@@ -199,7 +199,7 @@ index 83f38a6c..970d31ee 100644
 +    mutable uint32_t onlineFlags{0};
  };
 diff --git a/Code/client/Games/Misc/BSScript.cpp b/Code/client/Games/Misc/BSScript.cpp
-index 4eef585e..8a5ff07f 100644
+index 4eef585e3eacc05128f19f5ff6f38d34cea08c05..8a5ff07fef71386c7273b3ad3cda96b51b81f28c 100644
 --- a/Code/client/Games/Misc/BSScript.cpp
 +++ b/Code/client/Games/Misc/BSScript.cpp
 @@ -9,6 +9,7 @@
@@ -219,7 +219,7 @@ index 4eef585e..8a5ff07f 100644
      TiltedPhoques::ThisCall(RealBindEverythingToScript, apThis);
  }
 diff --git a/Code/client/Games/Misc/SubtitleManager.cpp b/Code/client/Games/Misc/SubtitleManager.cpp
-index 99cac10d..d4907375 100644
+index 99cac10da085115a90e2e82814c0231219b6c827..d4907375e9081deb5507e79f2305c10106e7a351 100644
 --- a/Code/client/Games/Misc/SubtitleManager.cpp
 +++ b/Code/client/Games/Misc/SubtitleManager.cpp
 @@ -36,6 +36,9 @@ void TP_MAKE_THISCALL(HookShowSubtitle, SubtitleManager, TESObjectREFR* apSpeake
@@ -233,7 +233,7 @@ index 99cac10d..d4907375 100644
      const bool isPlayerDialogue = isNpc && MenuTopicManager::IsPlayerDialogueSpeaker(pActor);
      const bool shouldSyncSubtitle = apSubtitleText && isNpc && (pActor->GetExtension()->IsLocal() || isPlayerDialogue);
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
-index 9e1933e8..c66b78f0 100644
+index 9e1933e862404cf2e3375c429edf47dad6af349a..c66b78f060fa3e0436026db9bc91b40053d57f4e 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
 @@ -1,3 +1,4 @@
@@ -523,7 +523,7 @@ index 9e1933e8..c66b78f0 100644
          {
              if (auto* pController = apThis->currentProcess->GetCharController())
 diff --git a/Code/client/Games/Skyrim/Actor.h b/Code/client/Games/Skyrim/Actor.h
-index 4c93c674..a9be9e7c 100644
+index 4c93c674060aa419d41baedda2c0d993d7f54b39..a9be9e7c4509e6b7accdde095f92f45adc5948f6 100644
 --- a/Code/client/Games/Skyrim/Actor.h
 +++ b/Code/client/Games/Skyrim/Actor.h
 @@ -23,6 +23,16 @@ struct AIProcess;
@@ -561,7 +561,7 @@ index 4c93c674..a9be9e7c 100644
      void SetPackage(TESPackage* apPackage) noexcept;
      void SetActorInventory(const Inventory& aInventory) noexcept;
 diff --git a/Code/client/Games/Skyrim/ExtraData/ExtraData.h b/Code/client/Games/Skyrim/ExtraData/ExtraData.h
-index 7adb60dc..c9e6e264 100644
+index 7adb60dc19a2fc72373cdedec055dcd49113993c..c9e6e26480d0ab940d33ec98e4f17baeb34be768 100644
 --- a/Code/client/Games/Skyrim/ExtraData/ExtraData.h
 +++ b/Code/client/Games/Skyrim/ExtraData/ExtraData.h
 @@ -17,6 +17,7 @@ enum class ExtraDataType : uint32_t
@@ -573,7 +573,7 @@ index 7adb60dc..c9e6e264 100644
      Poison = 0x3E,
      Faction = 0x5B,
 diff --git a/Code/client/Games/Skyrim/Forms/TESForm.h b/Code/client/Games/Skyrim/Forms/TESForm.h
-index 331dcc0f..b14e9335 100644
+index 331dcc0f8c0a0abc9245fd11d7c1d3e916b10aa1..b14e9335ad59326b503ce4160a1708fd0b7f2653 100644
 --- a/Code/client/Games/Skyrim/Forms/TESForm.h
 +++ b/Code/client/Games/Skyrim/Forms/TESForm.h
 @@ -10,6 +10,7 @@ enum class FormType : uint8_t
@@ -585,7 +585,7 @@ index 331dcc0f..b14e9335 100644
      Ammo = 42,
      Npc = 43,
 diff --git a/Code/client/Games/Skyrim/Misc/MiddleProcess.h b/Code/client/Games/Skyrim/Misc/MiddleProcess.h
-index a38e3586..169db293 100644
+index a38e358676d0717c47e05c1f56de3a90f183009a..169db293bcbdc5bd7bbe98e090dc4f6127025f0b 100644
 --- a/Code/client/Games/Skyrim/Misc/MiddleProcess.h
 +++ b/Code/client/Games/Skyrim/Misc/MiddleProcess.h
 @@ -15,7 +15,10 @@ struct MiddleProcess
@@ -609,7 +609,7 @@ index a38e3586..169db293 100644
  static_assert(offsetof(MiddleProcess, rightEquippedObject) == 0x260);
 diff --git a/Code/client/Games/Skyrim/NetImmerse/NiAVObject.cpp b/Code/client/Games/Skyrim/NetImmerse/NiAVObject.cpp
 new file mode 100644
-index 00000000..ef5fae43
+index 0000000000000000000000000000000000000000..ef5fae43ee38c0e9213c3ee217f2f3d679474b53
 --- /dev/null
 +++ b/Code/client/Games/Skyrim/NetImmerse/NiAVObject.cpp
 @@ -0,0 +1,17 @@
@@ -631,7 +631,7 @@ index 00000000..ef5fae43
 +    return TiltedPhoques::ThisCall(s_setMotionType, this, aType, true, false, aAllowActivate);
 +}
 diff --git a/Code/client/Games/Skyrim/NetImmerse/NiAVObject.h b/Code/client/Games/Skyrim/NetImmerse/NiAVObject.h
-index 9dcbd4fa..ad32bdba 100644
+index 9dcbd4fac9bcc4d7ba9695969106fcee006c2a39..ad32bdba6ea6738b1485fc7c59ff34465daf340e 100644
 --- a/Code/client/Games/Skyrim/NetImmerse/NiAVObject.h
 +++ b/Code/client/Games/Skyrim/NetImmerse/NiAVObject.h
 @@ -14,6 +14,9 @@ struct NiAVObject : NiObjectNET
@@ -645,7 +645,7 @@ index 9dcbd4fa..ad32bdba 100644
  };
  
 diff --git a/Code/client/Games/Skyrim/PlayerCharacter.cpp b/Code/client/Games/Skyrim/PlayerCharacter.cpp
-index efe4f697..d80f5d88 100644
+index efe4f69737ee7e3eeefafec3625b7aa5b1b477c6..d80f5d887c8c785c6af11b1102e5116fe08de309 100644
 --- a/Code/client/Games/Skyrim/PlayerCharacter.cpp
 +++ b/Code/client/Games/Skyrim/PlayerCharacter.cpp
 @@ -13,6 +13,7 @@
@@ -667,7 +667,7 @@ index efe4f697..d80f5d88 100644
  
      Inventory::Entry item{};
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-index e5852696..e42b1fb3 100644
+index e58526960ffa0b52d18f169fd36e8529be0ac466..e42b1fb351c0329f11f2880223ea0474c74341f6 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
 @@ -1,4 +1,7 @@
@@ -840,7 +840,7 @@ index e5852696..e42b1fb3 100644
      });
 diff --git a/Code/client/ModCompat/MissivesBridge.cpp b/Code/client/ModCompat/MissivesBridge.cpp
 new file mode 100644
-index 00000000..e80edc7a
+index 0000000000000000000000000000000000000000..e80edc7a75ecbae42e7a8d8b99250fc8a8f77403
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesBridge.cpp
 @@ -0,0 +1,146 @@
@@ -992,7 +992,7 @@ index 00000000..e80edc7a
 +}
 diff --git a/Code/client/ModCompat/MissivesBridge.h b/Code/client/ModCompat/MissivesBridge.h
 new file mode 100644
-index 00000000..0ff5378e
+index 0000000000000000000000000000000000000000..0ff5378e2ab9e61471cae7a0b9100f76543cc694
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesBridge.h
 @@ -0,0 +1,29 @@
@@ -1027,7 +1027,7 @@ index 00000000..0ff5378e
 +}
 diff --git a/Code/client/ModCompat/MissivesCompat.cpp b/Code/client/ModCompat/MissivesCompat.cpp
 new file mode 100644
-index 00000000..b8f64d57
+index 0000000000000000000000000000000000000000..b8f64d570a5928868a1becf0f1c5997451f3d4bc
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesCompat.cpp
 @@ -0,0 +1,94 @@
@@ -1127,7 +1127,7 @@ index 00000000..b8f64d57
 +}
 diff --git a/Code/client/ModCompat/MissivesCompat.h b/Code/client/ModCompat/MissivesCompat.h
 new file mode 100644
-index 00000000..8249a4e8
+index 0000000000000000000000000000000000000000..8249a4e80a545b542000aa6b6a18cf7876feb7ab
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesCompat.h
 @@ -0,0 +1,72 @@
@@ -1205,7 +1205,7 @@ index 00000000..8249a4e8
 +}
 diff --git a/Code/client/ModCompat/MissivesContext.cpp b/Code/client/ModCompat/MissivesContext.cpp
 new file mode 100644
-index 00000000..15531b9d
+index 0000000000000000000000000000000000000000..15531b9d053fbe6b3e877617f51138863261073a
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesContext.cpp
 @@ -0,0 +1,288 @@
@@ -1499,7 +1499,7 @@ index 00000000..15531b9d
 +}
 diff --git a/Code/client/ModCompat/MissivesContext.h b/Code/client/ModCompat/MissivesContext.h
 new file mode 100644
-index 00000000..5e006d5b
+index 0000000000000000000000000000000000000000..5e006d5b47e09025aa017497c21d63922405e924
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesContext.h
 @@ -0,0 +1,51 @@
@@ -1556,7 +1556,7 @@ index 00000000..5e006d5b
 +};
 diff --git a/Code/client/ModCompat/MissivesMissionCatalog.h b/Code/client/ModCompat/MissivesMissionCatalog.h
 new file mode 100644
-index 00000000..911c54fe
+index 0000000000000000000000000000000000000000..911c54fee3a8755061dccab0271363d1ddfecc0a
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesMissionCatalog.h
 @@ -0,0 +1,3098 @@
@@ -4660,7 +4660,7 @@ index 00000000..911c54fe
 +}};
 diff --git a/Code/client/ModCompat/MissivesPostingAliases.h b/Code/client/ModCompat/MissivesPostingAliases.h
 new file mode 100644
-index 00000000..55a92007
+index 0000000000000000000000000000000000000000..55a9200740cca8e421bfbb2c8c46b8ce704ea047
 --- /dev/null
 +++ b/Code/client/ModCompat/MissivesPostingAliases.h
 @@ -0,0 +1,275 @@
@@ -4941,7 +4941,7 @@ index 00000000..55a92007
 +}
 diff --git a/Code/client/ModCompat/NetworkActorSavePolicy.h b/Code/client/ModCompat/NetworkActorSavePolicy.h
 new file mode 100644
-index 00000000..2312818c
+index 0000000000000000000000000000000000000000..2312818c4978381feaaf9330e516832b296237e4
 --- /dev/null
 +++ b/Code/client/ModCompat/NetworkActorSavePolicy.h
 @@ -0,0 +1,10 @@
@@ -4956,7 +4956,7 @@ index 00000000..2312818c
 +bool CanFilter(const TESObjectREFR* apReference) noexcept;
 +}
 diff --git a/Code/client/Services/CharacterService.h b/Code/client/Services/CharacterService.h
-index 031d4e24..1da064fb 100644
+index 031d4e24cee2fb5d882b66e52a17ce964f2cc6db..1da064fbe369b9563e0d015d6f4389015940b536 100644
 --- a/Code/client/Services/CharacterService.h
 +++ b/Code/client/Services/CharacterService.h
 @@ -1,6 +1,8 @@
@@ -4985,7 +4985,7 @@ index 031d4e24..1da064fb 100644
  
 diff --git a/Code/client/Services/DroppedItemService.h b/Code/client/Services/DroppedItemService.h
 new file mode 100644
-index 00000000..c1190af1
+index 0000000000000000000000000000000000000000..c1190af1030ae997d0730de2f75a39223e36fd1f
 --- /dev/null
 +++ b/Code/client/Services/DroppedItemService.h
 @@ -0,0 +1,114 @@
@@ -5105,7 +5105,7 @@ index 00000000..c1190af1
 +};
 diff --git a/Code/client/Services/FurnitureService.h b/Code/client/Services/FurnitureService.h
 new file mode 100644
-index 00000000..de9a3c0b
+index 0000000000000000000000000000000000000000..de9a3c0be35ea6c41e3ec1fbd093bc0b6678b89c
 --- /dev/null
 +++ b/Code/client/Services/FurnitureService.h
 @@ -0,0 +1,39 @@
@@ -5149,7 +5149,7 @@ index 00000000..de9a3c0b
 +    entt::scoped_connection m_hitConnection;
 +};
 diff --git a/Code/client/Services/Generic/ActorValueService.cpp b/Code/client/Services/Generic/ActorValueService.cpp
-index b3f309a7..7a8623a4 100644
+index b3f309a7bafb224ff0679d4e35fea4f53e38d186..7a8623a49141e83da7097f1a585bd600d3cb4dbf 100644
 --- a/Code/client/Services/Generic/ActorValueService.cpp
 +++ b/Code/client/Services/Generic/ActorValueService.cpp
 @@ -1,6 +1,7 @@
@@ -5246,7 +5246,7 @@ index b3f309a7..7a8623a4 100644
      }
  }
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 7d3ac21a..1fb6918d 100644
+index 7d3ac21af54ebc62e2883db57710145085ed1553..1fb6918deebc023c99ccc52c030b8e41cbad0b94 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
 @@ -4,11 +4,14 @@
@@ -5719,7 +5719,7 @@ index 7d3ac21a..1fb6918d 100644
      auto facegenView = m_world.view<FormIdComponent, FaceGenComponent>();
 diff --git a/Code/client/Services/Generic/DroppedItemService.cpp b/Code/client/Services/Generic/DroppedItemService.cpp
 new file mode 100644
-index 00000000..e2b71300
+index 0000000000000000000000000000000000000000..e2b71300c8878300aa1e28e9db0bce6691228197
 --- /dev/null
 +++ b/Code/client/Services/Generic/DroppedItemService.cpp
 @@ -0,0 +1,817 @@
@@ -6542,7 +6542,7 @@ index 00000000..e2b71300
 +}
 diff --git a/Code/client/Services/Generic/FurnitureService.cpp b/Code/client/Services/Generic/FurnitureService.cpp
 new file mode 100644
-index 00000000..62002783
+index 0000000000000000000000000000000000000000..620027832a148565c4bf087887e7de1d266d75d7
 --- /dev/null
 +++ b/Code/client/Services/Generic/FurnitureService.cpp
 @@ -0,0 +1,162 @@
@@ -6709,7 +6709,7 @@ index 00000000..62002783
 +    }
 +}
 diff --git a/Code/client/Services/Generic/InventoryService.cpp b/Code/client/Services/Generic/InventoryService.cpp
-index 8d9f2c78..8a5effe4 100644
+index 8d9f2c78cac916edf6ecb8bb1d3ded2e5703b9ab..8a5effe407cc87dff0ec7795187742c37e346f2a 100644
 --- a/Code/client/Services/Generic/InventoryService.cpp
 +++ b/Code/client/Services/Generic/InventoryService.cpp
 @@ -1,4 +1,6 @@
@@ -6859,7 +6859,7 @@ index 8d9f2c78..8a5effe4 100644
  
 diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
 new file mode 100644
-index 00000000..3e1f3610
+index 0000000000000000000000000000000000000000..3e1f3610f916e7d26bd2ce2b3828d7db0231234c
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
 @@ -0,0 +1,642 @@
@@ -7506,7 +7506,7 @@ index 00000000..3e1f3610
 +    Cache(cQuest, *pSpec, &post);
 +}
 diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
-index b2140e2e..0370d9fe 100644
+index b2140e2edaf0e9ab94a41acf5de95e06db0f0a93..0370d9fe41406f036dc25d8d199c183a9bd3b004 100644
 --- a/Code/client/Services/Generic/ObjectService.cpp
 +++ b/Code/client/Services/Generic/ObjectService.cpp
 @@ -1,4 +1,5 @@
@@ -7570,7 +7570,7 @@ index b2140e2e..0370d9fe 100644
      {
          acEvent.pObject->Activate(acEvent.pActivator, acEvent.Unk1, acEvent.pObjectToGet, acEvent.Count, acEvent.DefaultProcessing);
 diff --git a/Code/client/Services/Generic/QuestService.cpp b/Code/client/Services/Generic/QuestService.cpp
-index ec897b18..a802bb3a 100644
+index ec897b183ccbd0090c5c8cafe6d643988da1aff3..a802bb3a73de961a8f1297d6bd234193ad7c8545 100644
 --- a/Code/client/Services/Generic/QuestService.cpp
 +++ b/Code/client/Services/Generic/QuestService.cpp
 @@ -6,6 +6,7 @@
@@ -7608,7 +7608,7 @@ index ec897b18..a802bb3a 100644
  
 diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/MissivesService.h
 new file mode 100644
-index 00000000..56e8a3d3
+index 0000000000000000000000000000000000000000..56e8a3d38b21f57a7714cdbb22923882ba9d3dd7
 --- /dev/null
 +++ b/Code/client/Services/MissivesService.h
 @@ -0,0 +1,79 @@
@@ -7693,7 +7693,7 @@ index 00000000..56e8a3d3
 +};
 diff --git a/Code/client/Systems/ActorIdentityCache.h b/Code/client/Systems/ActorIdentityCache.h
 new file mode 100644
-index 00000000..652582fb
+index 0000000000000000000000000000000000000000..652582fb378d9494e8e1807214648663d8cd0ba7
 --- /dev/null
 +++ b/Code/client/Systems/ActorIdentityCache.h
 @@ -0,0 +1,30 @@
@@ -7728,7 +7728,7 @@ index 00000000..652582fb
 +    std::map<std::pair<uint32_t, uint32_t>, uint32_t> m_entries;
 +};
 diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
-index 5d2a12b1..a1d60088 100644
+index 5d2a12b1dfabddcd1892da3030455abee4b6cee1..2a0e89c7f409289ac06f26e0b466ce12afa4a684 100644
 --- a/Code/client/Systems/AnimationSystem.cpp
 +++ b/Code/client/Systems/AnimationSystem.cpp
 @@ -1,6 +1,8 @@
@@ -7767,7 +7767,7 @@ index 5d2a12b1..a1d60088 100644
      const auto it = std::begin(actions);
      if (it != std::end(actions) && it->Tick <= aTick)
      {
-@@ -33,23 +50,38 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+@@ -33,23 +50,37 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
              // Animation graph not ready, keep the action in queue and try again later
              return;
          }
@@ -7776,13 +7776,14 @@ index 5d2a12b1..a1d60088 100644
 +
 +        const auto* pExtension = apActor->GetExtension();
 +        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
-+        if (ShouldDeferRemoteNpcTerminalDeathAction(cRemoteNpc, first.EventName, first.State1))
++        const bool cWasCorpse = cRemoteNpc && apActor->VirtIsDead(false);
++        if (ShouldDeferRemoteNpcRagdollAction(cRemoteNpc, first.EventName, first.State1, cWasCorpse, aConfirmedDeath))
          {
 -            apActor->animationGraphHolder.RevertAnimationGraphManager();
 -            aAnimationComponent.ResetAnimationGraphForReplay = false;
-+            spdlog::info("STR corpse terminal action deferred: local_player {}, actor {:X}, event {}, incoming_life_state {}, native_dead {}, virt_dead {}, native_state {:X}, queue {}",
++            spdlog::info("STR corpse ragdoll action deferred: local_player {}, actor {:X}, event {}, incoming_life_state {}, confirmed_death {}, native_corpse {}, native_dead {}, virt_dead {}, native_state {:X}, queue {}",
 +                aWorld.GetTransport().GetLocalPlayerId(), apActor->formID, first.EventName.c_str(), (first.State1 & 0x01E00000) >> 21,
-+                apActor->IsDead(), apActor->VirtIsDead(false), apActor->actorState.flags1, actions.size());
++                aConfirmedDeath, cWasCorpse, apActor->IsDead(), apActor->VirtIsDead(false), apActor->actorState.flags1, actions.size());
 +            if (aAnimationComponent.ReplayCount > 0)
 +                aAnimationComponent.ReplayCount--;
 +            actions.pop_front();
@@ -7798,8 +7799,6 @@ index 5d2a12b1..a1d60088 100644
          const auto pTarget = Cast<TESObjectREFR>(TESForm::GetById(targetId));
  
 -        apActor->actorState.flags1 = first.State1;
-+        const bool cWasCorpse = cRemoteNpc && apActor->VirtIsDead(false);
-+
 +        const uint32_t cNativeState = apActor->actorState.flags1;
 +        const uint32_t cAppliedState = cRemoteNpc ? PreserveRemoteNpcDeathTransition(cNativeState, first.State1, aConfirmedDeath) : first.State1;
 +        apActor->actorState.flags1 = cAppliedState;
@@ -7812,7 +7811,7 @@ index 5d2a12b1..a1d60088 100644
          apActor->LoadAnimationVariables(first.Variables);
  
          aAnimationComponent.LastRanAction = first;
-@@ -57,11 +89,16 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+@@ -57,11 +88,16 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
          // Play the animation
          TESActionData actionData(first.Type & 0x3, apActor, pAction, pTarget);
          actionData.eventName = BSFixedString(first.EventName.c_str());
@@ -7830,7 +7829,7 @@ index 5d2a12b1..a1d60088 100644
              aAnimationComponent.ReplayCount--;
  
 diff --git a/Code/client/Systems/AnimationSystem.h b/Code/client/Systems/AnimationSystem.h
-index 94b920d4..30ece9da 100644
+index 94b920d4139aa22116cb652f52c1d8badbab56af..30ece9da3108276d0f558910178f17d4232414cb 100644
 --- a/Code/client/Systems/AnimationSystem.h
 +++ b/Code/client/Systems/AnimationSystem.h
 @@ -19,7 +19,7 @@ struct AnimationSystem
@@ -7844,10 +7843,10 @@ index 94b920d4..30ece9da 100644
       * @param aWorld The registry where the actor in question lives.
 diff --git a/Code/client/Systems/CorpseDeathTransition.h b/Code/client/Systems/CorpseDeathTransition.h
 new file mode 100644
-index 00000000..ff700c5e
+index 0000000000000000000000000000000000000000..3328c195a9c956646b0a92c31bab360b92535e71
 --- /dev/null
 +++ b/Code/client/Systems/CorpseDeathTransition.h
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,19 @@
 +#pragma once
 +
 +#include <Systems/CorpseLifeState.h>
@@ -7855,20 +7854,21 @@ index 00000000..ff700c5e
 +#include <cstdint>
 +#include <string_view>
 +
-+// A remote actor's terminal ragdoll action is a pose notification, not a
-+// substitute for the local engine death transition. Let the health/death
-+// message invoke KillImpl first when the owner snapshot carries dying/dead.
-+inline bool ShouldDeferRemoteNpcTerminalDeathAction(const bool aRemoteNpc, const std::string_view acEventName,
-+                                                    const uint32_t aState1) noexcept
++// Ragdoll actions can arrive with stale actor-life bits. They are pose
++// notifications, not a substitute for the local engine death transition, and
++// must not revive a corpse after its death has already been confirmed.
++inline bool ShouldDeferRemoteNpcRagdollAction(const bool aRemoteNpc, const std::string_view acEventName,
++                                              const uint32_t aState1, const bool aNativeCorpse,
++                                              const bool aConfirmedDeath) noexcept
 +{
 +    if (!aRemoteNpc || (acEventName != "Ragdoll" && acEventName != "RagdollInstant"))
 +        return false;
 +
-+    return IsNativeDeathTransition(aState1);
++    return IsNativeDeathTransition(aState1) || aNativeCorpse || aConfirmedDeath;
 +}
 diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseLifeState.h
 new file mode 100644
-index 00000000..e505f37c
+index 0000000000000000000000000000000000000000..e505f37c829300c87e7c8a160d890ffb01d5c35f
 --- /dev/null
 +++ b/Code/client/Systems/CorpseLifeState.h
 @@ -0,0 +1,39 @@
@@ -7913,7 +7913,7 @@ index 00000000..e505f37c
 +}
 diff --git a/Code/client/Systems/CorpseSpeechWindow.h b/Code/client/Systems/CorpseSpeechWindow.h
 new file mode 100644
-index 00000000..49e97704
+index 0000000000000000000000000000000000000000..49e977046c84dba84f76927521170c4d52076908
 --- /dev/null
 +++ b/Code/client/Systems/CorpseSpeechWindow.h
 @@ -0,0 +1,35 @@
@@ -7954,7 +7954,7 @@ index 00000000..49e97704
 +};
 diff --git a/Code/client/Systems/DropPlacementClock.h b/Code/client/Systems/DropPlacementClock.h
 new file mode 100644
-index 00000000..59406c80
+index 0000000000000000000000000000000000000000..59406c808b5a14f0b09f76b729a899a37a190582
 --- /dev/null
 +++ b/Code/client/Systems/DropPlacementClock.h
 @@ -0,0 +1,45 @@
@@ -8005,7 +8005,7 @@ index 00000000..59406c80
 +};
 diff --git a/Code/client/Systems/DropProxySetup.h b/Code/client/Systems/DropProxySetup.h
 new file mode 100644
-index 00000000..ae974999
+index 0000000000000000000000000000000000000000..ae974999191beef679f79d9348368fa1f4b55797
 --- /dev/null
 +++ b/Code/client/Systems/DropProxySetup.h
 @@ -0,0 +1,36 @@
@@ -8047,7 +8047,7 @@ index 00000000..ae974999
 +};
 diff --git a/Code/client/Systems/DroppedItemBinding.h b/Code/client/Systems/DroppedItemBinding.h
 new file mode 100644
-index 00000000..d604d18b
+index 0000000000000000000000000000000000000000..d604d18ba69ab139bb41fda672f258ef97f5899a
 --- /dev/null
 +++ b/Code/client/Systems/DroppedItemBinding.h
 @@ -0,0 +1,24 @@
@@ -8077,7 +8077,7 @@ index 00000000..d604d18b
 +};
 diff --git a/Code/client/Systems/FurnitureRecovery.h b/Code/client/Systems/FurnitureRecovery.h
 new file mode 100644
-index 00000000..c7f06f6c
+index 0000000000000000000000000000000000000000..c7f06f6cf5420fac8a2c5abbe46f03e421a6c9b7
 --- /dev/null
 +++ b/Code/client/Systems/FurnitureRecovery.h
 @@ -0,0 +1,41 @@
@@ -8123,7 +8123,7 @@ index 00000000..c7f06f6c
 +    uint64_t m_reevaluatedAt{};
 +};
 diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/InterpolationSystem.cpp
-index e5fdb7e3..d7a69437 100644
+index e5fdb7e30a2db2c916c0b583f60979902b65f6c3..d7a69437cca3a7c54aafd52c01be49dec5315c4a 100644
 --- a/Code/client/Systems/InterpolationSystem.cpp
 +++ b/Code/client/Systems/InterpolationSystem.cpp
 @@ -96,7 +96,26 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
@@ -8166,7 +8166,7 @@ index e5fdb7e3..d7a69437 100644
  void InterpolationSystem::AddPoint(InterpolationComponent& aInterpolationComponent, InterpolationComponent::TimePoint aPoint, const double aArrivalTime) noexcept
 diff --git a/Code/client/Systems/PendingActorUpdates.h b/Code/client/Systems/PendingActorUpdates.h
 new file mode 100644
-index 00000000..5b69398f
+index 0000000000000000000000000000000000000000..5b69398ffb7d22efb947fc28baf2a5dab5ef80c0
 --- /dev/null
 +++ b/Code/client/Systems/PendingActorUpdates.h
 @@ -0,0 +1,49 @@
@@ -8220,7 +8220,7 @@ index 00000000..5b69398f
 +    return true;
 +}
 diff --git a/Code/client/World.cpp b/Code/client/World.cpp
-index b0596604..2fedcc51 100644
+index b0596604b504f429648fa5072f4bac592cbe1193..2fedcc51bd6f53ac7ba294794f6e0dfc5b926719 100644
 --- a/Code/client/World.cpp
 +++ b/Code/client/World.cpp
 @@ -13,12 +13,15 @@
@@ -8255,7 +8255,7 @@ index b0596604..2fedcc51 100644
      ctx().emplace<MapService>(*this, m_dispatcher, m_transport);
  
 diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
-index 5db8d876..8a281dda 100644
+index 5db8d876f831b28e1c3b326ed18721358d1f2aae..8a281ddab975f010ea9244f30791b17dd3bd1957 100644
 --- a/Code/common/BuildInfo.h.in
 +++ b/Code/common/BuildInfo.h.in
 @@ -1,4 +1,4 @@
@@ -8265,7 +8265,7 @@ index 5db8d876..8a281dda 100644
 -#define BUILD_COMMIT "${GIT_TAG}"
 +#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4k-native-death"
 diff --git a/Code/encoding/Messages/AssignCharacterRequest.cpp b/Code/encoding/Messages/AssignCharacterRequest.cpp
-index 7d7af814..24376ae9 100644
+index 7d7af81470f51dc8729cd80aa23a21267c3b991c..24376ae9666eb2cb2c5d6417dcbae91e0a1d8383 100644
 --- a/Code/encoding/Messages/AssignCharacterRequest.cpp
 +++ b/Code/encoding/Messages/AssignCharacterRequest.cpp
 @@ -3,6 +3,9 @@
@@ -8289,7 +8289,7 @@ index 7d7af814..24376ae9 100644
      FormId.Deserialize(aReader);
      CellId.Deserialize(aReader);
 diff --git a/Code/encoding/Messages/AssignCharacterRequest.h b/Code/encoding/Messages/AssignCharacterRequest.h
-index b6f6561c..c355522f 100644
+index b6f6561cd4bde4ea9d034c81335a897893cca75f..c355522f65751697cf748e4b2df1e0de2d66255d 100644
 --- a/Code/encoding/Messages/AssignCharacterRequest.h
 +++ b/Code/encoding/Messages/AssignCharacterRequest.h
 @@ -10,6 +10,7 @@
@@ -8315,7 +8315,7 @@ index b6f6561c..c355522f 100644
      GameId FormId{};
      GameId LeveledNpcPickId{};
 diff --git a/Code/encoding/Messages/CharacterSpawnRequest.cpp b/Code/encoding/Messages/CharacterSpawnRequest.cpp
-index 3a739be5..f67aad0a 100644
+index 3a739be59abac3e684e372fca33586d0d2de77e3..f67aad0a3458f242d2c380eb276bcfc85fb77fb6 100644
 --- a/Code/encoding/Messages/CharacterSpawnRequest.cpp
 +++ b/Code/encoding/Messages/CharacterSpawnRequest.cpp
 @@ -22,6 +22,8 @@ void CharacterSpawnRequest::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter)
@@ -8335,7 +8335,7 @@ index 3a739be5..f67aad0a 100644
 +    QuestWorldSpace.Deserialize(aReader);
  }
 diff --git a/Code/encoding/Messages/CharacterSpawnRequest.h b/Code/encoding/Messages/CharacterSpawnRequest.h
-index d6485177..7acc42fc 100644
+index d6485177da29e66f2611f230aba1937996242653..7acc42fc29c056c3332bf24be3c003919631fbcf 100644
 --- a/Code/encoding/Messages/CharacterSpawnRequest.h
 +++ b/Code/encoding/Messages/CharacterSpawnRequest.h
 @@ -33,7 +33,8 @@ struct CharacterSpawnRequest final : ServerMessage
@@ -8356,7 +8356,7 @@ index d6485177..7acc42fc 100644
 +    GameId QuestWorldSpace{};
  };
 diff --git a/Code/encoding/Messages/ClientMessageFactory.h b/Code/encoding/Messages/ClientMessageFactory.h
-index 4f94d6d1..237418ec 100644
+index 4f94d6d10e647012e41b4bd0b21ecfa914adb84a..237418ec01ed5648179454dd26972240c2e9a2b5 100644
 --- a/Code/encoding/Messages/ClientMessageFactory.h
 +++ b/Code/encoding/Messages/ClientMessageFactory.h
 @@ -1,4 +1,5 @@
@@ -8384,7 +8384,7 @@ index 4f94d6d1..237418ec 100644
      }
 diff --git a/Code/encoding/Messages/NotifyDroppedItem.cpp b/Code/encoding/Messages/NotifyDroppedItem.cpp
 new file mode 100644
-index 00000000..7c5c3df4
+index 0000000000000000000000000000000000000000..7c5c3df47fade197eb90d29bbb4f0fab4a1f47f4
 --- /dev/null
 +++ b/Code/encoding/Messages/NotifyDroppedItem.cpp
 @@ -0,0 +1,26 @@
@@ -8416,7 +8416,7 @@ index 00000000..7c5c3df4
 +}
 diff --git a/Code/encoding/Messages/NotifyDroppedItem.h b/Code/encoding/Messages/NotifyDroppedItem.h
 new file mode 100644
-index 00000000..9c65420b
+index 0000000000000000000000000000000000000000..9c65420b9beb90d1ad46929f467211ae405b1b62
 --- /dev/null
 +++ b/Code/encoding/Messages/NotifyDroppedItem.h
 @@ -0,0 +1,22 @@
@@ -8443,7 +8443,7 @@ index 00000000..9c65420b
 +    DroppedItemData Data{};
 +};
 diff --git a/Code/encoding/Messages/NotifyEquipmentChanges.cpp b/Code/encoding/Messages/NotifyEquipmentChanges.cpp
-index 2f4a4bba..3421deb9 100644
+index 2f4a4bba36978364431f7889c1df51762cf7d14a..3421deb95c78fe49498ee0598dc7fb65bbebdca7 100644
 --- a/Code/encoding/Messages/NotifyEquipmentChanges.cpp
 +++ b/Code/encoding/Messages/NotifyEquipmentChanges.cpp
 @@ -11,6 +11,8 @@ void NotifyEquipmentChanges::SerializeRaw(TiltedPhoques::Buffer::Writer& aWriter
@@ -8463,7 +8463,7 @@ index 2f4a4bba..3421deb9 100644
 +    SnapshotOnly = Serialization::ReadBool(aReader);
  }
 diff --git a/Code/encoding/Messages/NotifyEquipmentChanges.h b/Code/encoding/Messages/NotifyEquipmentChanges.h
-index 92faf9b9..1f0346c0 100644
+index 92faf9b991468304d6bb550ca8404fbc7247b4d1..1f0346c07f55bf91b2da840978f03c2a6854d2ab 100644
 --- a/Code/encoding/Messages/NotifyEquipmentChanges.h
 +++ b/Code/encoding/Messages/NotifyEquipmentChanges.h
 @@ -3,6 +3,7 @@
@@ -8492,7 +8492,7 @@ index 92faf9b9..1f0346c0 100644
  };
 diff --git a/Code/encoding/Messages/NotifyMissives.cpp b/Code/encoding/Messages/NotifyMissives.cpp
 new file mode 100644
-index 00000000..2eeaa2d4
+index 0000000000000000000000000000000000000000..2eeaa2d41c4e0e6a4191148871af29b2e80142b2
 --- /dev/null
 +++ b/Code/encoding/Messages/NotifyMissives.cpp
 @@ -0,0 +1,24 @@
@@ -8522,7 +8522,7 @@ index 00000000..2eeaa2d4
 +}
 diff --git a/Code/encoding/Messages/NotifyMissives.h b/Code/encoding/Messages/NotifyMissives.h
 new file mode 100644
-index 00000000..bcf29cea
+index 0000000000000000000000000000000000000000..bcf29cea80c267367fd4038a1d1d56b9c59272d9
 --- /dev/null
 +++ b/Code/encoding/Messages/NotifyMissives.h
 @@ -0,0 +1,20 @@
@@ -8548,7 +8548,7 @@ index 00000000..bcf29cea
 +};
 diff --git a/Code/encoding/Messages/RequestDroppedItem.cpp b/Code/encoding/Messages/RequestDroppedItem.cpp
 new file mode 100644
-index 00000000..ff2462d0
+index 0000000000000000000000000000000000000000..ff2462d04e755a568db749ae8a393ef6ed4165e4
 --- /dev/null
 +++ b/Code/encoding/Messages/RequestDroppedItem.cpp
 @@ -0,0 +1,28 @@
@@ -8582,7 +8582,7 @@ index 00000000..ff2462d0
 +}
 diff --git a/Code/encoding/Messages/RequestDroppedItem.h b/Code/encoding/Messages/RequestDroppedItem.h
 new file mode 100644
-index 00000000..69d0770b
+index 0000000000000000000000000000000000000000..69d0770bf00dcc2a01c09477bda2c7404fb494cf
 --- /dev/null
 +++ b/Code/encoding/Messages/RequestDroppedItem.h
 @@ -0,0 +1,27 @@
@@ -8614,7 +8614,7 @@ index 00000000..69d0770b
 +    DroppedItemData Data{};
 +};
 diff --git a/Code/encoding/Messages/RequestEquipmentChanges.cpp b/Code/encoding/Messages/RequestEquipmentChanges.cpp
-index 36e9ef34..e8fad17d 100644
+index 36e9ef34018bc449f21413f0b3725035d56cbddb..e8fad17dbd8e28faa7adeeec69da68c9d8a8cd47 100644
 --- a/Code/encoding/Messages/RequestEquipmentChanges.cpp
 +++ b/Code/encoding/Messages/RequestEquipmentChanges.cpp
 @@ -13,6 +13,7 @@ void RequestEquipmentChanges::SerializeRaw(TiltedPhoques::Buffer::Writer& aWrite
@@ -8632,7 +8632,7 @@ index 36e9ef34..e8fad17d 100644
 +    SnapshotOnly = Serialization::ReadBool(aReader);
  }
 diff --git a/Code/encoding/Messages/RequestEquipmentChanges.h b/Code/encoding/Messages/RequestEquipmentChanges.h
-index 3b4c5cf9..52082469 100644
+index 3b4c5cf9d80d1da9ef42103df3a6b7d7233c3848..520824693bf07490b75817ce446ad07029a71481 100644
 --- a/Code/encoding/Messages/RequestEquipmentChanges.h
 +++ b/Code/encoding/Messages/RequestEquipmentChanges.h
 @@ -21,7 +21,7 @@ struct RequestEquipmentChanges final : ClientMessage
@@ -8654,7 +8654,7 @@ index 3b4c5cf9..52082469 100644
  };
 diff --git a/Code/encoding/Messages/RequestMissives.cpp b/Code/encoding/Messages/RequestMissives.cpp
 new file mode 100644
-index 00000000..de68a523
+index 0000000000000000000000000000000000000000..de68a5239b65504fe85add96a4bfdc01dd1b96f0
 --- /dev/null
 +++ b/Code/encoding/Messages/RequestMissives.cpp
 @@ -0,0 +1,20 @@
@@ -8680,7 +8680,7 @@ index 00000000..de68a523
 +}
 diff --git a/Code/encoding/Messages/RequestMissives.h b/Code/encoding/Messages/RequestMissives.h
 new file mode 100644
-index 00000000..0a580013
+index 0000000000000000000000000000000000000000..0a58001339c58066ed7e6d6d96adac03ce17fea6
 --- /dev/null
 +++ b/Code/encoding/Messages/RequestMissives.h
 @@ -0,0 +1,19 @@
@@ -8704,7 +8704,7 @@ index 00000000..0a580013
 +    MissivesData Data;
 +};
 diff --git a/Code/encoding/Messages/ServerMessageFactory.h b/Code/encoding/Messages/ServerMessageFactory.h
-index 516878b1..4570d163 100644
+index 516878b1d992944c650ccdd2b3fc0962f3441741..4570d163eb9e57cb7a8b57454818200739f04b0e 100644
 --- a/Code/encoding/Messages/ServerMessageFactory.h
 +++ b/Code/encoding/Messages/ServerMessageFactory.h
 @@ -1,4 +1,5 @@
@@ -8731,7 +8731,7 @@ index 516878b1..4570d163 100644
          return s_visitor(std::forward<T>(func));
      }
 diff --git a/Code/encoding/Opcodes.h b/Code/encoding/Opcodes.h
-index baab493c..7995bd14 100644
+index baab493ccbfb8816c5d8c8ac6759f42d4154f2c7..7995bd148817e37382cb774dc7fe0c941dfb3d5d 100644
 --- a/Code/encoding/Opcodes.h
 +++ b/Code/encoding/Opcodes.h
 @@ -54,6 +54,8 @@ enum ClientOpcode : unsigned char
@@ -8753,7 +8753,7 @@ index baab493c..7995bd14 100644
  };
 diff --git a/Code/encoding/Structs/DroppedItemData.cpp b/Code/encoding/Structs/DroppedItemData.cpp
 new file mode 100644
-index 00000000..31e42346
+index 0000000000000000000000000000000000000000..31e423463f48e353387afa9d68bb89953dc9a322
 --- /dev/null
 +++ b/Code/encoding/Structs/DroppedItemData.cpp
 @@ -0,0 +1,28 @@
@@ -8787,7 +8787,7 @@ index 00000000..31e42346
 +}
 diff --git a/Code/encoding/Structs/DroppedItemData.h b/Code/encoding/Structs/DroppedItemData.h
 new file mode 100644
-index 00000000..d46aa28b
+index 0000000000000000000000000000000000000000..d46aa28b9570b21f4ac1c2bba4f8d93dd549af39
 --- /dev/null
 +++ b/Code/encoding/Structs/DroppedItemData.h
 @@ -0,0 +1,25 @@
@@ -8817,7 +8817,7 @@ index 00000000..d46aa28b
 +    void Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept;
 +};
 diff --git a/Code/encoding/Structs/Inventory.cpp b/Code/encoding/Structs/Inventory.cpp
-index 8221c638..eaca91e6 100644
+index 8221c638251aa33ef54562dcef013a51734c2511..eaca91e6bb83a4e20b76e18bdc56b8f9eaaa1d6e 100644
 --- a/Code/encoding/Structs/Inventory.cpp
 +++ b/Code/encoding/Structs/Inventory.cpp
 @@ -48,6 +48,7 @@ void Inventory::Entry::Serialize(TiltedPhoques::Buffer::Writer& aWriter) const n
@@ -8844,7 +8844,7 @@ index 8221c638..eaca91e6 100644
 \ No newline at end of file
 +}
 diff --git a/Code/encoding/Structs/Inventory.h b/Code/encoding/Structs/Inventory.h
-index 72a4d0a6..e8b63ff0 100644
+index 72a4d0a6399b9f6604402867bc6da6a9c40585d7..e8b63ff09b2f3228a70fc6461362dd7d074e9b59 100644
 --- a/Code/encoding/Structs/Inventory.h
 +++ b/Code/encoding/Structs/Inventory.h
 @@ -48,6 +48,9 @@ struct Inventory
@@ -8868,7 +8868,7 @@ index 72a4d0a6..e8b63ff0 100644
          bool IsWorn() const noexcept { return ExtraWorn || ExtraWornLeft; }
 diff --git a/Code/encoding/Structs/MissivesActorId.h b/Code/encoding/Structs/MissivesActorId.h
 new file mode 100644
-index 00000000..22772102
+index 0000000000000000000000000000000000000000..22772102cfeb7f96ea78121373d5186de1aa8f67
 --- /dev/null
 +++ b/Code/encoding/Structs/MissivesActorId.h
 @@ -0,0 +1,16 @@
@@ -8890,7 +8890,7 @@ index 00000000..22772102
 +}
 diff --git a/Code/encoding/Structs/MissivesData.cpp b/Code/encoding/Structs/MissivesData.cpp
 new file mode 100644
-index 00000000..f47433a0
+index 0000000000000000000000000000000000000000..f47433a08dcb6af0de3ff88a967c05706db638f3
 --- /dev/null
 +++ b/Code/encoding/Structs/MissivesData.cpp
 @@ -0,0 +1,75 @@
@@ -8971,7 +8971,7 @@ index 00000000..f47433a0
 +}
 diff --git a/Code/encoding/Structs/MissivesData.h b/Code/encoding/Structs/MissivesData.h
 new file mode 100644
-index 00000000..6932f624
+index 0000000000000000000000000000000000000000..6932f6247e000b1b4b9f46064fdd463a2e074e88
 --- /dev/null
 +++ b/Code/encoding/Structs/MissivesData.h
 @@ -0,0 +1,40 @@
@@ -9017,7 +9017,7 @@ index 00000000..6932f624
 +};
 diff --git a/Code/encoding/Structs/NpcInventorySnapshot.h b/Code/encoding/Structs/NpcInventorySnapshot.h
 new file mode 100644
-index 00000000..46130954
+index 0000000000000000000000000000000000000000..4613095486ce84981f6ff9a479df5a3b7379476c
 --- /dev/null
 +++ b/Code/encoding/Structs/NpcInventorySnapshot.h
 @@ -0,0 +1,41 @@
@@ -9064,7 +9064,7 @@ index 00000000..46130954
 +}
 diff --git a/Code/encoding/Structs/OwnedInventory.h b/Code/encoding/Structs/OwnedInventory.h
 new file mode 100644
-index 00000000..c4e3842d
+index 0000000000000000000000000000000000000000..c4e3842dc7ba41c6ca543ce1d60b6f0e49b81f71
 --- /dev/null
 +++ b/Code/encoding/Structs/OwnedInventory.h
 @@ -0,0 +1,70 @@
@@ -9140,7 +9140,7 @@ index 00000000..c4e3842d
 +}
 diff --git a/Code/server/Game/Inventory/DroppedItemLedger.h b/Code/server/Game/Inventory/DroppedItemLedger.h
 new file mode 100644
-index 00000000..f330b3dd
+index 0000000000000000000000000000000000000000..f330b3dd6e263cdc688524ac6764b28c4e191d42
 --- /dev/null
 +++ b/Code/server/Game/Inventory/DroppedItemLedger.h
 @@ -0,0 +1,136 @@
@@ -9282,7 +9282,7 @@ index 00000000..f330b3dd
 +};
 diff --git a/Code/server/Game/Inventory/MissivesLedger.h b/Code/server/Game/Inventory/MissivesLedger.h
 new file mode 100644
-index 00000000..89b2da0e
+index 0000000000000000000000000000000000000000..89b2da0ecf4a9b649a817cf400844a39bc91eca2
 --- /dev/null
 +++ b/Code/server/Game/Inventory/MissivesLedger.h
 @@ -0,0 +1,191 @@
@@ -9478,7 +9478,7 @@ index 00000000..89b2da0e
 +    std::map<std::pair<uint64_t, uint64_t>, std::set<uint64_t>> m_reservations;
 +};
 diff --git a/Code/server/GameServer.cpp b/Code/server/GameServer.cpp
-index de5e9179..a2dc95c7 100644
+index de5e917934cccf3a48163d91f2c0c199cdf63541..a2dc95c7158ae381b0f1126f5d71e2a9af5257a1 100644
 --- a/Code/server/GameServer.cpp
 +++ b/Code/server/GameServer.cpp
 @@ -21,10 +21,26 @@
@@ -9622,7 +9622,7 @@ index de5e9179..a2dc95c7 100644
              return;
          }
 diff --git a/Code/server/GameServer.h b/Code/server/GameServer.h
-index c0631015..351f5d13 100644
+index c063101504342d682f37d71b09429c692440b3cc..351f5d1375385a8cdd6854a6c13e5215b067e6fc 100644
 --- a/Code/server/GameServer.h
 +++ b/Code/server/GameServer.h
 @@ -43,6 +43,7 @@ struct GameServer final : Server
@@ -9658,7 +9658,7 @@ index c0631015..351f5d13 100644
      UniquePtr<World> m_pWorld;
  
 diff --git a/Code/server/Services/ActorValueService.cpp b/Code/server/Services/ActorValueService.cpp
-index bf711b5d..a2bcf90d 100644
+index bf711b5dcbc37a1072fb43f0d26a1cec6eb6146b..a2bcf90dbf379e2d00ba5e90a1afb0d22349f71a 100644
 --- a/Code/server/Services/ActorValueService.cpp
 +++ b/Code/server/Services/ActorValueService.cpp
 @@ -87,6 +87,14 @@ void ActorValueService::OnHealthChangeBroadcast(const PacketEvent<RequestHealthC
@@ -9689,7 +9689,7 @@ index bf711b5d..a2bcf90d 100644
      spdlog::debug("Updating death state {:x}:{}", message.Id, message.IsDead);
  
 diff --git a/Code/server/Services/CharacterService.cpp b/Code/server/Services/CharacterService.cpp
-index b23c775a..f15ba112 100644
+index b23c775a5d597f0b30f154cb7a0b1657e2960f4f..f15ba1128d513da37e1a1cf2ee487204b11da54f 100644
 --- a/Code/server/Services/CharacterService.cpp
 +++ b/Code/server/Services/CharacterService.cpp
 @@ -193,6 +193,28 @@ void CharacterService::OnAssignCharacterRequest(const PacketEvent<AssignCharacte
@@ -9723,7 +9723,7 @@ index b23c775a..f15ba112 100644
      {
 diff --git a/Code/server/Services/DroppedItemService.cpp b/Code/server/Services/DroppedItemService.cpp
 new file mode 100644
-index 00000000..1c1cfdc0
+index 0000000000000000000000000000000000000000..1c1cfdc03b36bb1ace3b55f820fc12907aa76303
 --- /dev/null
 +++ b/Code/server/Services/DroppedItemService.cpp
 @@ -0,0 +1,255 @@
@@ -9984,7 +9984,7 @@ index 00000000..1c1cfdc0
 +}
 diff --git a/Code/server/Services/DroppedItemService.h b/Code/server/Services/DroppedItemService.h
 new file mode 100644
-index 00000000..e6d299d5
+index 0000000000000000000000000000000000000000..e6d299d5de61ff17372585139bcf2f26880c24a2
 --- /dev/null
 +++ b/Code/server/Services/DroppedItemService.h
 @@ -0,0 +1,28 @@
@@ -10017,7 +10017,7 @@ index 00000000..e6d299d5
 +    entt::scoped_connection m_leaveConnection;
 +};
 diff --git a/Code/server/Services/InventoryService.cpp b/Code/server/Services/InventoryService.cpp
-index 2d7d0f07..1dfe6e45 100644
+index 2d7d0f0797d6e734816f56f8d7685b12c658ca82..1dfe6e45de0c1f5daf62069b75de2906d2871f2c 100644
 --- a/Code/server/Services/InventoryService.cpp
 +++ b/Code/server/Services/InventoryService.cpp
 @@ -1,4 +1,5 @@
@@ -10060,7 +10060,7 @@ index 2d7d0f07..1dfe6e45 100644
      const entt::entity cOrigin = static_cast<entt::entity>(message.ServerId);
      if (!GameServer::Get()->SendToPlayersInRange(notify, cOrigin, acMessage.GetSender()))
 diff --git a/Code/server/Services/InventoryService.h b/Code/server/Services/InventoryService.h
-index 3e9a26f5..71f03609 100644
+index 3e9a26f5dd6a8db14ed986fd4329afa41e193f17..71f036093a905bf1001d433b6060191022c8d494 100644
 --- a/Code/server/Services/InventoryService.h
 +++ b/Code/server/Services/InventoryService.h
 @@ -17,6 +17,7 @@ class InventoryService
@@ -10073,7 +10073,7 @@ index 3e9a26f5..71f03609 100644
       * @brief Relays inventory changes to other clients and updates server side inventories.
 diff --git a/Code/server/Services/MissivesService.cpp b/Code/server/Services/MissivesService.cpp
 new file mode 100644
-index 00000000..dc52d8d2
+index 0000000000000000000000000000000000000000..dc52d8d28a6d6d921862d3e708c4bd0770cac512
 --- /dev/null
 +++ b/Code/server/Services/MissivesService.cpp
 @@ -0,0 +1,285 @@
@@ -10364,7 +10364,7 @@ index 00000000..dc52d8d2
 +}
 diff --git a/Code/server/Services/MissivesService.h b/Code/server/Services/MissivesService.h
 new file mode 100644
-index 00000000..61a55a7e
+index 0000000000000000000000000000000000000000..61a55a7e1182f5c0c037a5d0470dc19b8a8fab23
 --- /dev/null
 +++ b/Code/server/Services/MissivesService.h
 @@ -0,0 +1,31 @@
@@ -10400,7 +10400,7 @@ index 00000000..61a55a7e
 +    entt::scoped_connection m_leaveConnection;
 +};
 diff --git a/Code/server/World.cpp b/Code/server/World.cpp
-index 8bfd5104..a5328e77 100644
+index 8bfd5104995f86d20b6eff170800aa30c7a6fe26..a5328e7712d8cdefb8461fb6e6fab561104b2dd5 100644
 --- a/Code/server/World.cpp
 +++ b/Code/server/World.cpp
 @@ -7,6 +7,8 @@
@@ -10423,7 +10423,7 @@ index 8bfd5104..a5328e77 100644
      ctx().emplace<CommandService>(*this, m_dispatcher);
 diff --git a/Code/tests/actor_identity_pending.cpp b/Code/tests/actor_identity_pending.cpp
 new file mode 100644
-index 00000000..1133fb6f
+index 0000000000000000000000000000000000000000..1133fb6f7ae4cc188cac4128579a9a2511bea692
 --- /dev/null
 +++ b/Code/tests/actor_identity_pending.cpp
 @@ -0,0 +1,172 @@
@@ -10601,7 +10601,7 @@ index 00000000..1133fb6f
 +}
 diff --git a/Code/tests/animation_replay_cache.cpp b/Code/tests/animation_replay_cache.cpp
 new file mode 100644
-index 00000000..a7e2636c
+index 0000000000000000000000000000000000000000..a7e2636cc81d373a0aed2d49bea4e9037636b66e
 --- /dev/null
 +++ b/Code/tests/animation_replay_cache.cpp
 @@ -0,0 +1,116 @@
@@ -10723,29 +10723,33 @@ index 00000000..a7e2636c
 +}
 diff --git a/Code/tests/corpse_death_transition.cpp b/Code/tests/corpse_death_transition.cpp
 new file mode 100644
-index 00000000..483ce80d
+index 0000000000000000000000000000000000000000..e18e8f11ed8cce4058161610a58adc32ddbbcaf3
 --- /dev/null
 +++ b/Code/tests/corpse_death_transition.cpp
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,20 @@
 +#include <catch2/catch.hpp>
 +
 +#include "../client/Systems/CorpseDeathTransition.h"
 +
-+TEST_CASE("Remote NPC terminal ragdoll actions defer to the native death message", "[corpse][death-order]")
++TEST_CASE("Stale remote NPC ragdoll actions cannot undo a confirmed corpse", "[corpse][death-order]")
 +{
 +    constexpr uint32_t kDying = 1u << 21;
 +    constexpr uint32_t kDead = 2u << 21;
 +
-+    CHECK(ShouldDeferRemoteNpcTerminalDeathAction(true, "Ragdoll", kDying));
-+    CHECK(ShouldDeferRemoteNpcTerminalDeathAction(true, "RagdollInstant", kDead));
++    CHECK(ShouldDeferRemoteNpcRagdollAction(true, "Ragdoll", kDying, false, false));
++    CHECK(ShouldDeferRemoteNpcRagdollAction(true, "RagdollInstant", kDead, false, false));
++    // A previous client log showed a stale Ragdoll snapshot with life state 0
++    // being replayed after the server had already confirmed this actor dead.
++    CHECK(ShouldDeferRemoteNpcRagdollAction(true, "Ragdoll", 0, false, true));
++    CHECK(ShouldDeferRemoteNpcRagdollAction(true, "RagdollInstant", 0, true, false));
 +
-+    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(true, "Ragdoll", 0));
-+    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(true, "AttackStart", kDying));
-+    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(false, "Ragdoll", kDead));
++    CHECK_FALSE(ShouldDeferRemoteNpcRagdollAction(true, "Ragdoll", 0, false, false));
++    CHECK_FALSE(ShouldDeferRemoteNpcRagdollAction(true, "AttackStart", kDying, true, true));
++    CHECK_FALSE(ShouldDeferRemoteNpcRagdollAction(false, "Ragdoll", kDead, true, true));
 +}
 diff --git a/Code/tests/corpse_speech_window.cpp b/Code/tests/corpse_speech_window.cpp
 new file mode 100644
-index 00000000..bc6c3bac
+index 0000000000000000000000000000000000000000..bc6c3bacbdf5164dc0b35fc52ea3c4f86fd4cec7
 --- /dev/null
 +++ b/Code/tests/corpse_speech_window.cpp
 @@ -0,0 +1,112 @@
@@ -10863,7 +10867,7 @@ index 00000000..bc6c3bac
 +}
 diff --git a/Code/tests/dropped_item_binding.cpp b/Code/tests/dropped_item_binding.cpp
 new file mode 100644
-index 00000000..ce28749c
+index 0000000000000000000000000000000000000000..ce28749c0e4fef49a7494f61c6fdb69f15082cce
 --- /dev/null
 +++ b/Code/tests/dropped_item_binding.cpp
 @@ -0,0 +1,52 @@
@@ -10921,7 +10925,7 @@ index 00000000..ce28749c
 +}
 diff --git a/Code/tests/dropped_item_placement.cpp b/Code/tests/dropped_item_placement.cpp
 new file mode 100644
-index 00000000..3e09d34a
+index 0000000000000000000000000000000000000000..3e09d34a2191fa46b4c555a2b4f200bd1e4e7517
 --- /dev/null
 +++ b/Code/tests/dropped_item_placement.cpp
 @@ -0,0 +1,148 @@
@@ -11075,7 +11079,7 @@ index 00000000..3e09d34a
 +}
 diff --git a/Code/tests/dropped_items.cpp b/Code/tests/dropped_items.cpp
 new file mode 100644
-index 00000000..71561908
+index 0000000000000000000000000000000000000000..71561908d39a21475e881e1a8bb3d41724af4d49
 --- /dev/null
 +++ b/Code/tests/dropped_items.cpp
 @@ -0,0 +1,254 @@
@@ -11335,7 +11339,7 @@ index 00000000..71561908
 +}
 diff --git a/Code/tests/missives.cpp b/Code/tests/missives.cpp
 new file mode 100644
-index 00000000..3991f0d5
+index 0000000000000000000000000000000000000000..3991f0d5374e2a622aa85e52785f63fb75ce5b3c
 --- /dev/null
 +++ b/Code/tests/missives.cpp
 @@ -0,0 +1,250 @@
@@ -11591,7 +11595,7 @@ index 00000000..3991f0d5
 +}
 diff --git a/Code/tests/npc_inventory_snapshot.cpp b/Code/tests/npc_inventory_snapshot.cpp
 new file mode 100644
-index 00000000..99b9534e
+index 0000000000000000000000000000000000000000..99b9534ebf0a1041ddc6d2f1f166cf9fa3e38647
 --- /dev/null
 +++ b/Code/tests/npc_inventory_snapshot.cpp
 @@ -0,0 +1,139 @@
@@ -11736,7 +11740,7 @@ index 00000000..99b9534e
 +}
 diff --git a/Code/tests/owned_inventory.cpp b/Code/tests/owned_inventory.cpp
 new file mode 100644
-index 00000000..db2e1055
+index 0000000000000000000000000000000000000000..db2e1055f8dd70cb2f498b18182a57c5ad5dbcfb
 --- /dev/null
 +++ b/Code/tests/owned_inventory.cpp
 @@ -0,0 +1,185 @@
@@ -11927,7 +11931,7 @@ index 00000000..db2e1055
 +}
 diff --git a/Code/tests/proxy_furniture_timing.cpp b/Code/tests/proxy_furniture_timing.cpp
 new file mode 100644
-index 00000000..2d39676a
+index 0000000000000000000000000000000000000000..2d39676a7cefc5e9cbfe1d13c6961dee68f05d7b
 --- /dev/null
 +++ b/Code/tests/proxy_furniture_timing.cpp
 @@ -0,0 +1,87 @@
@@ -12019,7 +12023,7 @@ index 00000000..2d39676a
 +    REQUIRE(setup.Advance(true, true, 21600) == A::Done);
 +}
 diff --git a/Code/tests/xmake.lua b/Code/tests/xmake.lua
-index 19abce57..b9ae56c0 100644
+index 19abce574791c5508f4a8f5a15bed8ae5f42d2ef..b9ae56c0a98017fe6327b4ece227c01c93e0f45c 100644
 --- a/Code/tests/xmake.lua
 +++ b/Code/tests/xmake.lua
 @@ -3,7 +3,7 @@ target("TPTests")

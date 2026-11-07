@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 expected = {
-    'Remote NPC terminal ragdoll actions defer to the native death message',
+    'Stale remote NPC ragdoll actions cannot undo a confirmed corpse',
     'Remote NPC pose cannot fabricate native death before KillImpl',
     'Remote dying NPC keeps its native transition instead of replaying a fake completion',
     'Native corpse completion and actual resurrection supersede stale pose life bits',

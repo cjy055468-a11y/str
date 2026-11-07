@@ -1,5 +1,5 @@
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
-index 8aeb94d3..c66b78f0 100644
+index 8aeb94d3b1d3bfaaaba3482613481c453ca7c17d..c66b78f060fa3e0436026db9bc91b40053d57f4e 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
 @@ -862,9 +862,29 @@ void Actor::Kill() noexcept
@@ -103,7 +103,7 @@ index 8aeb94d3..c66b78f0 100644
      }
  }
 diff --git a/Code/client/Services/Generic/ActorValueService.cpp b/Code/client/Services/Generic/ActorValueService.cpp
-index 765a6783..7a8623a4 100644
+index 765a67834ec3c39dc22b14a19d8520295f7a78e5..7a8623a49141e83da7097f1a585bd600d3cb4dbf 100644
 --- a/Code/client/Services/Generic/ActorValueService.cpp
 +++ b/Code/client/Services/Generic/ActorValueService.cpp
 @@ -295,16 +295,36 @@ void ActorValueService::OnHealthChangeBroadcast(const NotifyHealthChangeBroadcas
@@ -166,7 +166,7 @@ index 765a6783..7a8623a4 100644
      }
  }
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 2bd1a8de..1fb6918d 100644
+index 2bd1a8de050388edf5467e55afc53847d4feef22..1fb6918deebc023c99ccc52c030b8e41cbad0b94 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
 @@ -2091,8 +2091,10 @@ void CharacterService::RunRemoteUpdates() noexcept
@@ -183,7 +183,7 @@ index 2bd1a8de..1fb6918d 100644
              pExtension->SetNativeCorpseProcess(cAllowNative);
              if (cWasAllowed != cAllowNative)
 diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
-index a5996339..0370d9fe 100644
+index a599633945a85f171c04e0e2621b6f46449ba59b..0370d9fe41406f036dc25d8d199c183a9bd3b004 100644
 --- a/Code/client/Services/Generic/ObjectService.cpp
 +++ b/Code/client/Services/Generic/ObjectService.cpp
 @@ -24,6 +24,7 @@
@@ -208,7 +208,7 @@ index a5996339..0370d9fe 100644
          MissivesCompat::AuditBoard(acEvent.pObject, "activate");
  
 diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
-index 987e145b..a1d60088 100644
+index 987e145b16e17d49e12b67fac29b28213cd0cd17..2a0e89c7f409289ac06f26e0b466ce12afa4a684 100644
 --- a/Code/client/Systems/AnimationSystem.cpp
 +++ b/Code/client/Systems/AnimationSystem.cpp
 @@ -1,6 +1,7 @@
@@ -219,17 +219,18 @@ index 987e145b..a1d60088 100644
  #include <Systems/CorpseLifeState.h>
  
  #include <Games/Animation/TESActionData.h>
-@@ -51,17 +52,28 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+@@ -51,17 +52,27 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
          }
          const auto& first = *it;
  
 +        const auto* pExtension = apActor->GetExtension();
 +        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
-+        if (ShouldDeferRemoteNpcTerminalDeathAction(cRemoteNpc, first.EventName, first.State1))
++        const bool cWasCorpse = cRemoteNpc && apActor->VirtIsDead(false);
++        if (ShouldDeferRemoteNpcRagdollAction(cRemoteNpc, first.EventName, first.State1, cWasCorpse, aConfirmedDeath))
 +        {
-+            spdlog::info("STR corpse terminal action deferred: local_player {}, actor {:X}, event {}, incoming_life_state {}, native_dead {}, virt_dead {}, native_state {:X}, queue {}",
++            spdlog::info("STR corpse ragdoll action deferred: local_player {}, actor {:X}, event {}, incoming_life_state {}, confirmed_death {}, native_corpse {}, native_dead {}, virt_dead {}, native_state {:X}, queue {}",
 +                aWorld.GetTransport().GetLocalPlayerId(), apActor->formID, first.EventName.c_str(), (first.State1 & 0x01E00000) >> 21,
-+                apActor->IsDead(), apActor->VirtIsDead(false), apActor->actorState.flags1, actions.size());
++                aConfirmedDeath, cWasCorpse, apActor->IsDead(), apActor->VirtIsDead(false), apActor->actorState.flags1, actions.size());
 +            if (aAnimationComponent.ReplayCount > 0)
 +                aAnimationComponent.ReplayCount--;
 +            actions.pop_front();
@@ -244,8 +245,7 @@ index 987e145b..a1d60088 100644
  
 -        const auto* pExtension = apActor->GetExtension();
 -        const bool cWasCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
-+        const bool cWasCorpse = cRemoteNpc && apActor->VirtIsDead(false);
- 
+-
          const uint32_t cNativeState = apActor->actorState.flags1;
 -        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
          const uint32_t cAppliedState = cRemoteNpc ? PreserveRemoteNpcDeathTransition(cNativeState, first.State1, aConfirmedDeath) : first.State1;
@@ -253,10 +253,10 @@ index 987e145b..a1d60088 100644
          apActor->actorState.flags2 = first.State2;
 diff --git a/Code/client/Systems/CorpseDeathTransition.h b/Code/client/Systems/CorpseDeathTransition.h
 new file mode 100644
-index 00000000..ff700c5e
+index 0000000000000000000000000000000000000000..3328c195a9c956646b0a92c31bab360b92535e71
 --- /dev/null
 +++ b/Code/client/Systems/CorpseDeathTransition.h
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,19 @@
 +#pragma once
 +
 +#include <Systems/CorpseLifeState.h>
@@ -264,19 +264,20 @@ index 00000000..ff700c5e
 +#include <cstdint>
 +#include <string_view>
 +
-+// A remote actor's terminal ragdoll action is a pose notification, not a
-+// substitute for the local engine death transition. Let the health/death
-+// message invoke KillImpl first when the owner snapshot carries dying/dead.
-+inline bool ShouldDeferRemoteNpcTerminalDeathAction(const bool aRemoteNpc, const std::string_view acEventName,
-+                                                    const uint32_t aState1) noexcept
++// Ragdoll actions can arrive with stale actor-life bits. They are pose
++// notifications, not a substitute for the local engine death transition, and
++// must not revive a corpse after its death has already been confirmed.
++inline bool ShouldDeferRemoteNpcRagdollAction(const bool aRemoteNpc, const std::string_view acEventName,
++                                              const uint32_t aState1, const bool aNativeCorpse,
++                                              const bool aConfirmedDeath) noexcept
 +{
 +    if (!aRemoteNpc || (acEventName != "Ragdoll" && acEventName != "RagdollInstant"))
 +        return false;
 +
-+    return IsNativeDeathTransition(aState1);
++    return IsNativeDeathTransition(aState1) || aNativeCorpse || aConfirmedDeath;
 +}
 diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
-index 74713340..8a281dda 100644
+index 74713340e949aba1e085d84b02d46e7704184c77..8a281ddab975f010ea9244f30791b17dd3bd1957 100644
 --- a/Code/common/BuildInfo.h.in
 +++ b/Code/common/BuildInfo.h.in
 @@ -1,4 +1,4 @@
@@ -286,7 +287,7 @@ index 74713340..8a281dda 100644
 -#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4-loot1"
 +#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-corpse4k-native-death"
 diff --git a/Code/server/Services/ActorValueService.cpp b/Code/server/Services/ActorValueService.cpp
-index bf711b5d..a2bcf90d 100644
+index bf711b5dcbc37a1072fb43f0d26a1cec6eb6146b..a2bcf90dbf379e2d00ba5e90a1afb0d22349f71a 100644
 --- a/Code/server/Services/ActorValueService.cpp
 +++ b/Code/server/Services/ActorValueService.cpp
 @@ -87,6 +87,14 @@ void ActorValueService::OnHealthChangeBroadcast(const PacketEvent<RequestHealthC
@@ -318,23 +319,27 @@ index bf711b5d..a2bcf90d 100644
  
 diff --git a/Code/tests/corpse_death_transition.cpp b/Code/tests/corpse_death_transition.cpp
 new file mode 100644
-index 00000000..483ce80d
+index 0000000000000000000000000000000000000000..e18e8f11ed8cce4058161610a58adc32ddbbcaf3
 --- /dev/null
 +++ b/Code/tests/corpse_death_transition.cpp
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,20 @@
 +#include <catch2/catch.hpp>
 +
 +#include "../client/Systems/CorpseDeathTransition.h"
 +
-+TEST_CASE("Remote NPC terminal ragdoll actions defer to the native death message", "[corpse][death-order]")
++TEST_CASE("Stale remote NPC ragdoll actions cannot undo a confirmed corpse", "[corpse][death-order]")
 +{
 +    constexpr uint32_t kDying = 1u << 21;
 +    constexpr uint32_t kDead = 2u << 21;
 +
-+    CHECK(ShouldDeferRemoteNpcTerminalDeathAction(true, "Ragdoll", kDying));
-+    CHECK(ShouldDeferRemoteNpcTerminalDeathAction(true, "RagdollInstant", kDead));
++    CHECK(ShouldDeferRemoteNpcRagdollAction(true, "Ragdoll", kDying, false, false));
++    CHECK(ShouldDeferRemoteNpcRagdollAction(true, "RagdollInstant", kDead, false, false));
++    // A previous client log showed a stale Ragdoll snapshot with life state 0
++    // being replayed after the server had already confirmed this actor dead.
++    CHECK(ShouldDeferRemoteNpcRagdollAction(true, "Ragdoll", 0, false, true));
++    CHECK(ShouldDeferRemoteNpcRagdollAction(true, "RagdollInstant", 0, true, false));
 +
-+    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(true, "Ragdoll", 0));
-+    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(true, "AttackStart", kDying));
-+    CHECK_FALSE(ShouldDeferRemoteNpcTerminalDeathAction(false, "Ragdoll", kDead));
++    CHECK_FALSE(ShouldDeferRemoteNpcRagdollAction(true, "Ragdoll", 0, false, false));
++    CHECK_FALSE(ShouldDeferRemoteNpcRagdollAction(true, "AttackStart", kDying, true, true));
++    CHECK_FALSE(ShouldDeferRemoteNpcRagdollAction(false, "Ragdoll", kDead, true, true));
 +}
