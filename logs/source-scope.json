@@ -9,7 +9,7 @@
     "Code/tests/corpse_speech_window.cpp",
     "Code/common/BuildInfo.h.in"
   ],
-  "candidate_delta_sha256": "0a15647c02942acedbcdd284c7e3e284667e80323147a28e5bac11ad267ad8e4",
+  "candidate_delta_sha256": "584ca7530bd28ffd8db7d9811e90bc937dbe47fe0e0b0a0284ffffe7864f0ce1",
   "exact_corpse4i_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"
