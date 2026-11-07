@@ -1,0 +1,58 @@
+**********************
+PowerShell transcript start
+Start time: 20261107154216
+Username: runnervmquqza\runneradmin
+RunAs User: runnervmquqza\runneradmin
+Configuration Name: 
+Machine: runnervmquqza (Microsoft Windows NT 10.0.20348.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\7de065eb-349f-40a1-b7fd-ba75292bd784.ps1'
+Process ID: 504
+PSVersion: 7.6.9
+PSEdition: Core
+GitCommitId: 7.6.9
+OS: Microsoft Windows 10.0.20348
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is logs/source-validation.txt
+ e6f5759364a64462e717db1153781a7eae26a13e Libraries/TiltedConnect (heads/master)
+ d7c175b86975679eb05883c097d7eb1c2165226a Libraries/TiltedHooks (heads/master)
+ 55ee3f29c62fea247148e57b94ec4941055139ed Libraries/TiltedReverse (heads/master)
+ 0bec46b174d730832cbe0a10e8162bf6b0d3d66b Libraries/TiltedUI (0bec46b)
+
+
+{
+  "baseline": "STR-coopfix4g-corpse4-test + corpse4k native-death patch",
+  "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "baseline_files": 106,
+  "diagnostic_delta_files": [
+    "Code/client/Components/RemoteAnimationComponent.h",
+    "Code/client/Components/RemoteComponent.h",
+    "Code/client/Games/ActorExtension.cpp",
+    "Code/client/Games/ActorExtension.h",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+    "Code/client/Services/Generic/ActorValueService.cpp",
+    "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Services/Generic/ObjectService.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/common/BuildInfo.h.in",
+    "Code/server/Services/ActorValueService.cpp",
+    "Code/server/Services/CharacterService.cpp",
+    "Code/server/Services/ObjectService.cpp"
+  ],
+  "full_candidate_scope_matches_baseline_plus_delta": true,
+  "applied_full_patch_matches_source": true,
+  "reverse_delta_recovers_exact_4g_baseline": true
+}
+
+PS>$global:?
+True
+**********************
+PowerShell transcript end
+End time: 20261107154220
+**********************
+

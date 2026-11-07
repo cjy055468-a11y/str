@@ -1,0 +1,25 @@
+{
+  "baseline": "STR-coopfix4g-corpse4-test + corpse4k native-death patch",
+  "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "baseline_files": 106,
+  "diagnostic_delta_files": [
+    "Code/client/Components/RemoteAnimationComponent.h",
+    "Code/client/Components/RemoteComponent.h",
+    "Code/client/Games/ActorExtension.cpp",
+    "Code/client/Games/ActorExtension.h",
+    "Code/client/Games/Skyrim/Actor.cpp",
+    "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+    "Code/client/Services/Generic/ActorValueService.cpp",
+    "Code/client/Services/Generic/CharacterService.cpp",
+    "Code/client/Services/Generic/ObjectService.cpp",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/common/BuildInfo.h.in",
+    "Code/server/Services/ActorValueService.cpp",
+    "Code/server/Services/CharacterService.cpp",
+    "Code/server/Services/ObjectService.cpp"
+  ],
+  "full_candidate_scope_matches_baseline_plus_delta": true,
+  "applied_full_patch_matches_source": true,
+  "reverse_delta_recovers_exact_4g_baseline": true
+}
+
