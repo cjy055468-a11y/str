@@ -7845,13 +7845,13 @@ index 94b920d4139aa22116cb652f52c1d8badbab56af..30ece9da3108276d0f558910178f17d4
       * @param aWorld The registry where the actor in question lives.
 diff --git a/Code/client/Systems/CorpseDeathTransition.h b/Code/client/Systems/CorpseDeathTransition.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..3328c195a9c956646b0a92c31bab360b92535e71
+index 0000000000000000000000000000000000000000..bbae0293bbbea06734adf3299154ef7c8dc5fcc7
 --- /dev/null
 +++ b/Code/client/Systems/CorpseDeathTransition.h
 @@ -0,0 +1,19 @@
 +#pragma once
 +
-+#include <Systems/CorpseLifeState.h>
++#include "CorpseLifeState.h"
 +
 +#include <cstdint>
 +#include <string_view>
