@@ -10,7 +10,7 @@ reports = [inspect(path) for path in files]
 for path in files:
     data = path.read_bytes()
     if path.name != 'EarlyLoad.dll':
-        assert b'v1.8.4-coopfix4j-corpse4-loot1\0' in data, f'{path.name}: missing corpse4j build tag'
+        assert b'v1.8.4-coopfix4j-r1-corpse4-loot1\0' in data, f'{path.name}: missing corpse4j build tag'
 client = next(path for path in files if path.name == 'SkyrimTogether.exe').read_bytes()
 for marker in (b'STR corpse KillImpl invoked:', b'STR corpse native death item phase observed:'):
     assert marker in client, f'EXE lacks diagnostic marker {marker!r}'

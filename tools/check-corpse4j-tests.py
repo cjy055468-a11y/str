@@ -9,6 +9,7 @@ expected = {
     'Native corpse completion and actual resurrection supersede stale pose life bits',
     'Native death processing excludes living unconscious and essential down states',
     'A confirmed remote death invokes KillImpl once when IsDead was pre-set',
+    'Remote NPC KillImpl waits for 3D, cell, and process readiness',
     'remote corpse playback leaves Havok animation-driven state local',
 
     'Resolved NPC equipment replaces template counts instead of duplicating armor and weapons',
@@ -95,5 +96,5 @@ assert not root.findall('.//error'), 'Test execution error'
 executed = {case.attrib.get('name') for case in cases if case.find('skipped') is None}
 assert expected.issubset(executed), f'Missing required tests: {expected - executed}'
 print(json.dumps({'test_cases': len(cases), 'executed_cases': len(executed),
-                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 9, 'required_placement_cases': 6, 'required_corpse_timing_cases': 5, 'required_corpse_life_field_cases': 3,
+                  'required_replay_cases': 5, 'required_drop_cases': 9, 'required_actor_cases': 7, 'required_coopfix3r2_cases': 12, 'required_regression_cases': 9, 'required_placement_cases': 6, 'required_corpse_timing_cases': 5, 'required_corpse_life_field_cases': 4,
                   'failures': 0, 'errors': 0}, indent=2))
