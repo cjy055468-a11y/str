@@ -1,0 +1,1475 @@
+{
+  "input_sha256": "5250bae11db78ac1f79d4af7aad9ae936be8469147ef858a97f0b7406bdf63bb",
+  "input_bytes": 955405,
+  "records": [
+    {
+      "type": "BOOK",
+      "form_id": "02003331",
+      "editor_id": "_M_MissiveGatherIngrHigh"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200F0D0",
+      "editor_id": "_M_MissiveKillForsworn"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200BA9D",
+      "editor_id": "_M_MissiveCourierWeapon"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02003330",
+      "editor_id": "_M_MissiveGatherIngrMed"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200F0C5",
+      "editor_id": "_M_MissiveKillBandit"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200B534",
+      "editor_id": "_M_MissiveRetrieveRuins"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200F0C6",
+      "editor_id": "_M_MissiveKillGiant"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02008ED5",
+      "editor_id": "_M_MissiveGatherOreMed"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200F0C7",
+      "editor_id": "_M_MissiveKillDragon"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200B537",
+      "editor_id": "_M_MissiveGatherOreVeryHigh"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02009A16",
+      "editor_id": "_M_MissiveGatherInn"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02008ED6",
+      "editor_id": "_M_MissiveGatherOreHigh"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200B533",
+      "editor_id": "_M_MissiveRetrieveHideout"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "020331A8",
+      "editor_id": "_M_MissiveTrackFugitive"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "020331A7",
+      "editor_id": "_M_MissiveTrackVampire"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "020331A6",
+      "editor_id": "_M_MissiveTrackThief"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "020331A9",
+      "editor_id": "_M_MissiveKillWerewolves"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02008ED4",
+      "editor_id": "_M_MissiveGatherOreLow"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200BA9C",
+      "editor_id": "_M_MissiveCourierLetter"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02009F90",
+      "editor_id": "_M_MissiveGatherSoulGemLow"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "0200332F",
+      "editor_id": "_M_MissiveGatherIngrLow"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02006E74",
+      "editor_id": "_M_MissiveRetrieveWilderness"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02001D98",
+      "editor_id": "_M_MissiveKillAnimal"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02009F92",
+      "editor_id": "_M_MissiveGatherSoulGemHigh"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "02009F91",
+      "editor_id": "_M_MissiveGatherSoulGemMed"
+    },
+    {
+      "type": "BOOK",
+      "form_id": "020398A4",
+      "editor_id": "_M_MissiveCourierPotion"
+    },
+    {
+      "type": "MISC",
+      "form_id": "0200BA9B",
+      "editor_id": "_M_MiscLetter"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02006E72",
+      "editor_id": "_M_QuestWhiterunRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02008408",
+      "editor_id": "_M_QuestWhiterunGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02008EEA",
+      "editor_id": "_M_QuestWhiterunGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02009A1C",
+      "editor_id": "_M_QuestWhiterunGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02009F99",
+      "editor_id": "_M_QuestWhiterunGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200AA67",
+      "editor_id": "_M_QuestWhiterunGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200AA6B",
+      "editor_id": "_M_QuestWhiterunGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200BA9E",
+      "editor_id": "_M_QuestWhiterunCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200D59D",
+      "editor_id": "_M_QuestWhiterunCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200DB0A",
+      "editor_id": "_M_QuestWhiterunGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200DB0E",
+      "editor_id": "_M_QuestWhiterunGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200DB12",
+      "editor_id": "_M_QuestWhiterunGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200DB16",
+      "editor_id": "_M_QuestWhiterunGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200E080",
+      "editor_id": "_M_QuestWhiterunCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200E5EB",
+      "editor_id": "_M_QuestWhiterunCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200EB55",
+      "editor_id": "_M_QuestWhiterunCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200EB5C",
+      "editor_id": "_M_QuestWhiterunCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200F0C8",
+      "editor_id": "_M_QuestWhiterunKillBandit"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200F0CC",
+      "editor_id": "_M_QuestWhiterunKillGiant"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200F0D1",
+      "editor_id": "_M_QuestWhiterunKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200F0D7",
+      "editor_id": "_M_QuestWhiterunRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200F0DB",
+      "editor_id": "_M_QuestWhiterunRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200F64E",
+      "editor_id": "_M_QuestEastmarchCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200F655",
+      "editor_id": "_M_QuestEastmarchCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200F65C",
+      "editor_id": "_M_QuestEastmarchCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200FBC4",
+      "editor_id": "_M_QuestEastmarchCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200FBCB",
+      "editor_id": "_M_QuestEastmarchCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0200FBD2",
+      "editor_id": "_M_QuestEastmarchCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02010140",
+      "editor_id": "_M_QuestEastmarchGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02010145",
+      "editor_id": "_M_QuestEastmarchGatherIngrLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02010149",
+      "editor_id": "_M_QuestEastmarchGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020106B1",
+      "editor_id": "_M_QuestEastmarchGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020106BD",
+      "editor_id": "_M_QuestEastmarchGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020106C1",
+      "editor_id": "_M_QuestEastmarchGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020106C5",
+      "editor_id": "_M_QuestEastmarchGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020106C9",
+      "editor_id": "_M_QuestEastmarchGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02010C35",
+      "editor_id": "_M_QuestEastmarchGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02010C39",
+      "editor_id": "_M_QuestEastmarchGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02010C3D",
+      "editor_id": "_M_QuestEastmarchGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020111A3",
+      "editor_id": "_M_QuestEastmarchKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020111A7",
+      "editor_id": "_M_QuestEastmarchKillBandit"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020111AB",
+      "editor_id": "_M_QuestEastmarchKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020111AF",
+      "editor_id": "_M_QuestEastmarchKillGiant"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011715",
+      "editor_id": "_M_QuestEastmarchRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011719",
+      "editor_id": "_M_QuestEastmarchRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201171D",
+      "editor_id": "_M_QuestEastmarchRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011C86",
+      "editor_id": "_M_QuestFalkreathCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011C8D",
+      "editor_id": "_M_QuestHaafingarCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011C96",
+      "editor_id": "_M_QuestHjaalmarchCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011C9E",
+      "editor_id": "_M_QuestPaleCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CA8",
+      "editor_id": "_M_QuestReachCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CAF",
+      "editor_id": "_M_QuestRiftCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CB6",
+      "editor_id": "_M_QuestWinterholdCourierLetterHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CBE",
+      "editor_id": "_M_QuestFalkreathCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CC5",
+      "editor_id": "_M_QuestHaafingarCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CCD",
+      "editor_id": "_M_QuestHjaalmarchCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CD5",
+      "editor_id": "_M_QuestPaleCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CDD",
+      "editor_id": "_M_QuestReachCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CE5",
+      "editor_id": "_M_QuestRiftCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CEE",
+      "editor_id": "_M_QuestWinterholdCourierLetterLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CF5",
+      "editor_id": "_M_QuestFalkreathCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011CFD",
+      "editor_id": "_M_QuestHaafingarCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011D04",
+      "editor_id": "_M_QuestHjaalmarchCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011D0C",
+      "editor_id": "_M_QuestPaleCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011D14",
+      "editor_id": "_M_QuestReachCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011D1D",
+      "editor_id": "_M_QuestRiftCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02011D24",
+      "editor_id": "_M_QuestWinterholdCourierLetterMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201228F",
+      "editor_id": "_M_QuestFalkreathCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012297",
+      "editor_id": "_M_QuestHaafingarCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201229F",
+      "editor_id": "_M_QuestHjaalmarchCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020122A6",
+      "editor_id": "_M_QuestPaleCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020122AE",
+      "editor_id": "_M_QuestReachCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020122B6",
+      "editor_id": "_M_QuestRiftCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020122BF",
+      "editor_id": "_M_QuestWinterholdCourierWeaponHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012828",
+      "editor_id": "_M_QuestFalkreathCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012830",
+      "editor_id": "_M_QuestHaafingarCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012838",
+      "editor_id": "_M_QuestHjaalmarchCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012840",
+      "editor_id": "_M_QuestPaleCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012848",
+      "editor_id": "_M_QuestReachCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012851",
+      "editor_id": "_M_QuestRiftCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012859",
+      "editor_id": "_M_QuestWinterholdCourierWeaponLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012DC3",
+      "editor_id": "_M_QuestFalkreathCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012DCA",
+      "editor_id": "_M_QuestHaafingarCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012DD2",
+      "editor_id": "_M_QuestHjaalmarchCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012DDA",
+      "editor_id": "_M_QuestPaleCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012DE2",
+      "editor_id": "_M_QuestReachCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012DEA",
+      "editor_id": "_M_QuestRiftCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02012DF2",
+      "editor_id": "_M_QuestWinterholdCourierWeaponMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201335D",
+      "editor_id": "_M_QuestFalkreathGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013362",
+      "editor_id": "_M_QuestHaafingarGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013372",
+      "editor_id": "_M_QuestHjaalmarchGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013376",
+      "editor_id": "_M_QuestPaleGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201337A",
+      "editor_id": "_M_QuestReachGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201337E",
+      "editor_id": "_M_QuestRiftGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013382",
+      "editor_id": "_M_QuestWinterholdGatherIngrHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133A2",
+      "editor_id": "_M_QuestFalkreathGatherIngrLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133A6",
+      "editor_id": "_M_QuestHaafingarGatherIngrLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133AA",
+      "editor_id": "_M_QuestHjaalmarchGatherIngrLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133AE",
+      "editor_id": "_M_QuestPaleGatherIngrLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133B2",
+      "editor_id": "_M_QuestReachGatherIngrLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133B6",
+      "editor_id": "_M_QuestRiftGatherIngrLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133BA",
+      "editor_id": "_M_QuestWinterholdGatherIngrLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133BE",
+      "editor_id": "_M_QuestFalkreathGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133C2",
+      "editor_id": "_M_QuestHaafingarGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133C6",
+      "editor_id": "_M_QuestHjaalmarchGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133CA",
+      "editor_id": "_M_QuestPaleGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020133CE",
+      "editor_id": "_M_QuestReachGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013935",
+      "editor_id": "_M_QuestRiftGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013939",
+      "editor_id": "_M_QuestWinterholdGatherIngrMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013EAD",
+      "editor_id": "_M_QuestFalkreathGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013EB1",
+      "editor_id": "_M_QuestHaafingarGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013EB5",
+      "editor_id": "_M_QuestHjaalmarchGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013EB9",
+      "editor_id": "_M_QuestPaleGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013EBD",
+      "editor_id": "_M_QuestReachGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013EC1",
+      "editor_id": "_M_QuestRiftGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02013EC5",
+      "editor_id": "_M_QuestWinterholdGatherInn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014439",
+      "editor_id": "_M_QuestFalkreathGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201443D",
+      "editor_id": "_M_QuestHaafingarGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014441",
+      "editor_id": "_M_QuestHjaalmarchGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014445",
+      "editor_id": "_M_QuestPaleGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014449",
+      "editor_id": "_M_QuestReachGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201444D",
+      "editor_id": "_M_QuestRiftGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014451",
+      "editor_id": "_M_QuestWinterholdGatherOreHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020149B7",
+      "editor_id": "_M_QuestFalkreathGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020149C9",
+      "editor_id": "_M_QuestHaafingarGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020149CD",
+      "editor_id": "_M_QuestHjaalmarchGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020149D1",
+      "editor_id": "_M_QuestPaleGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020149D5",
+      "editor_id": "_M_QuestReachGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020149D9",
+      "editor_id": "_M_QuestRiftGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020149DD",
+      "editor_id": "_M_QuestWinterholdGatherOreLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014F51",
+      "editor_id": "_M_QuestFalkreathGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014F55",
+      "editor_id": "_M_QuestHaafingarGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014F59",
+      "editor_id": "_M_QuestWinterholdGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014F5D",
+      "editor_id": "_M_QuestHjaalmarchGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014F61",
+      "editor_id": "_M_QuestPaleGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014F65",
+      "editor_id": "_M_QuestReachGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02014F69",
+      "editor_id": "_M_QuestRiftGatherOreMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020154DD",
+      "editor_id": "_M_QuestFalkreathGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020154E1",
+      "editor_id": "_M_QuestHaafingarGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020154E5",
+      "editor_id": "_M_QuestHjaalmarchGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020154E9",
+      "editor_id": "_M_QuestPaleGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020154ED",
+      "editor_id": "_M_QuestReachGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020154F1",
+      "editor_id": "_M_QuestRiftGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020154F5",
+      "editor_id": "_M_QuestWinterholdGatherOreVeryHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015A63",
+      "editor_id": "_M_QuestFalkreathGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015A6E",
+      "editor_id": "_M_QuestHaafingarGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015A72",
+      "editor_id": "_M_QuestHjaalmarchGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015A76",
+      "editor_id": "_M_QuestPaleGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015A7A",
+      "editor_id": "_M_QuestReachGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015A7E",
+      "editor_id": "_M_QuestRiftGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015A82",
+      "editor_id": "_M_QuestWinterholdGatherSoulGemHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015FF7",
+      "editor_id": "_M_QuestFalkreathGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015FFB",
+      "editor_id": "_M_QuestHaafingarGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02015FFF",
+      "editor_id": "_M_QuestHjaalmarchGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016003",
+      "editor_id": "_M_QuestPaleGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016007",
+      "editor_id": "_M_QuestReachGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201600B",
+      "editor_id": "_M_QuestRiftGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201600F",
+      "editor_id": "_M_QuestWinterholdGatherSoulGemLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016582",
+      "editor_id": "_M_QuestFalkreathGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016586",
+      "editor_id": "_M_QuestHaafingarGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201658A",
+      "editor_id": "_M_QuestHjaalmarchGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201658E",
+      "editor_id": "_M_QuestPaleGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016592",
+      "editor_id": "_M_QuestReachGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016596",
+      "editor_id": "_M_QuestRiftGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201659A",
+      "editor_id": "_M_QuestWinterholdGatherSoulGemMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016B00",
+      "editor_id": "_M_QuestFalkreathKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016B04",
+      "editor_id": "_M_QuestHaafingarKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016B08",
+      "editor_id": "_M_QuestHjaalmarchKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016B0C",
+      "editor_id": "_M_QuestPaleKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016B10",
+      "editor_id": "_M_QuestReachKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016B14",
+      "editor_id": "_M_QuestRiftKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02016B18",
+      "editor_id": "_M_QuestWinterholdKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201707E",
+      "editor_id": "_M_QuestFalkreathKillBandit"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017082",
+      "editor_id": "_M_QuestHaafingarKillBandit"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017086",
+      "editor_id": "_M_QuestHjaalmarchKillBandit"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201708A",
+      "editor_id": "_M_QuestPaleKillBandit"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201708E",
+      "editor_id": "_M_QuestReachKillForsworn"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017092",
+      "editor_id": "_M_QuestRiftKillBandit"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017096",
+      "editor_id": "_M_QuestWinterholdKillBandit"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201709A",
+      "editor_id": "_M_QuestPaleKillGiant"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201709E",
+      "editor_id": "_M_QuestFalkreathKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020170A2",
+      "editor_id": "_M_QuestHaafingarKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020170A6",
+      "editor_id": "_M_QuestHjaalmarchKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020170AA",
+      "editor_id": "_M_QuestPaleKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020170AE",
+      "editor_id": "_M_QuestReachKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020170B2",
+      "editor_id": "_M_QuestRiftKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020170B6",
+      "editor_id": "_M_QuestWinterholdKillDragon"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201761C",
+      "editor_id": "_M_QuestFalkreathRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017620",
+      "editor_id": "_M_QuestHaafingarRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017624",
+      "editor_id": "_M_QuestHjaalmarchRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017628",
+      "editor_id": "_M_QuestPaleRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201762C",
+      "editor_id": "_M_QuestReachRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017630",
+      "editor_id": "_M_QuestRiftRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017634",
+      "editor_id": "_M_QuestWinterholdRetrieveHideout"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017638",
+      "editor_id": "_M_QuestFalkreathRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201763C",
+      "editor_id": "_M_QuestHaafingarRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017640",
+      "editor_id": "_M_QuestHjaalmarchRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017644",
+      "editor_id": "_M_QuestPaleRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017648",
+      "editor_id": "_M_QuestReachRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201764C",
+      "editor_id": "_M_QuestRiftRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017650",
+      "editor_id": "_M_QuestWinterholdRetrieveRuins"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017654",
+      "editor_id": "_M_QuestFalkreathRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017658",
+      "editor_id": "_M_QuestHaafingarRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201765C",
+      "editor_id": "_M_QuestHjaalmarchRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017660",
+      "editor_id": "_M_QuestPaleRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017664",
+      "editor_id": "_M_QuestReachRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02017668",
+      "editor_id": "_M_QuestRiftRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201766C",
+      "editor_id": "_M_QuestWinterholdRetrieveWilderness"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0201C1D9",
+      "editor_id": "_M_MCM"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02032C3D",
+      "editor_id": "_M_QuestEastmarchTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02034737",
+      "editor_id": "_M_QuestWhiterunTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02035764",
+      "editor_id": "_M_QuestWhiterunTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02036CF8",
+      "editor_id": "_M_QuestFalkreathTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02036CFC",
+      "editor_id": "_M_QuestHaafingarTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02036D02",
+      "editor_id": "_M_QuestHjaalmarchTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02036D07",
+      "editor_id": "_M_QuestPaleTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02036D0C",
+      "editor_id": "_M_QuestReachTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02037273",
+      "editor_id": "_M_QuestRiftTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02037278",
+      "editor_id": "_M_QuestWhiterunTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203727D",
+      "editor_id": "_M_QuestWinterholdTrackThief"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020377E4",
+      "editor_id": "_M_QuestEastmarchTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020377E9",
+      "editor_id": "_M_QuestFalkreathTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020377EE",
+      "editor_id": "_M_QuestHaafingarTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020377F3",
+      "editor_id": "_M_QuestHjaalmarchTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020377F8",
+      "editor_id": "_M_QuestPaleTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020377FD",
+      "editor_id": "_M_QuestReachTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02037D64",
+      "editor_id": "_M_QuestRiftTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02037D69",
+      "editor_id": "_M_QuestWinterholdTrackFugitive"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020382D0",
+      "editor_id": "_M_QuestEastmarchTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020382D5",
+      "editor_id": "_M_QuestFalkreathTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020382DA",
+      "editor_id": "_M_QuestHaafingarTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020382DF",
+      "editor_id": "_M_QuestHjaalmarchTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020382E4",
+      "editor_id": "_M_QuestPaleTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020382E9",
+      "editor_id": "_M_QuestReachTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020382EB",
+      "editor_id": "_M_QuestRiftTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020382F0",
+      "editor_id": "_M_QuestWinterholdTrackVampire"
+    },
+    {
+      "type": "QUST",
+      "form_id": "02038DBC",
+      "editor_id": "_M_QuestEastmarchCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203A372",
+      "editor_id": "_M_QuestFalkreathCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203A37C",
+      "editor_id": "_M_QuestHaafingarCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203A386",
+      "editor_id": "_M_QuestHjaalmarchCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203A8F2",
+      "editor_id": "_M_QuestPaleCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203A8F3",
+      "editor_id": "_M_QuestReachCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203A8F4",
+      "editor_id": "_M_QuestRiftCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203AE58",
+      "editor_id": "_M_QuestWhiterunCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203AE59",
+      "editor_id": "_M_QuestWinterholdCourierPotionLow"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203C40F",
+      "editor_id": "_M_QuestEastmarchCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203C973",
+      "editor_id": "_M_QuestFalkreathCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203C974",
+      "editor_id": "_M_QuestHaafingarCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203C975",
+      "editor_id": "_M_QuestHjaalmarchCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203C976",
+      "editor_id": "_M_QuestPaleCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203C977",
+      "editor_id": "_M_QuestReachCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203CEDB",
+      "editor_id": "_M_QuestRiftCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203CEDC",
+      "editor_id": "_M_QuestWhiterunCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203CEDD",
+      "editor_id": "_M_QuestWinterholdCourierPotionMed"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203CEDE",
+      "editor_id": "_M_QuestEastmarchCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203CEDF",
+      "editor_id": "_M_QuestFalkreathCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203CEE0",
+      "editor_id": "_M_QuestHaafingarCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203CEE1",
+      "editor_id": "_M_QuestHjaalmarchCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203CEE2",
+      "editor_id": "_M_QuestPaleCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203D448",
+      "editor_id": "_M_QuestReachCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203D44A",
+      "editor_id": "_M_QuestRiftCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203D44B",
+      "editor_id": "_M_QuestWhiterunCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "0203D44C",
+      "editor_id": "_M_QuestWinterholdCourierPotionHigh"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020058E4",
+      "editor_id": "_M_QuestWhiterunKillAnimal"
+    },
+    {
+      "type": "QUST",
+      "form_id": "020063AB",
+      "editor_id": "_M_QuestWhiterunGatherIngrLow"
+    }
+  ],
+  "baseline_unchanged_files": 55,
+  "changed_from_baseline": [
+    "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+    "Code/client/Services/Generic/QuestService.cpp",
+    "Code/client/ModCompat/MissivesLetterCompat.h"
+  ],
+  "new_engine_hooks": 0,
+  "new_engine_layouts": 0,
+  "game_tested": false
+}

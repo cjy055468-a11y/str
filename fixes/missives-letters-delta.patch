@@ -1,0 +1,93 @@
+diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+--- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
++++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
+@@ -1,4 +1,5 @@
+ #include <TiltedOnlinePCH.h>
++#include <ModCompat/MissivesLetterCompat.h>
+ #include <Services/DroppedItemService.h>
+ 
+ #include <Games/References.h>
+@@ -931,7 +932,12 @@
+         {
+             Actor* pActor = Cast<Actor>(this);
+             if (pActor && pActor->GetExtension()->IsRemotePlayer())
+-                pPlayer->AddOrRemoveItem(arEntry);
++            {
++                if (MissivesLetterCompat::IsPrivateLetter(pObject))
++                    spdlog::info("STR Missives private letter copy blocked: base {:X}, remote player {:X}", objectId, formID);
++                else
++                    pPlayer->AddOrRemoveItem(arEntry);
++            }
+         }
+     }
+ 
+diff --git a/Code/client/Services/Generic/QuestService.cpp b/Code/client/Services/Generic/QuestService.cpp
+--- a/Code/client/Services/Generic/QuestService.cpp
++++ b/Code/client/Services/Generic/QuestService.cpp
+@@ -1,4 +1,5 @@
+ #include <TiltedOnlinePCH.h>
++#include <ModCompat/MissivesLetterCompat.h>
+ 
+ #include <Events/ConnectedEvent.h>
+ #include <Events/DisconnectedEvent.h>
+@@ -513,6 +514,14 @@
+         return;
+     }
+ 
++    // Reject remote Missives stages before holding stages or running fragments.
++    // Other players' locally generated aliases do not describe our quest.
++    if (MissivesLetterCompat::IsPrivateForm(pQuest))
++    {
++        spdlog::info("STR Missives private quest update blocked: quest {:X}, stage {}, status {}", formId, aUpdate.Stage, aUpdate.Status);
++        return;
++    }
++
+     if (aUpdate.Status == NotifyQuestUpdate::StageUpdate && pQuest->IsStageReached(aUpdate.Stage))
+     {
+         spdlog::info("Remote quest {:X} already reached stage {}, current stage: {}", formId, aUpdate.Stage, pQuest->currentStage);
+@@ -620,7 +629,8 @@
+     // Quests with no quest stages are never synced. Most TESQues::Type:: quests should
+     // be synced, including Type::None and Type::Miscellaneous, but there are a few
+     // known exceptions that should be excluded that are in the table.
+-    return    apQuest->stages.Empty() 
++    return    MissivesLetterCompat::IsPrivateForm(apQuest)
++           || apQuest->stages.Empty()
+            || std::find(kNonSyncableQuestIds.begin(), kNonSyncableQuestIds.end(), apQuest->formID) != kNonSyncableQuestIds.end();
+ }
+ 
+diff --git a/Code/client/ModCompat/MissivesLetterCompat.h b/Code/client/ModCompat/MissivesLetterCompat.h
+new file mode 100644
+--- /dev/null
++++ b/Code/client/ModCompat/MissivesLetterCompat.h
+@@ -0,0 +1,31 @@
++#pragma once
++
++#include <Games/TES.h>
++#include <Forms/TESForm.h>
++
++// Missives quests own local aliases and generated book text. Generic quest
++// sharing cannot reproduce that context on another player's client.
++namespace MissivesLetterCompat
++{
++inline bool IsPrivateForm(const TESForm* apForm) noexcept
++{
++    if (!apForm)
++        return false;
++
++    const ModManager* pManager = ModManager::Get();
++    const Mod* pMod = pManager ? pManager->GetByName("Missives.esp") : nullptr;
++    if (!pMod || !pMod->IsLoaded())
++        return false;
++
++    const uint32_t cMask = pMod->IsLite() ? 0xFFFu : 0xFFFFFFu;
++    return pMod->GetFormId(apForm->formID & cMask) == apForm->formID;
++}
++
++inline bool IsPrivateLetter(const TESForm* apForm) noexcept
++{
++    // Courier delivery letters are MISC records, not readable BOOK records.
++    // 0xBA9B is _M_MiscLetter in the supplied Missives.esp.
++    return apForm && IsPrivateForm(apForm)
++        && (apForm->formType == FormType::Book || (apForm->formID & 0xFFFFFFu) == 0xBA9Bu);
++}
++}
