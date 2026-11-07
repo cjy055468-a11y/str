@@ -1,6 +1,6 @@
 {
+  "job_status": "cancelled",
   "checked_candidate": false,
-  "source_revision": "f4a523e877df6d3c9fac8be238e24beca642a64c",
-  "run_id": "42416853248",
-  "job_status": "cancelled"
+  "run_id": "42416931761",
+  "source_revision": "54b47dfaaa9eec1a5aef55ea2825de667d79fc0c"
 }
