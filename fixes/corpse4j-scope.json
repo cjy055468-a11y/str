@@ -1,0 +1,10 @@
+[
+  "Code/client/Games/ActorExtension.h",
+  "Code/client/Games/ActorExtension.cpp",
+  "Code/client/Games/Skyrim/Actor.cpp",
+  "Code/client/Services/Generic/CharacterService.cpp",
+  "Code/client/Services/Generic/ActorValueService.cpp",
+  "Code/client/Systems/CorpseLifeState.h",
+  "Code/tests/corpse_speech_window.cpp",
+  "Code/common/BuildInfo.h.in"
+]
