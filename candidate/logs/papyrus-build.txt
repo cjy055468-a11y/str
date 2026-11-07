@@ -23,4 +23,3 @@ Compiling _M_QuestTrackThiefScript.psc
 Compiling _M_QuestTrackVampire.psc
 _M_AliasPlayerGather.psc (18, 51:53): Warning W4001: Unnecessary cast from 'Form' to 'Form'.
 _M_AliasPlayerGather.psc (33, 51:53): Warning W4001: Unnecessary cast from 'Form' to 'Form'.
-

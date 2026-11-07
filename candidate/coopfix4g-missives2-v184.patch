@@ -163,10 +163,17 @@ index d70627f9..2841162a 100644
 +        std::atomic_ref<uint32_t>(onlineFlags).fetch_and(~kPlayer, std::memory_order_relaxed);
  }
 diff --git a/Code/client/Games/ActorExtension.h b/Code/client/Games/ActorExtension.h
-index 83f38a6c..970d31ee 100644
+index 83f38a6c..f326a8fc 100644
 --- a/Code/client/Games/ActorExtension.h
 +++ b/Code/client/Games/ActorExtension.h
-@@ -8,6 +8,9 @@ struct ActorExtension
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <cstdint>
+ #include <Structs/ActionEvent.h>
+ 
+ struct ActorExtension
+@@ -8,6 +9,9 @@ struct ActorExtension
      {
          kRemote = 1 << 0,
          kPlayer = 1 << 1,
@@ -176,7 +183,7 @@ index 83f38a6c..970d31ee 100644
      };
  
      enum class ReconciliationStage
-@@ -24,6 +27,12 @@ struct ActorExtension
+@@ -24,15 +28,29 @@ struct ActorExtension
      bool IsLocalPlayer() const noexcept;
      void SetRemote(bool aSet) noexcept;
      void SetPlayer(bool aSet) noexcept;
@@ -189,7 +196,16 @@ index 83f38a6c..970d31ee 100644
  
      ActionEvent LatestAnimation{};
      size_t GraphDescriptorHash = 0;
-@@ -34,5 +43,7 @@ struct ActorExtension
+     uint64_t GraphDescriptorProjectKey = 0;
++    uint64_t AnimationDrivenVariableDescriptorHash = 0;
++    uint64_t AnimationDrivenVariableProjectKey = 0;
++    uint32_t AnimationDrivenVariableIndex = ~uint32_t{0};
++    bool AnimationDrivenVariableResolved = false;
++    bool CorpseAnimationDrivenReset = false;
++    bool CorpseAnimationDrivenResetFailureLogged = false;
+ 
+     // TODO: atomic? bool instead? maybe simplify to `IsReenabling()` ?
+     // Protects discovery while rebuilding a leveled NPC.
      ReconciliationStage Reconciliation{ReconciliationStage::None};
  
  private:
@@ -233,10 +249,15 @@ index 99cac10d..d4907375 100644
      const bool isPlayerDialogue = isNpc && MenuTopicManager::IsPlayerDialogueSpeaker(pActor);
      const bool shouldSyncSubtitle = apSubtitleText && isNpc && (pActor->GetExtension()->IsLocal() || isPlayerDialogue);
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
-index 9e1933e8..9f2c895f 100644
+index 9e1933e8..8aeb94d3 100644
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
-@@ -24,6 +24,8 @@
+@@ -1,3 +1,4 @@
++#include <Systems/CorpseLifeState.h>
+ #include <Games/References.h>
+ #include <Games/Skyrim/EquipManager.h>
+ #include <AI/AIProcess.h>
+@@ -24,6 +25,8 @@
  #include <Games/TES.h>
  #include <World.h>
  #include <Services/PapyrusService.h>
@@ -245,7 +266,7 @@ index 9e1933e8..9f2c895f 100644
  
  #include <Forms/ActorValueInfo.h>
  #include <Forms/TESRace.h>
-@@ -178,6 +180,15 @@ uint16_t Actor::GetLevel() const noexcept
+@@ -178,6 +181,15 @@ uint16_t Actor::GetLevel() const noexcept
      return TiltedPhoques::ThisCall(s_getLevel, this);
  }
  
@@ -261,7 +282,7 @@ index 9e1933e8..9f2c895f 100644
  void Actor::ForcePosition(const NiPoint3& acPosition) noexcept
  {
      ScopedReferencesOverride recursionGuard;
-@@ -212,24 +223,32 @@ void Actor::QueueUpdate() noexcept
+@@ -212,24 +224,32 @@ void Actor::QueueUpdate() noexcept
      pSetting->data = originalValue;
  }
  
@@ -302,7 +323,7 @@ index 9e1933e8..9f2c895f 100644
  
      if (pCell && !(pCell->cellFlags & 1))
          pCell = nullptr;
-@@ -244,6 +263,15 @@ GamePtr<Actor> Actor::Create(TESNPC* apBaseForm) noexcept
+@@ -244,6 +264,15 @@ GamePtr<Actor> Actor::Create(TESNPC* apBaseForm) noexcept
  
      pActor->flags &= 0xFFDFFFFF;
  
@@ -318,7 +339,7 @@ index 9e1933e8..9f2c895f 100644
      return pActor;
  }
  
-@@ -910,7 +938,15 @@ char TP_MAKE_THISCALL(HookSetPosition, Actor, NiPoint3& aPosition)
+@@ -910,7 +939,15 @@ char TP_MAKE_THISCALL(HookSetPosition, Actor, NiPoint3& aPosition)
      const auto bIsRemote = pExtension && pExtension->IsRemote();
  
      if (bIsRemote && !ScopedReferencesOverride::IsOverriden())
@@ -326,7 +347,7 @@ index 9e1933e8..9f2c895f 100644
 +        // Dead NPCs use native ragdoll/reference positioning. Blocking that
 +        // update leaves their activation position behind the visible body.
 +        // Remote players retain their existing custom death/respawn handling.
-+        if (apThis->formType == Actor::Type && !pExtension->IsPlayer() && apThis->VirtIsDead(false))
++        if (apThis->formType == Actor::Type && !pExtension->IsPlayer() && (apThis->VirtIsDead(false) || (pExtension->CanRunNativeCorpseProcess() && IsNativeDeathTransition(apThis->actorState.flags1))))
 +            return TiltedPhoques::ThisCall(RealSetPosition, apThis, aPosition);
 +
          return 1;
@@ -334,7 +355,7 @@ index 9e1933e8..9f2c895f 100644
  
      // Don't interfere with non actor references, or the player, or if we are calling our self
      if (apThis->formType != Actor::Type || apThis == PlayerCharacter::Get() || ScopedReferencesOverride::IsOverriden())
-@@ -1081,6 +1117,9 @@ void TP_MAKE_THISCALL(HookAddInventoryItem, Actor, TESBoundObject* apItem, Extra
+@@ -1081,6 +1118,9 @@ void TP_MAKE_THISCALL(HookAddInventoryItem, Actor, TESBoundObject* apItem, Extra
  
  void* TP_MAKE_THISCALL(HookPickUpObject, Actor, TESObjectREFR* apObject, int32_t aCount, bool aUnk1, float aUnk2)
  {
@@ -344,7 +365,7 @@ index 9e1933e8..9f2c895f 100644
      if (!ScopedInventoryOverride::IsOverriden())
      {
          auto& modSystem = World::Get().GetModSystem();
-@@ -1109,6 +1148,15 @@ void Actor::PickUpObject(TESObjectREFR* apObject, int32_t aCount, bool aUnk1, fl
+@@ -1109,6 +1149,15 @@ void Actor::PickUpObject(TESObjectREFR* apObject, int32_t aCount, bool aUnk1, fl
  
  void* TP_MAKE_THISCALL(HookDropObject, Actor, void* apResult, TESBoundObject* apObject, ExtraDataList* apExtraData, int32_t aCount, NiPoint3* apLocation, NiPoint3* apRotation)
  {
@@ -360,7 +381,7 @@ index 9e1933e8..9f2c895f 100644
      auto& modSystem = World::Get().GetModSystem();
  
      Inventory::Entry item{};
-@@ -1118,11 +1166,29 @@ void* TP_MAKE_THISCALL(HookDropObject, Actor, void* apResult, TESBoundObject* ap
+@@ -1118,11 +1167,29 @@ void* TP_MAKE_THISCALL(HookDropObject, Actor, void* apResult, TESBoundObject* ap
      if (apExtraData)
          apThis->GetItemFromExtraData(item, apExtraData);
  
@@ -392,7 +413,7 @@ index 9e1933e8..9f2c895f 100644
  }
  
  void Actor::DropOrPickUpObject(const Inventory::Entry& arEntry, NiPoint3* apLocation, NiPoint3* apRotation) noexcept
-@@ -1214,6 +1280,11 @@ static TSpeakSoundFunction* RealSpeakSoundFunction = nullptr;
+@@ -1214,6 +1281,11 @@ static TSpeakSoundFunction* RealSpeakSoundFunction = nullptr;
  
  float TP_MAKE_THISCALL(HookSpeakSoundFunction, Actor, const char* apName, uint32_t* a3, uint32_t a4, uint32_t a5, uint32_t a6, uint64_t a7, uint64_t a8, uint64_t a9, bool a10, uint64_t a11, bool a12, bool a13, bool a14)
  {
@@ -404,14 +425,14 @@ index 9e1933e8..9f2c895f 100644
      spdlog::debug("a3: {:X}, a4: {}, a5: {}, a6: {}, a7: {}, a8: {:X}, a9: {:X}, a10: {}, a11: {:X}, a12: {}, a13: {}, a14: {}", (uint64_t)a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14);
  
      // The player having the conversation may not own this NPC. Ambient
-@@ -1250,6 +1321,12 @@ char TP_MAKE_THISCALL(HookActorProcess, Actor, float aDeltaTime)
+@@ -1250,6 +1322,12 @@ char TP_MAKE_THISCALL(HookActorProcess, Actor, float aDeltaTime)
      // Suppress local movement for remote actors, but preserve controller timing.
      if (apThis->GetExtension()->IsRemote())
      {
-+        // Main-thread state validation enables only completed, confirmed NPC
++        // Main-thread state validation enables only dying/dead, confirmed NPC
 +        // deaths with attached 3D. Do not query ragdoll/graph/UI on this worker.
 +        const auto* pExtension = apThis->GetExtension();
-+        if (pExtension->CanRunNativeCorpseProcess() && !pExtension->IsPlayer() && apThis->VirtIsDead(false))
++        if (pExtension->CanRunNativeCorpseProcess() && !pExtension->IsPlayer() && IsNativeDeathTransition(apThis->actorState.flags1))
 +            return TiltedPhoques::ThisCall(RealActorProcess, apThis, aDeltaTime);
 +
          if (apThis->currentProcess)
@@ -455,6 +476,18 @@ index 4c93c674..a9be9e7c 100644
      void SetWeaponDrawnEx(bool aDraw) noexcept;
      void SetPackage(TESPackage* apPackage) noexcept;
      void SetActorInventory(const Inventory& aInventory) noexcept;
+diff --git a/Code/client/Games/Skyrim/ExtraData/ExtraData.h b/Code/client/Games/Skyrim/ExtraData/ExtraData.h
+index 7adb60dc..c9e6e264 100644
+--- a/Code/client/Games/Skyrim/ExtraData/ExtraData.h
++++ b/Code/client/Games/Skyrim/ExtraData/ExtraData.h
+@@ -17,6 +17,7 @@ enum class ExtraDataType : uint32_t
+     Charge = 0x28,
+     Teleport = 0x2B,
+     LeveledCreature = 0x2D,
++    LeveledItem = 0x2E,
+     CannotWear = 0x3D,
+     Poison = 0x3E,
+     Faction = 0x5B,
 diff --git a/Code/client/Games/Skyrim/Forms/TESForm.h b/Code/client/Games/Skyrim/Forms/TESForm.h
 index 331dcc0f..b14e9335 100644
 --- a/Code/client/Games/Skyrim/Forms/TESForm.h
@@ -550,17 +583,18 @@ index efe4f697..d80f5d88 100644
  
      Inventory::Entry item{};
 diff --git a/Code/client/Games/Skyrim/TESObjectREFR.cpp b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-index e5852696..78d0478e 100644
+index e5852696..a9423bb3 100644
 --- a/Code/client/Games/Skyrim/TESObjectREFR.cpp
 +++ b/Code/client/Games/Skyrim/TESObjectREFR.cpp
-@@ -1,4 +1,6 @@
+@@ -1,4 +1,7 @@
  #include <TiltedOnlinePCH.h>
 +#include <Services/DroppedItemService.h>
 +#include <ModCompat/NetworkActorSavePolicy.h>
++#include <Structs/NpcInventorySnapshot.h>
  
  #include <Games/References.h>
  #include <Games/Overrides.h>
-@@ -26,6 +28,7 @@
+@@ -26,6 +29,7 @@
  #include <DefaultObjectManager.h>
  #include <BSAnimationGraphManager.h>
  #include <Havok/BShkbAnimationGraph.h>
@@ -568,7 +602,117 @@ index e5852696..78d0478e 100644
  #include <Havok/hkbBehaviorGraph.h>
  #include <Havok/hkbVariableValueSet.h>
  #include <Havok/hkbStateMachine.h>
-@@ -591,6 +594,7 @@ void TESObjectREFR::GetItemFromExtraData(Inventory::Entry& arEntry, ExtraDataLis
+@@ -35,6 +39,7 @@
+ 
+ #include <Structs/AnimationGraphDescriptorManager.h>
+ #include <Structs/AnimationVariables.h>
++#include <Systems/CorpseAnimationSync.h>
+ 
+ extern const AnimationGraphDescriptor* BehaviorVarPatch(BSAnimationGraphManager* pManager, Actor* pActor);
+ 
+@@ -70,6 +75,16 @@ void UpdateGraphDescriptorHash(Actor* apActor, BSAnimationGraphManager* apManage
+     const auto cPreviousHash = pExtension->GraphDescriptorHash;
+     pExtension->GraphDescriptorHash = apManager->GetDescriptorKey(aForceIndex);
+     pExtension->GraphDescriptorProjectKey = cProjectKey;
++    if (pExtension->AnimationDrivenVariableDescriptorHash != pExtension->GraphDescriptorHash ||
++        pExtension->AnimationDrivenVariableProjectKey != pExtension->GraphDescriptorProjectKey)
++    {
++        pExtension->AnimationDrivenVariableDescriptorHash = 0;
++        pExtension->AnimationDrivenVariableProjectKey = 0;
++        pExtension->AnimationDrivenVariableIndex = ~uint32_t{0};
++        pExtension->AnimationDrivenVariableResolved = false;
++        pExtension->CorpseAnimationDrivenReset = false;
++        pExtension->CorpseAnimationDrivenResetFailureLogged = false;
++    }
+ 
+     if (cPreviousHash != 0)
+         spdlog::info("Animation graph project of actor {:X} changed, graph descriptor {} -> {}", apActor->formID, cPreviousHash, pExtension->GraphDescriptorHash);
+@@ -268,7 +283,7 @@ void TESObjectREFR::SaveAnimationVariables(AnimationVariables& aVariables) const
+     }
+ }
+ 
+-void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables) const noexcept
++void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables, const bool aPreserveCorpsePhysics) const noexcept
+ {
+     const auto spManager = animationGraphHolder.GetAnimationGraphManagerPtr();
+     if (spManager)
+@@ -302,18 +317,75 @@ void TESObjectREFR::LoadAnimationVariables(const AnimationVariables& aVariables)
+             if (!pDescriptor)
+                 return;
+ 
++            // Resolve this once per graph project. DumpAnimationVariables reads the Havok name table,
++            // so doing it for every corpse movement snapshot would be needlessly expensive.
++            const bool cAnimationDrivenCacheMatches =
++                pExtendedActor->AnimationDrivenVariableDescriptorHash == pExtendedActor->GraphDescriptorHash &&
++                pExtendedActor->AnimationDrivenVariableProjectKey == pExtendedActor->GraphDescriptorProjectKey;
++            if (aPreserveCorpsePhysics && (!pExtendedActor->AnimationDrivenVariableResolved || !cAnimationDrivenCacheMatches) && pGraph->hkxDB)
++            {
++                pExtendedActor->AnimationDrivenVariableIndex = ~uint32_t{0};
++                const auto cVariableNames = pManager->DumpAnimationVariables(false);
++                for (const auto& [cIndex, cName] : cVariableNames)
++                {
++                    if (!ShouldApplyCorpseAnimationVariable(true, cName))
++                    {
++                        pExtendedActor->AnimationDrivenVariableIndex = cIndex;
++                        break;
++                    }
++                }
++                pExtendedActor->AnimationDrivenVariableDescriptorHash = pExtendedActor->GraphDescriptorHash;
++                pExtendedActor->AnimationDrivenVariableProjectKey = pExtendedActor->GraphDescriptorProjectKey;
++                pExtendedActor->AnimationDrivenVariableResolved = true;
++                spdlog::info("STR corpse animation sync guard: actor {:X}, graph {}, animation-driven index {}, found {}",
++                    pActor->formID, pExtendedActor->GraphDescriptorHash, pExtendedActor->AnimationDrivenVariableIndex,
++                    pExtendedActor->AnimationDrivenVariableIndex != ~uint32_t{0});
++            }
++
+             const auto* pBehaviorGraph = pGraph->behaviorGraph;
+             const auto* pVariableSet = pBehaviorGraph->animationVariables;
+ 
+             if (!pVariableSet)
+                 return;
+ 
++            if (aPreserveCorpsePhysics && pExtendedActor->AnimationDrivenVariableIndex != ~uint32_t{0} &&
++                ShouldResetCorpseAnimationDriven(aPreserveCorpsePhysics, pExtendedActor->CorpseAnimationDrivenReset))
++            {
++                BSFixedString cAnimationDriven("bAnimationDriven");
++                bool cWasAnimationDriven = false;
++                const bool cVariableFound = pActor->animationGraphHolder.GetVariableBool(&cAnimationDriven, &cWasAnimationDriven);
++                const bool cSetResult = cVariableFound && (!cWasAnimationDriven || pActor->animationGraphHolder.SetVariableBool(&cAnimationDriven, false));
++                if (cSetResult)
++                {
++                    pExtendedActor->CorpseAnimationDrivenReset = true;
++                    pExtendedActor->CorpseAnimationDrivenResetFailureLogged = false;
++                    spdlog::info("STR corpse animation sync reset: actor {:X}, variable found {}, before {}, result {}",
++                        pActor->formID, cVariableFound, cWasAnimationDriven, cSetResult);
++                }
++                else if (!pExtendedActor->CorpseAnimationDrivenResetFailureLogged)
++                {
++                    pExtendedActor->CorpseAnimationDrivenResetFailureLogged = true;
++                    spdlog::warn("STR corpse animation sync reset pending: actor {:X}, variable found {}, before {}",
++                        pActor->formID, cVariableFound, cWasAnimationDriven);
++                }
++            }
++            else if (!aPreserveCorpsePhysics)
++            {
++                pExtendedActor->CorpseAnimationDrivenReset = false;
++                pExtendedActor->CorpseAnimationDrivenResetFailureLogged = false;
++            }
++
+             // Never write into a variable whose word is an index: a wrong descriptor would turn the synced value into an
+             // out-of-bounds index that Havok reads later, when it copies the variable to a bound node.
+             for (size_t i = 0; i < pDescriptor->BooleanLookUpTable.size(); ++i)
+             {
+                 const auto idx = pDescriptor->BooleanLookUpTable[i];
+ 
++                // Once this remote NPC is dead, don't let an animation snapshot put Havok back
++                // into animation-driven mode during local ragdoll playback.
++                if (aPreserveCorpsePhysics && idx == pExtendedActor->AnimationDrivenVariableIndex)
++                    continue;
++
+                 if (pVariableSet->size > idx && pBehaviorGraph->IsWordVariable(idx))
+                 {
+                     pVariableSet->data[idx] = aVariables.Booleans.size() > i ? aVariables.Booleans[i] : false;
+@@ -591,6 +663,7 @@ void TESObjectREFR::GetItemFromExtraData(Inventory::Entry& arEntry, ExtraDataLis
      arEntry.ExtraWornLeft = apExtraDataList->Contains(ExtraDataType::WornLeft);
  
      arEntry.IsQuestItem = apExtraDataList->HasQuestObjectAlias();
@@ -576,7 +720,44 @@ index e5852696..78d0478e 100644
  }
  
  ExtraDataList* TESObjectREFR::GetExtraDataFromItem(const Inventory::Entry& arEntry) noexcept
-@@ -883,6 +887,11 @@ void TESObjectREFR::SetInventoryRetainingQuestItems(Inventory& aCurrentInventory
+@@ -718,6 +791,9 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
+     }
+ 
+     Inventory extraInventory{};
++    Vector<GameId> resolvedNpcBases;
++    auto* pActor = Cast<Actor>(this);
++    const bool cNpc = pActor && this != PlayerCharacter::Get() && !pActor->GetExtension()->IsPlayer();
+ 
+     auto pExtraContChangesEntries = GetContainerChanges()->entries;
+     for (auto pGameEntry : *pExtraContChangesEntries)
+@@ -743,6 +819,11 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
+ 
+             GetItemFromExtraData(innerEntry, pExtraDataList);
+ 
++            // Like InventoryEntryData::IsLeveled in CommonLibSSE, this marks
++            // a replacement count, not a delta to add to the NPC template.
++            if (cNpc && pExtraDataList->Contains(ExtraDataType::LeveledItem))
++                resolvedNpcBases.push_back(entry.BaseId);
++
+             entry.Count -= innerEntry.Count;
+ 
+             extraInventory.Entries.push_back(std::move(innerEntry));
+@@ -752,6 +833,14 @@ Inventory TESObjectREFR::GetInventory(std::function<bool(TESForm&)> aFilter) con
+             extraInventory.Entries.push_back(std::move(entry));
+     }
+ 
++    if (!resolvedNpcBases.empty())
++    {
++        auto snapshot = BuildNpcInventorySnapshot(inventory, extraInventory, resolvedNpcBases);
++        spdlog::debug("STR NPC resolved inventory: actor {:X}, replaced bases {}, snapshot entries {}",
++            formID, resolvedNpcBases.size(), snapshot.Entries.size());
++        return snapshot;
++    }
++
+     spdlog::debug("ExtraInventory count: {}", extraInventory.Entries.size());
+ 
+     Inventory minimizedExtraInventory{};
+@@ -883,6 +972,11 @@ void TESObjectREFR::SetInventoryRetainingQuestItems(Inventory& aCurrentInventory
  
  void TESObjectREFR::AddOrRemoveItem(const Inventory::Entry& arEntry, bool aIsSettingInventory) noexcept
  {
@@ -588,7 +769,7 @@ index e5852696..78d0478e 100644
      ModSystem& modSystem = World::Get().GetModSystem();
  
      uint32_t objectId = modSystem.GetGameId(arEntry.BaseId);
-@@ -930,7 +939,12 @@ void TESObjectREFR::AddOrRemoveItem(const Inventory::Entry& arEntry, bool aIsSet
+@@ -930,7 +1024,12 @@ void TESObjectREFR::AddOrRemoveItem(const Inventory::Entry& arEntry, bool aIsSet
          {
              Actor* pActor = Cast<Actor>(this);
              if (pActor && pActor->GetExtension()->IsRemotePlayer())
@@ -602,7 +783,7 @@ index e5852696..78d0478e 100644
          }
      }
  
-@@ -1032,6 +1046,26 @@ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, u
+@@ -1032,6 +1131,26 @@ bool TP_MAKE_THISCALL(HookActivate, TESObjectREFR, TESObjectREFR* apActivator, u
  {
      Actor* pActivator = Cast<Actor>(apActivator);
  
@@ -629,7 +810,7 @@ index e5852696..78d0478e 100644
      // Exclude books from activation since only reading them removes them from the cell
      // Note: Books are now unsynced 
      if (pActivator && apThis->baseForm->formType != FormType::Book)
-@@ -1146,6 +1180,33 @@ void TP_MAKE_THISCALL(HookLockChange, TESObjectREFR)
+@@ -1146,6 +1265,33 @@ void TP_MAKE_THISCALL(HookLockChange, TESObjectREFR)
          World::Get().GetRunner().Trigger(LockChangeEvent(apThis->formID, false, 0));
  }
  
@@ -663,7 +844,7 @@ index e5852696..78d0478e 100644
  static TiltedPhoques::Initializer s_objectReferencesHooks(
      []()
      {
-@@ -1159,6 +1220,11 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
+@@ -1159,6 +1305,11 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
          POINTER_SKYRIMSE(TRemoveInventoryItem, s_removeInventoryItem, 19689);
          POINTER_SKYRIMSE(TPlayAnimationAndWait, s_playAnimationAndWait, 56206);
          POINTER_SKYRIMSE(TPlayAnimation, s_playAnimation, 56205);
@@ -675,7 +856,7 @@ index e5852696..78d0478e 100644
  
          RealLockChange = s_lockChange.Get();
          // RealSetLeveledCreature = s_SetLeveledCreature.Get();
-@@ -1181,4 +1247,7 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
+@@ -1181,4 +1332,7 @@ static TiltedPhoques::Initializer s_objectReferencesHooks(
          TP_HOOK(&RealRemoveInventoryItem, HookRemoveInventoryItem);
          TP_HOOK(&RealPlayAnimationAndWait, HookPlayAnimationAndWait);
          TP_HOOK(&RealPlayAnimation, HookPlayAnimation);
@@ -683,6 +864,19 @@ index e5852696..78d0478e 100644
 +        spdlog::info("STR drop save filter installed: tracked references only; runtime flags preserved");
 +        spdlog::info("STR network NPC save filter installed: marked temporary replicas only; runtime flags preserved");
      });
+diff --git a/Code/client/Games/Skyrim/TESObjectREFR.h b/Code/client/Games/Skyrim/TESObjectREFR.h
+index 207d5140..f64d6050 100644
+--- a/Code/client/Games/Skyrim/TESObjectREFR.h
++++ b/Code/client/Games/Skyrim/TESObjectREFR.h
+@@ -179,7 +179,7 @@ struct TESObjectREFR : TESForm
+     TESObjectCELL* GetParentCellEx() const noexcept;
+ 
+     void SaveAnimationVariables(AnimationVariables& aWriter) const noexcept;
+-    void LoadAnimationVariables(const AnimationVariables& aReader) const noexcept;
++    void LoadAnimationVariables(const AnimationVariables& aReader, bool aPreserveCorpsePhysics = false) const noexcept;
+     uint32_t GetAnimationVariableInt(BSFixedString* apVariableName) noexcept;
+ 
+     void RemoveAllItems() noexcept;
 diff --git a/Code/client/ModCompat/MissivesBridge.cpp b/Code/client/ModCompat/MissivesBridge.cpp
 new file mode 100644
 index 00000000..e80edc7a
@@ -5040,7 +5234,7 @@ index b3f309a7..765a6783 100644
      {
          spdlog::info("Applying death state {} to remote actor {:X}, server id: {:X}", acMessage.IsDead, pActor->formID, acMessage.Id);
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 7d3ac21a..9ae4da82 100644
+index 7d3ac21a..9a4c01ad 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
 @@ -4,11 +4,14 @@
@@ -5463,7 +5657,7 @@ index 7d3ac21a..9ae4da82 100644
      pActor->GetExtension()->SetRemote(true);
      pActor->rotation.x = acMessage.Rotation.x;
      pActor->rotation.z = acMessage.Rotation.y;
-@@ -1894,6 +2081,34 @@ void CharacterService::RunRemoteUpdates() noexcept
+@@ -1894,6 +2081,35 @@ void CharacterService::RunRemoteUpdates() noexcept
              pActor = Cast<Actor>(pForm);
          }
  
@@ -5476,7 +5670,8 @@ index 7d3ac21a..9ae4da82 100644
 +            const bool cCompletedDeath = IsCompletedCorpseLifeState(pActor->actorState.flags1);
 +            const bool cHas3D = pActor->GetNiNode() != nullptr;
 +            const bool cAttached = pActor->parentCell && pActor->parentCell->IsAttached();
-+            const bool cAllowNative = pExtension->IsRemote() && cConfirmedDeath && cNativeDead && cCompletedDeath &&
++            const bool cDeathTransition = IsNativeDeathTransition(pActor->actorState.flags1);
++            const bool cAllowNative = pExtension->IsRemote() && !pExtension->IsPlayer() && cConfirmedDeath && cDeathTransition &&
 +                cHas3D && cAttached && pActor->currentProcess && pActor->unk10 != 0xFFFF;
 +            const bool cWasAllowed = pExtension->CanRunNativeCorpseProcess();
 +            pExtension->SetNativeCorpseProcess(cAllowNative);
@@ -5498,7 +5693,7 @@ index 7d3ac21a..9ae4da82 100644
          InterpolationSystem::Update(pActor, interpolationComponent, cNow);
      }
  
-@@ -1912,7 +2127,8 @@ void CharacterService::RunRemoteUpdates() noexcept
+@@ -1912,7 +2128,8 @@ void CharacterService::RunRemoteUpdates() noexcept
          // Actions run on the clock the interpolation pass above just advanced, so the body and its animations stay in step
          const auto cTick = InterpolationSystem::GetPlaybackTick(animatedView.get<InterpolationComponent>(entity));
  
@@ -5508,6 +5703,17 @@ index 7d3ac21a..9ae4da82 100644
      }
  
      auto facegenView = m_world.view<FormIdComponent, FaceGenComponent>();
+@@ -1949,7 +2166,9 @@ void CharacterService::RunRemoteUpdates() noexcept
+ 
+         if (!waitingFor3D.SpawnRequest.ActionsToReplay.Actions.empty())
+         {
+-            pActor->LoadAnimationVariables(waitingFor3D.SpawnRequest.ActionsToReplay.Actions[0].Variables);
++            const auto* pExtension = pActor->GetExtension();
++            const bool cPreserveCorpsePhysics = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && waitingFor3D.SpawnRequest.IsDead;
++            pActor->LoadAnimationVariables(waitingFor3D.SpawnRequest.ActionsToReplay.Actions[0].Variables, cPreserveCorpsePhysics);
+         }
+ 
+         m_weaponDrawUpdates[pActor->formID] = {waitingFor3D.SpawnRequest.IsWeaponDrawn};
 diff --git a/Code/client/Services/Generic/DroppedItemService.cpp b/Code/client/Services/Generic/DroppedItemService.cpp
 new file mode 100644
 index 00000000..e2b71300
@@ -6500,7 +6706,7 @@ index 00000000..62002783
 +    }
 +}
 diff --git a/Code/client/Services/Generic/InventoryService.cpp b/Code/client/Services/Generic/InventoryService.cpp
-index 8d9f2c78..8a5effe4 100644
+index 8d9f2c78..27707129 100644
 --- a/Code/client/Services/Generic/InventoryService.cpp
 +++ b/Code/client/Services/Generic/InventoryService.cpp
 @@ -1,4 +1,6 @@
@@ -6539,7 +6745,21 @@ index 8d9f2c78..8a5effe4 100644
      if (acMessage.OwnershipEpoch != 0)
      {
          Actor* pActor = nullptr;
-@@ -199,6 +216,10 @@ void InventoryService::OnNotifyInventoryChanges(const NotifyInventoryChanges& ac
+@@ -193,12 +210,24 @@ void InventoryService::OnNotifyInventoryChanges(const NotifyInventoryChanges& ac
+     if (!pObject)
+         return;
+ 
++    // Board contents are reconciled from canonical Missives aliases. Ignore
++    // stale generic inventory deltas left by older STR sessions.
++    if (MissivesCompat::HasBoardPatch() && MissivesCompat::IsBoard(pObject))
++    {
++        MissivesCompat::AuditBoard(pObject, "ignored_generic_inventory_delta");
++        return;
++    }
++
+     ScopedInventoryOverride _;
+     pObject->AddOrRemoveItem(acMessage.Item);
+ }
  
  void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& acMessage) noexcept
  {
@@ -6550,7 +6770,7 @@ index 8d9f2c78..8a5effe4 100644
      auto view = m_world.view<RemoteComponent, FormIdComponent>(entt::exclude<LocalComponent>);
      const auto it = std::find_if(view.begin(), view.end(), [view, &acMessage](const entt::entity aEntity)
      {
-@@ -212,7 +233,7 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
+@@ -212,7 +241,7 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
      }
  
      Actor* pActor = Cast<Actor>(TESForm::GetById(view.get<FormIdComponent>(*it).Id));
@@ -6559,7 +6779,7 @@ index 8d9f2c78..8a5effe4 100644
          return;
  
      auto& modSystem = World::Get().GetModSystem();
-@@ -220,7 +241,7 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
+@@ -220,7 +249,7 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
      uint32_t itemId = modSystem.GetGameId(acMessage.ItemId);
      TESForm* pItem = TESForm::GetById(itemId);
  
@@ -6568,7 +6788,7 @@ index 8d9f2c78..8a5effe4 100644
      {
          spdlog::error("Could not find inventory item {:X}:{:X}", acMessage.ItemId.ModId, acMessage.ItemId.BaseId);
          return;
-@@ -235,6 +256,49 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
+@@ -235,6 +264,49 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
  
      auto* pEquipManager = EquipManager::Get();
  
@@ -6618,7 +6838,7 @@ index 8d9f2c78..8a5effe4 100644
      if (acMessage.IsSpell)
      {
          if (acMessage.Unequip)
-@@ -261,29 +325,7 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
+@@ -261,29 +333,7 @@ void InventoryService::OnNotifyEquipmentChanges(const NotifyEquipmentChanges& ac
      }
      else
      {
@@ -6650,10 +6870,10 @@ index 8d9f2c78..8a5effe4 100644
  
 diff --git a/Code/client/Services/Generic/MissivesService.cpp b/Code/client/Services/Generic/MissivesService.cpp
 new file mode 100644
-index 00000000..3e1f3610
+index 00000000..1a474754
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissivesService.cpp
-@@ -0,0 +1,642 @@
+@@ -0,0 +1,690 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissivesService.h>
 +#include <Services/TransportService.h>
@@ -6698,32 +6918,64 @@ index 00000000..3e1f3610
 +    m_notifyConnection = aDispatcher.sink<NotifyMissives>().connect<&MissivesService::OnNotify>(this);
 +}
 +
-+uint64_t MissivesService::ProfileToken() noexcept
++uint64_t MissivesService::ProfileToken(uint32_t& aFailure) noexcept
 +{
++    aFailure = 0;
 +    // Local character identity only. No hardware identifiers, credentials or
 +    // player names are sent to the server or included in diagnostics.
 +    const auto* pPlayer = PlayerCharacter::Get();
 +    const char* pName = pPlayer ? pPlayer->GetName() : nullptr;
-+    if (!pName || !*pName) return 0;
++    if (!pName || !*pName) { aFailure = 1; return 0; }
 +    uint64_t nameHash = 14695981039346656037ULL;
 +    for (const char* p = pName; *p; ++p) { nameHash ^= static_cast<uint8_t>(*p); nameHash *= 1099511628211ULL; }
-+    wchar_t directory[32768]{};
-+    const DWORD cLength = GetEnvironmentVariableW(L"LOCALAPPDATA", directory, 32768);
-+    if (!cLength || cLength >= 32768) return 0;
-+    std::filesystem::path folder = std::filesystem::path(directory) / L"SkyrimTogetherReborn" / L"Missives";
-+    std::error_code error;
-+    std::filesystem::create_directories(folder, error);
-+    if (error) return 0;
-+    const auto file = folder / (std::to_wstring(nameHash) + L".bin");
++    std::vector<std::filesystem::path> folders;
++    const auto addFolder = [&folders](const wchar_t* apVariable) noexcept
++    {
++        wchar_t directory[32768]{};
++        const DWORD cLength = GetEnvironmentVariableW(apVariable, directory, 32768);
++        if (!cLength || cLength >= 32768) return;
++        const auto folder = std::filesystem::path(directory) / L"SkyrimTogetherReborn" / L"Missives";
++        if (std::find(folders.begin(), folders.end(), folder) == folders.end()) folders.push_back(folder);
++    };
++    addFolder(L"LOCALAPPDATA");
++    addFolder(L"APPDATA");
++    wchar_t profile[32768]{};
++    const DWORD cProfileLength = GetEnvironmentVariableW(L"USERPROFILE", profile, 32768);
++    if (cProfileLength && cProfileLength < 32768)
++    {
++        const auto folder = std::filesystem::path(profile) / L"AppData" / L"Local" / L"SkyrimTogetherReborn" / L"Missives";
++        if (std::find(folders.begin(), folders.end(), folder) == folders.end()) folders.push_back(folder);
++    }
++    if (folders.empty()) { aFailure = 2; return 0; }
++
++    const auto fileName = std::to_wstring(nameHash) + L".bin";
++    // Search every stable profile location before creating a new token. This
++    // preserves identity if a launcher exposes a different app-data variable
++    // on a later run.
++    for (const auto& folder : folders)
++    {
++        uint64_t token{};
++        std::ifstream input(folder / fileName, std::ios::binary);
++        if (input.read(reinterpret_cast<char*>(&token), sizeof(token)) && token) return token;
++    }
++
 +    uint64_t token{};
-+    std::ifstream input(file, std::ios::binary);
-+    if (input.read(reinterpret_cast<char*>(&token), sizeof(token)) && token) return token;
-+    input.close();
-+    if (BCryptGenRandom(nullptr, reinterpret_cast<PUCHAR>(&token), sizeof(token), BCRYPT_USE_SYSTEM_PREFERRED_RNG) != 0 || !token) return 0;
-+    std::ofstream output(file, std::ios::binary | std::ios::trunc);
-+    output.write(reinterpret_cast<const char*>(&token), sizeof(token));
-+    output.flush();
-+    return output ? token : 0;
++    if (BCryptGenRandom(nullptr, reinterpret_cast<PUCHAR>(&token), sizeof(token), BCRYPT_USE_SYSTEM_PREFERRED_RNG) != 0 || !token) { aFailure = 4; return 0; }
++    bool cDirectoryFailed = false;
++    bool cFileWriteFailed = false;
++    for (const auto& folder : folders)
++    {
++        std::error_code error;
++        std::filesystem::create_directories(folder, error);
++        if (error) { cDirectoryFailed = true; continue; }
++        std::ofstream output(folder / fileName, std::ios::binary | std::ios::trunc);
++        output.write(reinterpret_cast<const char*>(&token), sizeof(token));
++        output.flush();
++        if (output) return token;
++        cFileWriteFailed = true;
++    }
++    aFailure = cFileWriteFailed ? 5 : cDirectoryFailed ? 3 : 5;
++    return 0;
 +}
 +
 +const MissiveQuestSpec* MissivesService::Spec(uint32_t aRuntimeId) const noexcept
@@ -6750,10 +7002,11 @@ index 00000000..3e1f3610
 +    m_claims.clear();
 +    spdlog::info("STR Missives plugins: base_loaded {}, patch_loaded {}", Plugin("Missives.esp") != nullptr, Plugin("STR_Missives_Compat.esp") != nullptr);
 +    if (!m_enabled) return;
-+    m_token = ProfileToken();
++    m_profileFailure = ~uint32_t{0};
++    m_token = ProfileToken(m_profileFailure);
 +    m_waitReason = -1;
 +    spdlog::info("STR Missives startup: enabled {}, scripts_seen {}, identity_available {}", m_enabled, MissivesBridge::SawScript(), m_token != 0);
-+    if (!m_token) spdlog::error("STR Missives profile identity unavailable: check the local Missives data directory");
++    if (!m_token) spdlog::error("STR Missives profile identity unavailable; retrying (reason {}, 1=player name, 2=app-data path, 3=directory, 4=random source, 5=token file)", m_profileFailure);
 +    MissivesBridge::SetConnection(true, false, false);
 +    const auto* pMod = Plugin("Missives.esp");
 +    for (const auto& spec : cMissiveQuestSpecs)
@@ -7089,6 +7342,21 @@ index 00000000..3e1f3610
 +    const auto& papyrus = m_world.ctx().at<PapyrusService>();
 +    if (!m_hello)
 +    {
++        if (!m_token)
++        {
++            uint32_t cFailure = 0;
++            m_token = ProfileToken(cFailure);
++            if (m_token)
++            {
++                m_profileFailure = 0;
++                spdlog::info("STR Missives profile identity became available after retry");
++            }
++            else if (m_profileFailure != cFailure)
++            {
++                m_profileFailure = cFailure;
++                spdlog::warn("STR Missives profile identity retry pending (reason {}, 1=player name, 2=app-data path, 3=directory, 4=random source, 5=token file)", cFailure);
++            }
++        }
 +        for (auto it = m_contexts.begin(); it != m_contexts.end();)
 +        {
 +            if (m_personal.contains(it->first)) { ++it; continue; }
@@ -7297,7 +7565,7 @@ index 00000000..3e1f3610
 +    Cache(cQuest, *pSpec, &post);
 +}
 diff --git a/Code/client/Services/Generic/ObjectService.cpp b/Code/client/Services/Generic/ObjectService.cpp
-index b2140e2e..a5996339 100644
+index b2140e2e..a3301c93 100644
 --- a/Code/client/Services/Generic/ObjectService.cpp
 +++ b/Code/client/Services/Generic/ObjectService.cpp
 @@ -1,4 +1,5 @@
@@ -7316,8 +7584,18 @@ index b2140e2e..a5996339 100644
      // Quest chests that take the player's whole inventory without going through faction crime data.
      switch (apObject->formID)
      {
-@@ -199,6 +203,9 @@ void ObjectService::OnAssignObjectsResponse(const AssignObjectsResponse& acMessa
+@@ -197,8 +201,19 @@ void ObjectService::OnAssignObjectsResponse(const AssignObjectsResponse& acMessa
+             continue;
+         }
  
++        // Missives postings are quest aliases, not container inventory. A
++        // cached or legacy generic object snapshot must never erase them.
++        if (MissivesCompat::HasBoardPatch() && MissivesCompat::IsBoard(pObject))
++        {
++            MissivesCompat::AuditBoard(pObject, "ignored_generic_assignment");
++            continue;
++        }
++
          CreateObjectEntity(pObject->formID, objectData.ServerId);
  
 +        if (MissivesCompat::IsBoard(pObject))
@@ -7326,7 +7604,7 @@ index b2140e2e..a5996339 100644
          if (objectData.IsSenderFirst)
              continue;
  
-@@ -227,6 +234,9 @@ void ObjectService::OnAssignObjectsResponse(const AssignObjectsResponse& acMessa
+@@ -227,6 +242,9 @@ void ObjectService::OnAssignObjectsResponse(const AssignObjectsResponse& acMessa
              else
                  pObject->SetInventory(objectData.CurrentInventory);
          }
@@ -7336,7 +7614,7 @@ index b2140e2e..a5996339 100644
      }
  }
  
-@@ -250,6 +260,9 @@ entt::entity ObjectService::CreateObjectEntity(const uint32_t acFormId, const ui
+@@ -250,6 +268,9 @@ entt::entity ObjectService::CreateObjectEntity(const uint32_t acFormId, const ui
  
  void ObjectService::OnActivate(const ActivateEvent& acEvent) noexcept
  {
@@ -7385,10 +7663,10 @@ index ec897b18..a802bb3a 100644
  
 diff --git a/Code/client/Services/MissivesService.h b/Code/client/Services/MissivesService.h
 new file mode 100644
-index 00000000..56e8a3d3
+index 00000000..eacc72d6
 --- /dev/null
 +++ b/Code/client/Services/MissivesService.h
-@@ -0,0 +1,79 @@
+@@ -0,0 +1,80 @@
 +#pragma once
 +#include <Messages/NotifyMissives.h>
 +#include <Messages/RequestMissives.h>
@@ -7431,7 +7709,7 @@ index 00000000..56e8a3d3
 +    TESObjectREFR* ResolveActor(uint32_t aId) noexcept;
 +    uint32_t ActorId(TESObjectREFR* apReference) noexcept;
 +    void Cache(uint32_t aQuest, const MissiveQuestSpec& acSpec, const Posting* apPosting) noexcept;
-+    uint64_t ProfileToken() noexcept;
++    uint64_t ProfileToken(uint32_t& aFailure) noexcept;
 +    const MissiveQuestSpec* Spec(uint32_t aRuntimeId) const noexcept;
 +
 +    World& m_world;
@@ -7445,6 +7723,7 @@ index 00000000..56e8a3d3
 +    bool m_authority{};
 +    bool m_snapshot{};
 +    int m_waitReason{-1};
++    uint32_t m_profileFailure{~uint32_t{0}};
 +    std::map<uint64_t, Posting> m_postings;
 +    std::map<uint32_t, std::unique_ptr<MissivesContext>> m_contexts;
 +    std::map<uint32_t, uint64_t> m_current;
@@ -7505,7 +7784,7 @@ index 00000000..652582fb
 +    std::map<std::pair<uint32_t, uint32_t>, uint32_t> m_entries;
 +};
 diff --git a/Code/client/Systems/AnimationSystem.cpp b/Code/client/Systems/AnimationSystem.cpp
-index 5d2a12b1..4b70c465 100644
+index 5d2a12b1..e51450ed 100644
 --- a/Code/client/Systems/AnimationSystem.cpp
 +++ b/Code/client/Systems/AnimationSystem.cpp
 @@ -1,6 +1,7 @@
@@ -7556,27 +7835,30 @@ index 5d2a12b1..4b70c465 100644
          const auto& first = *it;
  
          const auto actionId = first.ActionId;
-@@ -47,9 +57,18 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+@@ -47,21 +57,37 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
          const auto pAction = Cast<BGSAction>(TESForm::GetById(actionId));
          const auto pTarget = Cast<TESObjectREFR>(TESForm::GetById(targetId));
  
 -        apActor->actorState.flags1 = first.State1;
 +        const auto* pExtension = apActor->GetExtension();
-+        const bool cWasCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
++        const bool cRemoteNpc = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer();
++        const bool cWasCorpse = cRemoteNpc && apActor->VirtIsDead(false);
++        const bool cPreserveCorpsePhysics = cRemoteNpc && (cWasCorpse || aConfirmedDeath);
 +
 +        const uint32_t cNativeState = apActor->actorState.flags1;
-+        const uint32_t cAppliedState = PreserveConfirmedCorpseLifeState(cNativeState, first.State1, cWasCorpse && aConfirmedDeath);
++        const uint32_t cAppliedState = cRemoteNpc ? PreserveRemoteNpcDeathTransition(cNativeState, first.State1, aConfirmedDeath) : first.State1;
 +        apActor->actorState.flags1 = cAppliedState;
          apActor->actorState.flags2 = first.State2;
  
+-        apActor->LoadAnimationVariables(first.Variables);
 +        if (cAppliedState != first.State1)
 +            spdlog::info("STR corpse life-state guard: actor {:X}, native {:X}, incoming {:X}, applied {:X}, event {}",
 +                apActor->formID, cNativeState, first.State1, cAppliedState, first.EventName.c_str());
 +
-         apActor->LoadAnimationVariables(first.Variables);
++        apActor->LoadAnimationVariables(first.Variables, cPreserveCorpsePhysics);
  
          aAnimationComponent.LastRanAction = first;
-@@ -57,11 +76,16 @@ void AnimationSystem::Update(World& aWorld, Actor* apActor, RemoteAnimationCompo
+ 
          // Play the animation
          TESActionData actionData(first.Type & 0x3, apActor, pAction, pTarget);
          actionData.eventName = BSFixedString(first.EventName.c_str());
@@ -7606,12 +7888,34 @@ index 94b920d4..30ece9da 100644
      /**
       * @brief Sets up the animation system for a particular actor.
       * @param aWorld The registry where the actor in question lives.
+diff --git a/Code/client/Systems/CorpseAnimationSync.h b/Code/client/Systems/CorpseAnimationSync.h
+new file mode 100644
+index 00000000..e1729fa3
+--- /dev/null
++++ b/Code/client/Systems/CorpseAnimationSync.h
+@@ -0,0 +1,16 @@
++#pragma once
++
++#include <string_view>
++
++// A dead remote NPC's local Havok death path owns this switch. Replaying its
++// owner's value every movement/action update can put the local graph back into
++// animation-driven mode and prevent the ragdoll transition from settling.
++inline bool ShouldApplyCorpseAnimationVariable(const bool aPreserveCorpsePhysics, const std::string_view acName) noexcept
++{
++    return !aPreserveCorpsePhysics || acName != "bAnimationDriven";
++}
++
++inline bool ShouldResetCorpseAnimationDriven(const bool aPreserveCorpsePhysics, const bool aAlreadyReset) noexcept
++{
++    return aPreserveCorpsePhysics && !aAlreadyReset;
++}
 diff --git a/Code/client/Systems/CorpseLifeState.h b/Code/client/Systems/CorpseLifeState.h
 new file mode 100644
-index 00000000..266c6bec
+index 00000000..e505f37c
 --- /dev/null
 +++ b/Code/client/Systems/CorpseLifeState.h
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,39 @@
 +#pragma once
 +
 +#include <cstdint>
@@ -7632,6 +7936,24 @@ index 00000000..266c6bec
 +    if (aConfirmedDeath && IsCompletedCorpseLifeState(aNativeState))
 +        return (aActionState & ~kLifeMask) | kDead;
 +    return aActionState;
++}
++
++// Actor action snapshots carry pose state, not a completed native Kill call.
++// Copying their dead bit onto a still-live replica makes IsDead skip KillImpl.
++inline uint32_t PreserveRemoteNpcDeathTransition(uint32_t aNative, uint32_t aIncoming, bool aConfirmed) noexcept
++{
++    constexpr uint32_t kMask = 0x01E00000;
++    const uint32_t nativeLife = (aNative & kMask) >> 21;
++    const uint32_t incomingLife = (aIncoming & kMask) >> 21;
++    if (nativeLife <= 2 && incomingLife <= 2)
++        return (aIncoming & ~kMask) | (aNative & kMask);
++    return PreserveConfirmedCorpseLifeState(aNative, aIncoming, aConfirmed);
++}
++
++inline bool IsNativeDeathTransition(uint32_t aNative) noexcept
++{
++    const uint32_t life = (aNative & 0x01E00000) >> 21;
++    return life == 1 || life == 2;
 +}
 diff --git a/Code/client/Systems/CorpseSpeechWindow.h b/Code/client/Systems/CorpseSpeechWindow.h
 new file mode 100644
@@ -7845,20 +8167,21 @@ index 00000000..c7f06f6c
 +    uint64_t m_reevaluatedAt{};
 +};
 diff --git a/Code/client/Systems/InterpolationSystem.cpp b/Code/client/Systems/InterpolationSystem.cpp
-index e5fdb7e3..94040eb1 100644
+index e5fdb7e3..fb3a771d 100644
 --- a/Code/client/Systems/InterpolationSystem.cpp
 +++ b/Code/client/Systems/InterpolationSystem.cpp
-@@ -96,7 +96,26 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
+@@ -96,8 +96,27 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
      if (!apActor)
          return;
  
 -    apActor->ForcePosition(aInterpolationComponent.Position);
+-    apActor->LoadAnimationVariables(second.Variables);
 +    const auto* pExtension = apActor->GetExtension();
 +    const bool cRemoteCorpse = pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && apActor->VirtIsDead(false);
 +    const bool cPhysicalCorpse = cRemoteCorpse && apActor->IsInRagdollState();
 +    // Let a confirmed, completed death reach ragdoll instead of waiting for
 +    // ragdoll while repeatedly forcing the living reference transform.
-+    const bool cReleaseCorpseRoot = cPhysicalCorpse || (cRemoteCorpse && pExtension->CanRunNativeCorpseProcess());
++    const bool cReleaseCorpseRoot = cPhysicalCorpse || (pExtension && pExtension->IsRemote() && !pExtension->IsPlayer() && pExtension->CanRunNativeCorpseProcess());
 +    if (aInterpolationComponent.CorpsePlaybackObserved != cRemoteCorpse || aInterpolationComponent.CorpseRagdollObserved != cPhysicalCorpse)
 +    {
 +        aInterpolationComponent.CorpsePlaybackObserved = cRemoteCorpse;
@@ -7873,9 +8196,10 @@ index e5fdb7e3..94040eb1 100644
 +    // physical corpses or the narrowly validated native death-update path.
 +    if (!cReleaseCorpseRoot)
 +        apActor->ForcePosition(aInterpolationComponent.Position);
-     apActor->LoadAnimationVariables(second.Variables);
++    apActor->LoadAnimationVariables(second.Variables, cRemoteCorpse);
  
      if (apActor->currentProcess && apActor->currentProcess->middleProcess)
+     {
 @@ -118,7 +137,8 @@ void InterpolationSystem::Update(Actor* apActor, InterpolationComponent& aInterp
      const auto finalY = TiltedPhoques::Mod(rotA.y + deltaY, float(TiltedPhoques::Pi * 2));
      const auto finalZ = TiltedPhoques::Mod(rotA.z + deltaZ, float(TiltedPhoques::Pi * 2));
@@ -7977,7 +8301,7 @@ index b0596604..2fedcc51 100644
      ctx().emplace<MapService>(*this, m_dispatcher, m_transport);
  
 diff --git a/Code/common/BuildInfo.h.in b/Code/common/BuildInfo.h.in
-index 5db8d876..32c0aba2 100644
+index 5db8d876..220ad48e 100644
 --- a/Code/common/BuildInfo.h.in
 +++ b/Code/common/BuildInfo.h.in
 @@ -1,4 +1,4 @@
@@ -7985,7 +8309,7 @@ index 5db8d876..32c0aba2 100644
  // This file was autogenerated by xmake
  #define BUILD_BRANCH "${GIT_BRANCH}"
 -#define BUILD_COMMIT "${GIT_TAG}"
-+#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-missives2r1"
++#define BUILD_COMMIT "${GIT_TAG}-coopfix4g-missives2r2"
 diff --git a/Code/encoding/Messages/AssignCharacterRequest.cpp b/Code/encoding/Messages/AssignCharacterRequest.cpp
 index 7d7af814..24376ae9 100644
 --- a/Code/encoding/Messages/AssignCharacterRequest.cpp
@@ -8737,6 +9061,53 @@ index 00000000..6932f624
 +    void Serialize(TiltedPhoques::Buffer::Writer& aWriter) const noexcept;
 +    void Deserialize(TiltedPhoques::Buffer::Reader& aReader) noexcept;
 +};
+diff --git a/Code/encoding/Structs/NpcInventorySnapshot.h b/Code/encoding/Structs/NpcInventorySnapshot.h
+new file mode 100644
+index 00000000..46130954
+--- /dev/null
++++ b/Code/encoding/Structs/NpcInventorySnapshot.h
+@@ -0,0 +1,41 @@
++#pragma once
++
++#include <Structs/Inventory.h>
++#include <algorithm>
++
++// A runtime entry marked ExtraLeveledItem already replaces the corresponding
++// template count. Preserve its complete stacks and metadata, rather than
++// serializing both the template equipment and its resolved replacement.
++// Ordinary runtime deltas must still be added to their template counts.
++inline Inventory BuildNpcInventorySnapshot(const Inventory& acBase, const Inventory& acChanges,
++    const Vector<GameId>& acResolvedBases) noexcept
++{
++    Inventory result = acBase;
++    result.RemoveByFilter([&](const auto& entry)
++    {
++        return std::find(acResolvedBases.begin(), acResolvedBases.end(), entry.BaseId) != acResolvedBases.end();
++    });
++
++    Inventory changes;
++    for (const auto& entry : acChanges.Entries)
++    {
++        const auto duplicate = std::find_if(changes.Entries.begin(), changes.Entries.end(),
++            [&](const auto& candidate) { return candidate.CanBeMerged(entry); });
++        if (duplicate == changes.Entries.end()) changes.Entries.push_back(entry);
++        else duplicate->Count += entry.Count;
++    }
++    for (auto& entry : changes.Entries)
++    {
++        if (entry.ContainsExtraData()) continue;
++        // A template may contain more than one row for the same base form.
++        for (auto& base : result.Entries)
++            if (base.CanBeMerged(entry))
++            {
++                entry.Count += base.Count;
++                base.Count = 0;
++            }
++    }
++    result.Entries.insert(result.Entries.end(), changes.Entries.begin(), changes.Entries.end());
++    result.RemoveByFilter([](const auto& entry) { return entry.Count == 0; });
++    return result;
++}
 diff --git a/Code/encoding/Structs/OwnedInventory.h b/Code/encoding/Structs/OwnedInventory.h
 new file mode 100644
 index 00000000..c4e3842d
@@ -10365,12 +10736,31 @@ index 00000000..a7e2636c
 +    REQUIRE(repeated.ResetAnimationGraph);
 +    REQUIRE(repeated.Actions.empty());
 +}
+diff --git a/Code/tests/corpse_animation_sync.cpp b/Code/tests/corpse_animation_sync.cpp
+new file mode 100644
+index 00000000..73fdc633
+--- /dev/null
++++ b/Code/tests/corpse_animation_sync.cpp
+@@ -0,0 +1,13 @@
++#include <catch2/catch.hpp>
++#include "../client/Systems/CorpseAnimationSync.h"
++
++TEST_CASE("remote corpse playback leaves Havok animation-driven state local", "[corpse][animation]")
++{
++    CHECK_FALSE(ShouldApplyCorpseAnimationVariable(true, "bAnimationDriven"));
++    CHECK(ShouldApplyCorpseAnimationVariable(true, "bAllowRotation"));
++    CHECK(ShouldApplyCorpseAnimationVariable(true, "kIsAttacking"));
++    CHECK(ShouldApplyCorpseAnimationVariable(false, "bAnimationDriven"));
++    CHECK(ShouldResetCorpseAnimationDriven(true, false));
++    CHECK_FALSE(ShouldResetCorpseAnimationDriven(true, true));
++    CHECK_FALSE(ShouldResetCorpseAnimationDriven(false, false));
++}
 diff --git a/Code/tests/corpse_speech_window.cpp b/Code/tests/corpse_speech_window.cpp
 new file mode 100644
-index 00000000..e2e680bd
+index 00000000..bc6c3bac
 --- /dev/null
 +++ b/Code/tests/corpse_speech_window.cpp
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,112 @@
 +#include <catch2/catch.hpp>
 +#include "../client/Systems/CorpseSpeechWindow.h"
 +#include "../client/Systems/CorpseLifeState.h"
@@ -10450,6 +10840,38 @@ index 00000000..e2e680bd
 +    constexpr uint32_t kDead = 2u << 21;
 +    CHECK(PreserveConfirmedCorpseLifeState(kDead | 9, 23, false) == 23);
 +    CHECK(PreserveConfirmedCorpseLifeState(kDead, 4u << 21, false) == (4u << 21));
++}
++
++TEST_CASE("Remote NPC pose cannot fabricate native death before KillImpl", "[corpse.state]")
++{
++    constexpr uint32_t mask = 0x01E00000;
++    for (bool confirmed : {false, true})
++        for (uint32_t life : {1u, 2u})
++        {
++            const uint32_t result = PreserveRemoteNpcDeathTransition(17, (life << 21) | 29, confirmed);
++            CHECK((result & mask) == 0);
++            CHECK((result & ~mask) == 29);
++        }
++}
++TEST_CASE("Remote dying NPC keeps its native transition instead of replaying a fake completion", "[corpse.state]")
++{
++    constexpr uint32_t mask = 0x01E00000;
++    for (uint32_t incoming : {0u, 1u, 2u})
++        CHECK((PreserveRemoteNpcDeathTransition(1u << 21, incoming << 21, true) & mask) == (1u << 21));
++}
++TEST_CASE("Native corpse completion and actual resurrection supersede stale pose life bits", "[corpse.state]")
++{
++    constexpr uint32_t mask = 0x01E00000;
++    CHECK((PreserveRemoteNpcDeathTransition(2u << 21, 17, true) & mask) == (2u << 21));
++    CHECK((PreserveRemoteNpcDeathTransition(0, 2u << 21, false) & mask) == 0);
++    CHECK(PreserveRemoteNpcDeathTransition(0, 8u << 21, false) == (8u << 21));
++}
++TEST_CASE("Native death processing excludes living unconscious and essential down states", "[corpse.state]")
++{
++    CHECK(IsNativeDeathTransition(1u << 21));
++    CHECK(IsNativeDeathTransition(2u << 21));
++    for (uint32_t state : {0u, 3u, 4u, 5u, 6u, 7u, 8u})
++        CHECK_FALSE(IsNativeDeathTransition(state << 21));
 +}
 diff --git a/Code/tests/dropped_item_binding.cpp b/Code/tests/dropped_item_binding.cpp
 new file mode 100644
@@ -11178,6 +11600,151 @@ index 00000000..3991f0d5
 +    const auto actor = DecodeMissivesActorId(result->Data.Aliases[0].ActorId);
 +    REQUIRE(actor);
 +    REQUIRE(*actor == 0);
++}
+diff --git a/Code/tests/npc_inventory_snapshot.cpp b/Code/tests/npc_inventory_snapshot.cpp
+new file mode 100644
+index 00000000..99b9534e
+--- /dev/null
++++ b/Code/tests/npc_inventory_snapshot.cpp
+@@ -0,0 +1,139 @@
++#include <TiltedCore/Stl.hpp>
++#include <TiltedCore/Buffer.hpp>
++#include <TiltedCore/Serialization.hpp>
++#include <glm/glm.hpp>
++#include <optional>
++#include <catch2/catch.hpp>
++#include <Structs/NpcInventorySnapshot.h>
++#include <Structs/OwnedInventory.h>
++#include <Messages/AssignCharacterRequest.h>
++#include <Messages/CharacterSpawnRequest.h>
++#include <Messages/ClientMessageFactory.h>
++#include <Messages/ServerMessageFactory.h>
++
++namespace
++{
++Inventory::Entry Equipment(uint32_t aBase, int32_t aCount = 1, bool aWorn = false)
++{
++    Inventory::Entry item;
++    item.BaseId = GameId(0, aBase);
++    item.Count = aCount;
++    item.ExtraWorn = aWorn;
++    return item;
++}
++}
++
++TEST_CASE("Resolved NPC equipment replaces template counts instead of duplicating armor and weapons", "[inventory][npc]")
++{
++    Inventory base;
++    base.Entries = {Equipment(0x100), Equipment(0x200)};
++    Inventory runtime;
++    runtime.Entries = {Equipment(0x100, 1, true), Equipment(0x200, 1, true)};
++    const auto snapshot = BuildNpcInventorySnapshot(base, runtime, {GameId(0, 0x100), GameId(0, 0x200)});
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x100)) == 1);
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x200)) == 1);
++    REQUIRE(snapshot.Entries.size() == 2);
++    REQUIRE(snapshot.Entries[0].IsWorn());
++    REQUIRE(snapshot.Entries[1].IsWorn());
++    REQUIRE(base.Entries[0].Count == 1);
++    REQUIRE(runtime.Entries[0].ExtraWorn);
++}
++
++TEST_CASE("NPC snapshot preserves legitimate spare equipment stacks and different enchantments", "[inventory][npc]")
++{
++    Inventory base;
++    base.Entries = {Equipment(0x100)};
++    Inventory runtime;
++    auto tempered = Equipment(0x100, 1, true);
++    tempered.ExtraHealth = 1.5f;
++    auto enchanted = Equipment(0x100);
++    enchanted.ExtraEnchantId = GameId(1, 0x999);
++    enchanted.ExtraCharge = 50.f;
++    runtime.Entries = {tempered, Equipment(0x100, 2), enchanted};
++    const auto snapshot = BuildNpcInventorySnapshot(base, runtime, {GameId(0, 0x100)});
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x100)) == 4);
++    REQUIRE(snapshot.Entries.size() == 3);
++    REQUIRE(snapshot.Entries[0].ExtraHealth == 1.5f);
++    REQUIRE(snapshot.Entries[0].IsWorn());
++    REQUIRE(snapshot.Entries[2].ExtraEnchantId == enchanted.ExtraEnchantId);
++    REQUIRE(snapshot.Entries[2].ExtraCharge == 50.f);
++}
++
++TEST_CASE("NPC ordinary signed inventory deltas still combine with every template row", "[inventory][npc]")
++{
++    Inventory base;
++    base.Entries = {Equipment(0x100, 2), Equipment(0x100, 3), Equipment(0x200, 10)};
++    Inventory runtime;
++    runtime.Entries = {Equipment(0x100, 1, true), Equipment(0x100, -3), Equipment(0x200, -4), Equipment(0x300, 7)};
++    const auto snapshot = BuildNpcInventorySnapshot(base, runtime, {});
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x100)) == 3);
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x200)) == 6);
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x300)) == 7);
++    REQUIRE(std::count_if(snapshot.Entries.begin(), snapshot.Entries.end(), [](const auto& e) { return e.IsWorn(); }) == 1);
++}
++
++TEST_CASE("An exhausted resolved NPC item cannot regain the default outfit count", "[inventory][npc]")
++{
++    Inventory base;
++    base.Entries = {Equipment(0x100, 1), Equipment(0x200, 2)};
++    Inventory runtime;
++    runtime.Entries = {Equipment(0x100, 1, true), Equipment(0x100, -1), Equipment(0x200, -1)};
++    const auto snapshot = BuildNpcInventorySnapshot(base, runtime, {GameId(0, 0x100)});
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x100)) == 0);
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x200)) == 1);
++    auto explicitZero = Equipment(0x100, 0);
++    runtime.Entries = {explicitZero};
++    const auto empty = BuildNpcInventorySnapshot(base, runtime, {GameId(0, 0x100)});
++    REQUIRE(CachedItemCount(empty, GameId(0, 0x100)) == 0);
++}
++
++TEST_CASE("Resolved NPC snapshots preserve quest equipment and both equipped hands", "[inventory][npc]")
++{
++    Inventory base;
++    base.Entries = {Equipment(0x100, 2), Equipment(0x200)};
++    Inventory runtime;
++    auto right = Equipment(0x100, 1, true);
++    auto left = Equipment(0x100);
++    left.ExtraWornLeft = true;
++    auto quest = Equipment(0x200);
++    quest.IsQuestItem = quest.IsPersonalQuestItem = true;
++    runtime.Entries = {right, left, quest};
++    const auto snapshot = BuildNpcInventorySnapshot(base, runtime, {GameId(0, 0x100), GameId(0, 0x200)});
++    REQUIRE(CachedItemCount(snapshot, GameId(0, 0x100)) == 2);
++    REQUIRE(snapshot.Entries.size() == 3);
++    REQUIRE(snapshot.Entries[0].ExtraWorn);
++    REQUIRE(snapshot.Entries[1].ExtraWornLeft);
++    REQUIRE(snapshot.Entries[2].IsQuestItem);
++    REQUIRE(snapshot.Entries[2].IsPersonalQuestItem);
++}
++
++TEST_CASE("Corrected NPC counts survive the actual assignment and spawn message factories", "[inventory][npc][encoding]")
++{
++    Inventory base;
++    base.Entries = {Equipment(0x100), Equipment(0x200)};
++    Inventory runtime;
++    runtime.Entries = {Equipment(0x100, 1, true), Equipment(0x200, 1, true)};
++    const auto snapshot = BuildNpcInventorySnapshot(base, runtime, {GameId(0, 0x100), GameId(0, 0x200)});
++    AssignCharacterRequest assign;
++    assign.CurrentActorData.InitialInventory = snapshot;
++    TiltedPhoques::Buffer up(16384);
++    TiltedPhoques::Buffer::Writer upWriter(&up);
++    assign.Serialize(upWriter);
++    TiltedPhoques::Buffer::Reader upReader(&up);
++    const auto decodedAssign = ClientMessageFactory{}.Extract(upReader);
++    REQUIRE(decodedAssign);
++    const auto& assigned = static_cast<const AssignCharacterRequest*>(decodedAssign.get())->CurrentActorData.InitialInventory;
++    REQUIRE(assigned.Entries == snapshot.Entries);
++    CharacterSpawnRequest spawn;
++    spawn.InventoryContent = assigned;
++    TiltedPhoques::Buffer down(16384);
++    TiltedPhoques::Buffer::Writer downWriter(&down);
++    spawn.Serialize(downWriter);
++    TiltedPhoques::Buffer::Reader downReader(&down);
++    const auto decodedSpawn = ServerMessageFactory{}.Extract(downReader);
++    REQUIRE(decodedSpawn);
++    const auto& received = static_cast<const CharacterSpawnRequest*>(decodedSpawn.get())->InventoryContent;
++    REQUIRE(received.Entries == snapshot.Entries);
++    REQUIRE(CachedItemCount(received, GameId(0, 0x100)) == 1);
++    REQUIRE(CachedItemCount(received, GameId(0, 0x200)) == 1);
 +}
 diff --git a/Code/tests/owned_inventory.cpp b/Code/tests/owned_inventory.cpp
 new file mode 100644

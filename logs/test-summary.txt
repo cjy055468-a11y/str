@@ -1,6 +1,6 @@
 {
-  "test_cases": 93,
-  "executed_cases": 93,
+  "test_cases": 104,
+  "executed_cases": 104,
   "required_replay_cases": 5,
   "required_drop_cases": 9,
   "required_actor_cases": 7,

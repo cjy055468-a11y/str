@@ -1,9 +1,12 @@
 {
   "native_changes_from_delivered_corpse3": [
+    "Code/client/Games/ActorExtension.h",
     "Code/client/Games/Misc/BSScript.cpp",
     "Code/client/Games/Skyrim/Actor.cpp",
     "Code/client/Games/Skyrim/Actor.h",
+    "Code/client/Games/Skyrim/ExtraData/ExtraData.h",
     "Code/client/Games/Skyrim/TESObjectREFR.cpp",
+    "Code/client/Games/Skyrim/TESObjectREFR.h",
     "Code/client/ModCompat/MissivesBridge.cpp",
     "Code/client/ModCompat/MissivesBridge.h",
     "Code/client/ModCompat/MissivesCompat.cpp",
@@ -18,6 +21,10 @@
     "Code/client/Services/Generic/ObjectService.cpp",
     "Code/client/Services/Generic/QuestService.cpp",
     "Code/client/Services/MissivesService.h",
+    "Code/client/Systems/AnimationSystem.cpp",
+    "Code/client/Systems/CorpseAnimationSync.h",
+    "Code/client/Systems/CorpseLifeState.h",
+    "Code/client/Systems/InterpolationSystem.cpp",
     "Code/client/World.cpp",
     "Code/common/BuildInfo.h.in",
     "Code/encoding/Messages/CharacterSpawnRequest.cpp",
@@ -34,15 +41,18 @@
     "Code/encoding/Structs/MissivesActorId.h",
     "Code/encoding/Structs/MissivesData.cpp",
     "Code/encoding/Structs/MissivesData.h",
+    "Code/encoding/Structs/NpcInventorySnapshot.h",
     "Code/server/Game/Inventory/MissivesLedger.h",
     "Code/server/Services/MissivesService.cpp",
     "Code/server/Services/MissivesService.h",
     "Code/server/World.cpp",
-    "Code/tests/missives.cpp"
+    "Code/tests/corpse_animation_sync.cpp",
+    "Code/tests/corpse_speech_window.cpp",
+    "Code/tests/missives.cpp",
+    "Code/tests/npc_inventory_snapshot.cpp"
   ],
-  "delta_sha256": "022d3a0924c5be1dddb2fe2280d5f890b9dea8a44a53d907b31721764f6e3a45",
+  "delta_sha256": "6c89ffb2c441953144f0db91265e17db148ebd1bf27e0012cd1f5f885d1f30f6",
   "exact_corpse3_recovery": true,
   "official_base": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "game_test": "not run"
 }
-
