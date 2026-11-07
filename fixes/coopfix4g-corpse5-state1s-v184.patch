@@ -5115,7 +5115,7 @@ index b3f309a7..765a6783 100644
      {
          spdlog::info("Applying death state {} to remote actor {:X}, server id: {:X}", acMessage.IsDead, pActor->formID, acMessage.Id);
 diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
-index 7d3ac21a..a8ba3812 100644
+index 7d3ac21a..5be59c10 100644
 --- a/Code/client/Services/Generic/CharacterService.cpp
 +++ b/Code/client/Services/Generic/CharacterService.cpp
 @@ -4,11 +4,14 @@
@@ -5397,7 +5397,7 @@ index 7d3ac21a..a8ba3812 100644
          return;
      }
  
-@@ -1150,6 +1257,133 @@ static bool IsLineVoicedByLocalScene(Actor* apActor, const GameId& acSceneId, ui
+@@ -1150,6 +1257,134 @@ static bool IsLineVoicedByLocalScene(Actor* apActor, const GameId& acSceneId, ui
      return !IsPhaseStuckOnRemotePackage(pScene, cPhase);
  }
  
@@ -5429,8 +5429,9 @@ index 7d3ac21a..a8ba3812 100644
 +        if (!pRefresh)
 +            pRefresh = &m_world.emplace<CorpseStateRefreshComponent>(entity);
 +
-+        const bool cReady = IsCompletedCorpseLifeState(pActor->actorState.flags1) && pActor->IsDead() &&
-+            pActor->GetNiNode() && pActor->parentCell && pActor->parentCell->IsAttached() &&
++        // Use the accepted network death, not local IsDead/completion, to arm
++        // recovery: the local death state is precisely what may be stuck.
++        const bool cReady = pActor->GetNiNode() && pActor->parentCell && pActor->parentCell->IsAttached() &&
 +            pActor->currentProcess && pActor->animationGraphHolder.IsReady() && pActor->unk10 != 0xFFFF;
 +        const uint32_t cHandle = pActor->GetHandle().handle.iBits;
 +        if (!pRefresh->Window.Observe(cHandle, remote.Id, remote.OwnershipEpoch, cConfirmedDead, cReady, cNow))
@@ -5531,7 +5532,7 @@ index 7d3ac21a..a8ba3812 100644
  void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
  {
      if (!m_transport.IsConnected())
-@@ -1161,6 +1395,9 @@ void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
+@@ -1161,6 +1396,9 @@ void CharacterService::OnDialogueEvent(const DialogueEvent& acEvent) noexcept
      if (entityIt == view.end())
          return;
  
@@ -5541,7 +5542,7 @@ index 7d3ac21a..a8ba3812 100644
      auto serverIdRes = Utils::GetServerId(*entityIt);
      if (!serverIdRes)
      {
-@@ -1184,6 +1421,9 @@ void CharacterService::OnNotifyDialogue(const NotifyDialogue& acMessage) noexcep
+@@ -1184,6 +1422,9 @@ void CharacterService::OnNotifyDialogue(const NotifyDialogue& acMessage) noexcep
      if (!pActor)
          return;
  
@@ -5551,7 +5552,7 @@ index 7d3ac21a..a8ba3812 100644
      // Every client plays scenes itself, the local copy usually voices the line. Menu and other-scene lines still play.
      if (IsLineVoicedByLocalScene(pActor, acMessage.SceneId, acMessage.ScenePhase))
      {
-@@ -1208,6 +1448,9 @@ void CharacterService::OnSubtitleEvent(const SubtitleEvent& acEvent) noexcept
+@@ -1208,6 +1449,9 @@ void CharacterService::OnSubtitleEvent(const SubtitleEvent& acEvent) noexcept
      if (entityIt == view.end())
          return;
  
@@ -5561,7 +5562,7 @@ index 7d3ac21a..a8ba3812 100644
      auto serverIdRes = Utils::GetServerId(*entityIt);
      if (!serverIdRes)
      {
-@@ -1231,6 +1474,9 @@ void CharacterService::OnNotifySubtitle(const NotifySubtitle& acMessage) noexcep
+@@ -1231,6 +1475,9 @@ void CharacterService::OnNotifySubtitle(const NotifySubtitle& acMessage) noexcep
      if (!pActor)
          return;
  
@@ -5571,7 +5572,7 @@ index 7d3ac21a..a8ba3812 100644
      // The local copy of the scene shows its own subtitle, see OnNotifyDialogue. Only the actor's own voice line ending
      // hides a subtitle, so a remote one arriving after the local line has finished would stay on screen.
      if (IsLineVoicedByLocalScene(pActor, acMessage.SceneId, acMessage.ScenePhase))
-@@ -1360,6 +1606,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1360,6 +1607,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
      AssignCharacterRequest message{};
  
      message.Cookie = sCookieSeed;
@@ -5582,7 +5583,7 @@ index 7d3ac21a..a8ba3812 100644
  
      if (!m_world.GetModSystem().GetServerModId(formIdComponent.Id, message.ReferenceId))
      {
-@@ -1490,7 +1740,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+@@ -1490,7 +1741,10 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
  
      if (m_transport.Send(message))
      {
@@ -5594,7 +5595,7 @@ index 7d3ac21a..a8ba3812 100644
  
          sCookieSeed++;
      }
-@@ -1613,17 +1866,20 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
+@@ -1613,17 +1867,20 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
              FaceGenSystem::Setup(m_world, aEntity, acMessage.FaceTints);
          }
  
@@ -5616,7 +5617,7 @@ index 7d3ac21a..a8ba3812 100644
      pActor->GetExtension()->SetRemote(true);
      pActor->rotation.x = acMessage.Rotation.x;
      pActor->rotation.z = acMessage.Rotation.y;
-@@ -1894,6 +2150,35 @@ void CharacterService::RunRemoteUpdates() noexcept
+@@ -1894,6 +2151,35 @@ void CharacterService::RunRemoteUpdates() noexcept
              pActor = Cast<Actor>(pForm);
          }
  
@@ -5652,7 +5653,7 @@ index 7d3ac21a..a8ba3812 100644
          InterpolationSystem::Update(pActor, interpolationComponent, cNow);
      }
  
-@@ -1912,7 +2197,8 @@ void CharacterService::RunRemoteUpdates() noexcept
+@@ -1912,7 +2198,8 @@ void CharacterService::RunRemoteUpdates() noexcept
          // Actions run on the clock the interpolation pass above just advanced, so the body and its animations stay in step
          const auto cTick = InterpolationSystem::GetPlaybackTick(animatedView.get<InterpolationComponent>(entity));
  

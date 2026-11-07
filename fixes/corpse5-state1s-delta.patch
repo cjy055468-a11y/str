@@ -72,7 +72,7 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
      m_actorIdentities.Clear();
      auto remoteView = m_world.view<FormIdComponent, RemoteComponent>();
      for (auto entity : remoteView)
-@@ -1252,6 +1255,72 @@
+@@ -1252,6 +1255,73 @@
          return true;
  
      return !IsPhaseStuckOnRemotePackage(pScene, cPhase);
@@ -106,8 +106,9 @@ diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Ser
 +        if (!pRefresh)
 +            pRefresh = &m_world.emplace<CorpseStateRefreshComponent>(entity);
 +
-+        const bool cReady = IsCompletedCorpseLifeState(pActor->actorState.flags1) && pActor->IsDead() &&
-+            pActor->GetNiNode() && pActor->parentCell && pActor->parentCell->IsAttached() &&
++        // Use the accepted network death, not local IsDead/completion, to arm
++        // recovery: the local death state is precisely what may be stuck.
++        const bool cReady = pActor->GetNiNode() && pActor->parentCell && pActor->parentCell->IsAttached() &&
 +            pActor->currentProcess && pActor->animationGraphHolder.IsReady() && pActor->unk10 != 0xFFFF;
 +        const uint32_t cHandle = pActor->GetHandle().handle.iBits;
 +        if (!pRefresh->Window.Observe(cHandle, remote.Id, remote.OwnershipEpoch, cConfirmedDead, cReady, cNow))
