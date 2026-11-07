@@ -54,11 +54,12 @@ diff --git a/Code/client/Games/ActorExtension.cpp b/Code/client/Games/ActorExten
 diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor.cpp
 --- a/Code/client/Games/Skyrim/Actor.cpp
 +++ b/Code/client/Games/Skyrim/Actor.cpp
-@@ -863,7 +863,11 @@
+@@ -863,7 +863,12 @@
          return;
  
      // TODO: these args are kind of bogus of course
-+    pExtension->SetKillImplInvoked(true);
++    if (pExtension->IsRemote())
++        pExtension->SetKillImplInvoked(true);
      KillImpl(nullptr, 100.f, true, true);
 +
 +    if (pExtension->IsRemote())
@@ -66,7 +67,7 @@ diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor
  
      // Papyrus kill will not go through if it is queued by a kill move
      /*
-@@ -889,6 +893,7 @@
+@@ -889,6 +894,7 @@
  
  void Actor::Respawn() noexcept
  {
@@ -74,7 +75,7 @@ diff --git a/Code/client/Games/Skyrim/Actor.cpp b/Code/client/Games/Skyrim/Actor
      Resurrect(false);
      Reset();
  }
-@@ -1345,7 +1350,18 @@
+@@ -1345,7 +1351,18 @@
  void TP_MAKE_THISCALL(HookAddDeathItems, Actor)
  {
      if (apThis->GetExtension()->IsRemote())
