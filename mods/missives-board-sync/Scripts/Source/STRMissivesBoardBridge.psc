@@ -45,6 +45,11 @@ Function RefreshPosting(Quest mission, ObjectReference targetBoard) Global
     If stage < 20 && status <= 0 && letter && Game.GetPlayer().GetItemCount(letter) > 0
         ; Keep a just-picked posting with the player while its public listing is
         ; still being published or its claim is awaiting server confirmation.
+        ; The elected authority retries publication if its acknowledgement was
+        ; lost; other players wait for that server listing before claiming.
+        If status < 0 && IsBoardAuthority(boardId) && CanGenerate(questId, boardId)
+            Publish(questId, boardId)
+        EndIf
         Return
     EndIf
     If status == 0 && (stage >= 103 || !mission.IsRunning())

@@ -9,6 +9,7 @@
   "checks": [
     "Both pickup aliases retry Claim once per second while the player holds the posting and its state remains pending or available; polling stops after grant, loss, retirement, or local task activation.",
     "RefreshPosting leaves a picked posting with the player while status is unknown or available, so a late listing response cannot move it back to the board or remove it before claim resolution.",
+    "While status is unknown, the elected authority retries Publish through the existing pending-publication timeout; non-authorities wait for the server listing before issuing Claim.",
     "The server claim remains atomic and idempotent: the claimant receives Grant, other viewers receive Taken, and duplicate retries by the winner are treated as AlreadyOwned.",
     "The source checker now fails if either pickup retry path or the held-posting guard is removed.",
     "Windows CI compiles all Papyrus sources to PEX, validates every PEX signature/count, builds the client and server, and runs the complete protocol test suite before packaging."

@@ -74,6 +74,8 @@ def main() -> None:
                 f"{name} pickup path does not retry unconfirmed claims")
     require("stage < 20 && status <= 0 && letter && Game.GetPlayer().GetItemCount(letter) > 0" in bridge_psc,
             "picked posting may be moved off the player before the listing/claim response arrives")
+    require(re.search(r"If status < 0 && IsBoardAuthority\(boardId\) && CanGenerate\(questId, boardId\)[\s\S]*?Publish\(questId, boardId\)", bridge_psc) is not None,
+            "the board authority does not retry an unacknowledged publication while the picked posting is pending")
     require("stage < 20 && status <= 0 && letter && Game.GetPlayer().GetItemCount(letter) > 0" in bridge_psc,
             "picked posting may be moved off the player before the listing/claim response arrives")
     require("If status == 2" in bridge_psc and "mission.SetStage(20)" in bridge_psc, "only-granted claimant path is missing")
