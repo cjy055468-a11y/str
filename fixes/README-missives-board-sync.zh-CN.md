@@ -10,7 +10,7 @@
 
 - `coopfix4g-missives-board-sync-v184.patch`：针对官方 STR v1.8.4 源码的完整 native 源码补丁。
 - `mods/missives-board-sync/`：覆盖 Missives 原脚本的全新 Papyrus 源码和公告目录；没有 ESP，也不复用旧兼容 ESP。
-- 三轮源码审查记录、源码 SHA 清单、检查工具和 Windows 构建工作流。
+- 五轮源码审查记录、源码 SHA 清单、检查工具和 Windows 构建工作流。
 
 ## 构建与安装
 

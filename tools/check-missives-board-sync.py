@@ -63,6 +63,18 @@ def main() -> None:
     require("Event OnTriggerLeave" in activator and "CloseBoard(" in activator, "board leave trigger is not connected")
     require("IsBoardReady(" in activator and "IsBoardAuthority(" in activator, "board handshake/election is not checked")
     require("STRMaintainNonEmptyBoard()" in activator, "empty-board recovery path is missing")
+    require(all(f"STRRefreshList({name})" in activator for name in ("QuestsLow", "QuestsMed", "QuestsHigh", "QuestsVeryHigh"))
+            and "If STRInside" in activator and "RegisterForSingleUpdate(1.0)" in activator,
+            "an open physical board does not keep polling listing changes")
+    refresh_posting = bridge_psc[bridge_psc.index("Function RefreshPosting"):bridge_psc.index("Function STRMoveLocalPosting")]
+    require("status == 1 || status == 3" in refresh_posting and "STRRemoveLocalPosting(letter, sourceBoard, targetBoard)" in refresh_posting,
+            "a remotely claimed or retired posting is not removed from the local physical board")
+    client_service = (source / "Code/client/Services/Generic/MissiveBoardService.cpp").read_text(encoding="utf-8")
+    server_service = (source / "Code/server/Services/MissiveBoardService.cpp").read_text(encoding="utf-8")
+    require("NotifyMissivesBoard::Operation::Taken ? 1" in client_service
+            and "SetListing(questId, boardId, acMessage.Listing.Id, state)" in client_service
+            and "Broadcast(*record, NotifyMissivesBoard::Operation::Taken)" in server_service,
+            "a board claim is not broadcast and reflected in every client's local listing state")
     require("Claim(" in alias_claim and "GetPostingStatus(" in alias_claim, "posting pickup trigger is not connected")
     require("Claim(" in alias_delivery and "GetPostingStatus(" in alias_delivery, "delivery posting pickup trigger is not connected")
     for name, alias in (("ordinary", alias_claim), ("delivery", alias_delivery)):
@@ -107,6 +119,18 @@ def main() -> None:
     server_world = (source / "Code/server/World.cpp").read_text(encoding="utf-8")
     require("RegisterMissiveBoardBridge" in bsscript and "MissiveBoardService" in client_world and "MissiveBoardService" in server_world,
             "native Papyrus/server/client services are not all registered")
+    require("m_openBoards" in client_service and "retrying open for board" in client_service
+            and "RequestMissivesBoard::Operation::Open" in client_service,
+            "an open board does not retry until its server snapshot completes")
+    open_handler = client_service[client_service.index("if (acEvent.Action == O::Open || acEvent.Action == O::Close)"):]
+    open_tracking = open_handler.find("m_openBoards[acEvent.Quest]")
+    open_mapping = open_handler.find("GetServerModId(acEvent.Quest")
+    require(open_tracking >= 0 and open_mapping >= 0 and open_tracking < open_mapping,
+            "a board open can be lost before its local-to-server form mapping is ready")
+    require("retry.NextRequest = now + std::chrono::seconds(2);\n        if (sent)" in client_service,
+            "failed board-open sends are not rate-limited and retried")
+    require("cannot map server board id" in client_service and "cannot map server quest id" in client_service,
+            "unmapped incoming snapshot IDs are silently discarded")
 
     old_active = [
         source / "Code/client/Services/Generic/MissivesService.cpp",
@@ -122,6 +146,7 @@ def main() -> None:
         "trigger_integration": "source-verified",
         "board_claim_scope": "physical-board-id",
         "claim_retry": "one-second-until-server-result",
+        "snapshot_retry": "reopens-until-snapshot-end",
         "task_progress_wire_fields": 0,
         "personal_task_item_filter": "present",
         "old_board_implementation": "absent",

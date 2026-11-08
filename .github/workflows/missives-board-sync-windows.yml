@@ -148,7 +148,7 @@ jobs:
           Copy-Item mods/missives-board-sync/README.zh-CN.md candidate/MissivesBoardSync/README.zh-CN.md
           Copy-Item fixes/coopfix4g-missives-board-sync-v184.patch candidate/
           Copy-Item fixes/README-missives-board-sync.zh-CN.md candidate/README.zh-CN.md
-          Copy-Item fixes/missives-board-sync-source-review-round1.json, fixes/missives-board-sync-source-review-round2.json, fixes/missives-board-sync-source-review-round3.json, fixes/missives-board-sync-source-manifest.json candidate/
+          Copy-Item fixes/missives-board-sync-source-review-round1.json, fixes/missives-board-sync-source-review-round2.json, fixes/missives-board-sync-source-review-round3.json, fixes/missives-board-sync-source-review-round4.json, fixes/missives-board-sync-source-review-round5.json, fixes/missives-board-sync-source-manifest.json candidate/
           Copy-Item source/LICENSE candidate/LICENSE
           Copy-Item logs candidate/logs -Recurse
           $deliveryHashes = Get-ChildItem candidate -File -Recurse | Where-Object { $_.Name -ne 'SHA256.txt' } | Get-FileHash -Algorithm SHA256
