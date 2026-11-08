@@ -1,0 +1,285 @@
+[0m[33;1mDetecting Visual Studio environment (cached); run `xmake global --clean` first if vs updated.[0m
+[0mchecking for vswhere.exe ... [32;1mC:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe[0m
+[0m[2mdetecting vstudio environment ... [32;1m2022(17.0, toolset:14.44)[0m
+[0mchecking for cl.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe[0m
+[0mchecking for Microsoft C/C++ Compiler (x64) ... [32;1mok[0m
+[0mchecking for Microsoft Visual Studio (x64) version ... [32;1m2022[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(zig.exe version), No such file or directory[0m
+[0mchecking for zig ... [31;1mno[0m
+[0m[33;1mcheckinfo: [0;2mcannot runv(nim.exe --version), No such file or directory[0m
+[0mchecking for nim ... [31;1mno[0m
+[0mchecking for dotnet ... [32;1mC:\Program Files\dotnet\dotnet.exe[0m
+[0mchecking for .NET SDK version ... [32;1m10.0.403[0m
+[0mchecking for .NET SDK directory ... [32;1mC:\Program Files\dotnet\sdk\10.0.403[0m
+[0mchecking for git ... [32;1mC:\Program Files\Git\bin\git.exe[0m
+[0mchecking for gzip ... [32;1mC:\Program Files\Git\usr\bin\gzip.exe[0m
+[0mchecking for tar ... [32;1mC:\Windows\System32\tar.exe[0m
+[0mchecking for curl ... [32;1mC:\hostedtoolcache\windows\xmake\3.1.0\x64\winenv\bin\curl[0m
+pinging the host(gitlab.com) ... 32 ms
+pinging the host(github.com) ... 39 ms
+pinging the host(gitee.com) ... 65535 ms
+pinging the host(gitcode.com) ... 654 ms
+updating repositories .. 
+cloning repository(build-artifacts): https://gitlab.com/xmake-mirror/build-artifacts.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts ..
+Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\build-artifacts'...
+Updating files:  18% (462/2446)
+Updating files:  19% (465/2446)
+Updating files:  20% (490/2446)
+Updating files:  21% (514/2446)
+Updating files:  22% (539/2446)
+Updating files:  23% (563/2446)
+Updating files:  24% (588/2446)
+Updating files:  25% (612/2446)
+Updating files:  26% (636/2446)
+Updating files:  27% (661/2446)
+Updating files:  28% (685/2446)
+Updating files:  29% (710/2446)
+Updating files:  30% (734/2446)
+Updating files:  31% (759/2446)
+Updating files:  32% (783/2446)
+Updating files:  33% (808/2446)
+Updating files:  34% (832/2446)
+Updating files:  35% (857/2446)
+Updating files:  36% (881/2446)
+Updating files:  37% (906/2446)
+Updating files:  38% (930/2446)
+Updating files:  39% (954/2446)
+Updating files:  40% (979/2446)
+Updating files:  41% (1003/2446)
+Updating files:  42% (1028/2446)
+Updating files:  43% (1052/2446)
+Updating files:  44% (1077/2446)
+Updating files:  45% (1101/2446)
+Updating files:  46% (1126/2446)
+Updating files:  47% (1150/2446)
+Updating files:  47% (1164/2446)
+Updating files:  48% (1175/2446)
+Updating files:  49% (1199/2446)
+Updating files:  50% (1223/2446)
+Updating files:  51% (1248/2446)
+Updating files:  52% (1272/2446)
+Updating files:  53% (1297/2446)
+Updating files:  54% (1321/2446)
+Updating files:  55% (1346/2446)
+Updating files:  56% (1370/2446)
+Updating files:  57% (1395/2446)
+Updating files:  58% (1419/2446)
+Updating files:  59% (1444/2446)
+Updating files:  60% (1468/2446)
+Updating files:  61% (1493/2446)
+Updating files:  62% (1517/2446)
+Updating files:  63% (1541/2446)
+Updating files:  63% (1557/2446)
+Updating files:  64% (1566/2446)
+Updating files:  65% (1590/2446)
+Updating files:  66% (1615/2446)
+Updating files:  67% (1639/2446)
+Updating files:  68% (1664/2446)
+Updating files:  69% (1688/2446)
+Updating files:  70% (1713/2446)
+Updating files:  71% (1737/2446)
+Updating files:  72% (1762/2446)
+Updating files:  73% (1786/2446)
+Updating files:  74% (1811/2446)
+Updating files:  75% (1835/2446)
+Updating files:  76% (1859/2446)
+Updating files:  77% (1884/2446)
+Updating files:  78% (1908/2446)
+Updating files:  79% (1933/2446)
+Updating files:  80% (1957/2446)
+Updating files:  81% (1982/2446)
+Updating files:  82% (2006/2446)
+Updating files:  83% (2031/2446)
+Updating files:  84% (2055/2446)
+Updating files:  85% (2080/2446)
+Updating files:  86% (2104/2446)
+Updating files:  87% (2129/2446)
+Updating files:  88% (2153/2446)
+Updating files:  89% (2177/2446)
+Updating files:  90% (2202/2446)
+Updating files:  91% (2226/2446)
+Updating files:  91% (2239/2446)
+Updating files:  92% (2251/2446)
+Updating files:  93% (2275/2446)
+Updating files:  94% (2300/2446)
+Updating files:  95% (2324/2446)
+Updating files:  96% (2349/2446)
+Updating files:  97% (2373/2446)
+Updating files:  98% (2398/2446)
+Updating files:  99% (2422/2446)
+Updating files: 100% (2446/2446)
+Updating files: 100% (2446/2446), done.
+cloning repository(xmake-repo): https://gitlab.com/tboox/xmake-repo.git to C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo ..
+Cloning into 'C:\Users\runneradmin\AppData\Local\.xmake\repositories\xmake-repo'...
+Updating files:  17% (503/2943)
+Updating files:  18% (530/2943)
+Updating files:  19% (560/2943)
+Updating files:  20% (589/2943)
+Updating files:  21% (619/2943)
+Updating files:  22% (648/2943)
+Updating files:  23% (677/2943)
+Updating files:  24% (707/2943)
+Updating files:  25% (736/2943)
+Updating files:  26% (766/2943)
+Updating files:  27% (795/2943)
+Updating files:  28% (825/2943)
+Updating files:  29% (854/2943)
+Updating files:  30% (883/2943)
+Updating files:  31% (913/2943)
+Updating files:  32% (942/2943)
+Updating files:  33% (972/2943)
+Updating files:  34% (1001/2943)
+Updating files:  35% (1031/2943)
+Updating files:  36% (1060/2943)
+Updating files:  37% (1089/2943)
+Updating files:  38% (1119/2943)
+Updating files:  39% (1148/2943)
+Updating files:  40% (1178/2943)
+Updating files:  41% (1207/2943)
+Updating files:  42% (1237/2943)
+Updating files:  43% (1266/2943)
+Updating files:  44% (1295/2943)
+Updating files:  45% (1325/2943)
+Updating files:  46% (1354/2943)
+Updating files:  47% (1384/2943)
+Updating files:  48% (1413/2943)
+Updating files:  49% (1443/2943)
+Updating files:  50% (1472/2943)
+Updating files:  50% (1498/2943)
+Updating files:  51% (1501/2943)
+Updating files:  52% (1531/2943)
+Updating files:  53% (1560/2943)
+Updating files:  54% (1590/2943)
+Updating files:  55% (1619/2943)
+Updating files:  56% (1649/2943)
+Updating files:  57% (1678/2943)
+Updating files:  58% (1707/2943)
+Updating files:  59% (1737/2943)
+Updating files:  60% (1766/2943)
+Updating files:  61% (1796/2943)
+Updating files:  62% (1825/2943)
+Updating files:  63% (1855/2943)
+Updating files:  64% (1884/2943)
+Updating files:  65% (1913/2943)
+Updating files:  66% (1943/2943)
+Updating files:  67% (1972/2943)
+Updating files:  68% (2002/2943)
+Updating files:  69% (2031/2943)
+Updating files:  70% (2061/2943)
+Updating files:  71% (2090/2943)
+Updating files:  72% (2119/2943)
+Updating files:  73% (2149/2943)
+Updating files:  74% (2178/2943)
+Updating files:  75% (2208/2943)
+Updating files:  76% (2237/2943)
+Updating files:  76% (2255/2943)
+Updating files:  77% (2267/2943)
+Updating files:  78% (2296/2943)
+Updating files:  79% (2325/2943)
+Updating files:  80% (2355/2943)
+Updating files:  81% (2384/2943)
+Updating files:  82% (2414/2943)
+Updating files:  83% (2443/2943)
+Updating files:  84% (2473/2943)
+Updating files:  85% (2502/2943)
+Updating files:  86% (2531/2943)
+Updating files:  87% (2561/2943)
+Updating files:  88% (2590/2943)
+Updating files:  89% (2620/2943)
+Updating files:  90% (2649/2943)
+Updating files:  91% (2679/2943)
+Updating files:  92% (2708/2943)
+Updating files:  93% (2737/2943)
+Updating files:  94% (2767/2943)
+Updating files:  95% (2796/2943)
+Updating files:  96% (2826/2943)
+Updating files:  97% (2855/2943)
+Updating files:  98% (2885/2943)
+Updating files:  99% (2914/2943)
+Updating files: 100% (2943/2943)
+Updating files: 100% (2943/2943), done.
+[0m[32mok[0m
+C:\Program Files\Git\bin\git.exe rev-parse HEAD
+[0mchecking for ninja ... [31;1mno[0m
+[0mchecking for ninja ... [31;1mno[0m
+[0mchecking for ninja ... [32;1mC:\ProgramData\Chocolatey\bin\ninja.exe[0m
+[0mchecking for cmake ... [31;1mno[0m
+[0mchecking for cmake ... [31;1mno[0m
+finding lua from xmake ..
+[0mchecking for xmake::lua ... [32;1mlua v5.4.8[0m
+finding sol2 from xmake ..
+[0mchecking for xmake::sol2 ... [32;1msol2 v3.3.0[0m
+[0mchecking for cmake ... [31;1mno[0m
+[0mchecking for cmake ... [32;1mC:\Program Files\CMake\bin\cmake[0m
+finding mimalloc from xmake ..
+[0mchecking for xmake::mimalloc ... [32;1mmimalloc v2.2.4[0m
+finding tiltedcore from xmake ..
+[0mchecking for xmake::tiltedcore ... [32;1mtiltedcore v0.2.9[0m
+finding hopscotch-map from xmake ..
+[0mchecking for xmake::hopscotch-map ... [32;1mhopscotch-map v2.3.1[0m
+finding snappy from xmake ..
+[0mchecking for xmake::snappy ... [32;1msnappy 1.1.10[0m
+finding abseil from xmake ..
+[0mchecking for xmake::abseil ... [32;1mabseil 20250127.1[0m
+finding protobuf-cpp from xmake ..
+[0mchecking for xmake::protobuf-cpp ... [32;1mprotobuf-cpp 26.1[0m
+finding gamenetworkingsockets from xmake ..
+[0mchecking for xmake::gamenetworkingsockets ... [32;1mgamenetworkingsockets v1.4.1[0m
+finding catch2 from xmake ..
+[0mchecking for xmake::catch2 ... [32;1mcatch2 v2.13.9[0m
+finding libuv from xmake ..
+[0mchecking for xmake::libuv ... [32;1mlibuv v1.48.0[0m
+finding mem from xmake ..
+[0mchecking for xmake::mem ... [32;1mmem 1.0.0[0m
+finding minhook from xmake ..
+[0mchecking for xmake::minhook ... [32;1mminhook v1.3.3[0m
+finding xbyak from xmake ..
+[0mchecking for xmake::xbyak ... [32;1mxbyak v7.06[0m
+finding directxtk from xmake ..
+[0mchecking for xmake::directxtk ... [32;1mdirectxtk 21.11.0[0m
+finding cef from xmake ..
+[0mchecking for xmake::cef ... [32;1mcef 141.0.11[0m
+finding entt from xmake ..
+[0mchecking for xmake::entt ... [32;1mentt v3.10.0[0m
+finding cryptopp from xmake ..
+[0mchecking for xmake::cryptopp ... [32;1mcryptopp 8.9.0[0m
+finding spdlog from xmake ..
+[0mchecking for xmake::spdlog ... [32;1mspdlog v1.13.0[0m
+finding openssl from xmake ..
+[0mchecking for xmake::openssl ... [32;1mopenssl 1.1.1-w[0m
+finding cpp-httplib from xmake ..
+[0mchecking for xmake::cpp-httplib ... [32;1mcpp-httplib v0.14.0[0m
+finding gtest from xmake ..
+[0mchecking for xmake::gtest ... [32;1mgtest v1.14.0[0m
+finding glm from xmake ..
+[0mchecking for xmake::glm ... [32;1mglm 0.9.9+8[0m
+finding zlib from xmake ..
+[0mchecking for xmake::zlib ... [32;1mzlib v1.3.1[0m
+finding discord from xmake ..
+[0mchecking for xmake::discord ... [32;1mdiscord 3.2.1[0m
+finding imgui from xmake ..
+[0mchecking for xmake::imgui ... [32;1mimgui v1.89.7[0m
+[0mchecking for cl.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\cl.exe[0m
+[0m[2mchecking for the c++ compiler (cxx) ... [32;1mcl.exe[0m
+[0mchecking for link.exe ... [32;1mC:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\link.exe[0m
+[0m[2mchecking for the linker (ld) ... [32;1mlink.exe[0m
+[0m[2mgenerating Code\common\BuildInfo.h.in to build\BuildInfo.h ..[0m
+  > replace GIT_BRANCH -> master
+  > replace GIT_TAG -> v1.8.4
+[0mgenerating Code\common\BuildInfo.h.in ... [32;1mok[0m
+configure
+{
+    mode = release
+    dotnet_sdkver = 10.0.403
+    builddir = build
+    ccache = true
+    skyrim_version = 1.6.1170
+    ndk_stdcxx = true
+    plat = windows
+    dotnet = C:\Program Files\dotnet\sdk\10.0.403
+    host = windows
+    vs = 2022
+    kind = static
+    arch = x64
+}
+[0m[1;33;1mwarning: [33;1mplease use add_configs("runtimes") instead of add_configs("vs_runtime").[0m

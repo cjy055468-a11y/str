@@ -1,0 +1,27 @@
+{
+  "round": 1,
+  "scope": [
+    "MissiveBoardListing wire model and request/notify messages",
+    "MissiveBoardLedger board-local publish/claim/retire lifecycle",
+    "client/server service routing and authority election",
+    "removal of the previous Missives sharing protocol and ESP package"
+  ],
+  "checks": [
+    "A listing contains only its ID, physical board ID, quest form ID, and posting book form ID.",
+    "The ledger key is physical board plus quest; separate physical boards can host independent rows for the same quest.",
+    "Claims are serialized under one mutex and one claimant wins per physical-board row.",
+    "Claim notifications remove the row for all viewers of that board and grant task activation only to the winner.",
+    "Task progress, objective aliases, reward data, and task item contents are absent from the protocol and ledger.",
+    "Missives quest stages and personal quest items are filtered from normal STR synchronization."
+  ],
+  "findings_fixed": [
+    "Removed an earlier cross-board reservation concept so claiming the same quest on one board does not suppress a listing on another board.",
+    "Expired available rows may be retired by the currently elected authority; claimed rows may be retired by their claimant.",
+    "Retired and rejected local rows are erased so the board can recover and generate replacement public notices."
+  ],
+  "result": "PASS_SOURCE_REVIEW",
+  "limits": [
+    "Windows/MSVC build not run in this Linux workspace.",
+    "Two-client Skyrim behavior is not established by source review."
+  ]
+}
