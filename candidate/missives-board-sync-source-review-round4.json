@@ -1,0 +1,19 @@
+{
+  "round": 4,
+  "scope": [
+    "client board-open retry until a complete snapshot arrives",
+    "snapshot and board-open diagnostics across client/server",
+    "regression checks for retry coverage and patch reproducibility"
+  ],
+  "checks": [
+    "Client tracks each open physical board and repeats the idempotent Open request every two seconds until SnapshotEnd marks that board ready; retries stop when the board closes or the connection ends.",
+    "The server Open path is idempotent for an existing visitor and repeats a fresh snapshot on each retry, so a missed/incomplete snapshot can recover without task-state transfer.",
+    "Client logs connection detection, handshake, first open, snapshot begin/end, and listing synchronization; server logs Hello, first board open, and snapshot contents at debug level.",
+    "The source checker now fails if the open-board snapshot retry is removed.",
+    "The complete native patch still applies to the pinned clean upstream commit."
+  ],
+  "result": "PASS_SOURCE_REVIEW",
+  "limits": [
+    "Windows/MSVC build and live two-client game test have not yet been rerun for this retry change."
+  ]
+}

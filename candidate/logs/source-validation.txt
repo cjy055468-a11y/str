@@ -1,12 +1,12 @@
 **********************
 PowerShell transcript start
-Start time: 20261108154059
+Start time: 20261108173105
 Username: runnervmquqza\runneradmin
 RunAs User: runnervmquqza\runneradmin
 Configuration Name: 
 Machine: runnervmquqza (Microsoft Windows NT 10.0.20348.0)
-Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\dba88583-edf5-4d61-bd97-68a724d14872.ps1'
-Process ID: 2232
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\b3f1a3ae-0fab-44a3-9483-dc8d68d1e76d.ps1'
+Process ID: 828
 PSVersion: 7.6.9
 PSEdition: Core
 GitCommitId: 7.6.9
@@ -35,6 +35,7 @@ Transcript started, output file is logs/source-validation.txt
   "trigger_integration": "source-verified",
   "board_claim_scope": "physical-board-id",
   "claim_retry": "one-second-until-server-result",
+  "snapshot_retry": "reopens-until-snapshot-end",
   "task_progress_wire_fields": 0,
   "personal_task_item_filter": "present",
   "old_board_implementation": "absent",
@@ -45,5 +46,5 @@ PS>$global:?
 True
 **********************
 PowerShell transcript end
-End time: 20261108154104
+End time: 20261108173109
 **********************

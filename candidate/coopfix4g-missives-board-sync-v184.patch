@@ -3315,10 +3315,10 @@ index 8d9f2c78..19c786ee 100644
  
 diff --git a/Code/client/Services/Generic/MissiveBoardService.cpp b/Code/client/Services/Generic/MissiveBoardService.cpp
 new file mode 100644
-index 00000000..abd38b33
+index 00000000..ab84620f
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissiveBoardService.cpp
-@@ -0,0 +1,284 @@
+@@ -0,0 +1,366 @@
 +#include <TiltedOnlinePCH.h>
 +#include <Services/MissiveBoardService.h>
 +#include <Services/TransportService.h>
@@ -3384,6 +3384,8 @@ index 00000000..abd38b33
 +    m_owned.clear();
 +    m_pendingPublish.clear();
 +    m_pendingFinish.clear();
++    m_openBoards.clear();
++    m_unmappedServerIds.clear();
 +    MissiveBoardBridge::SetConnection(m_enabled);
 +    if (!m_enabled) return;
 +    RegisterLocalQuests();
@@ -3397,6 +3399,8 @@ index 00000000..abd38b33
 +    m_listings.clear();
 +    m_pendingPublish.clear();
 +    m_pendingFinish.clear();
++    m_openBoards.clear();
++    m_unmappedServerIds.clear();
 +    MissiveBoardBridge::SetConnection(false);
 +}
 +
@@ -3426,6 +3430,43 @@ index 00000000..abd38b33
 +    }
 +
 +    for (const auto& event : MissiveBoardBridge::Drain()) Handle(event);
++
++    // A board-open event is one-shot from Papyrus. Reissue it until a complete
++    // snapshot arrives so a transient request/response race cannot leave the
++    // local board permanently unready.
++    for (auto& [boardId, retry] : m_openBoards)
++    {
++        if (MissiveBoardBridge::Call(MissiveBoardBridge::Operation::BoardReady, boardId, 0)
++            || now < retry.NextRequest)
++            continue;
++
++        MissiveBoardListing listing;
++        if (!m_world.GetModSystem().GetServerModId(boardId, listing.Board))
++        {
++            retry.NextRequest = now + std::chrono::seconds(2);
++            if (now >= retry.NextLog)
++            {
++                spdlog::warn("STR Missives board retry cannot map local board {:X}", boardId);
++                retry.NextLog = now + std::chrono::seconds(30);
++            }
++            continue;
++        }
++        const bool sent = Send(RequestMissivesBoard::Operation::Open, listing);
++        retry.NextRequest = now + std::chrono::seconds(2);
++        if (sent)
++        {
++            if (now >= retry.NextLog)
++            {
++                spdlog::warn("STR Missives board snapshot not ready; retrying open for board {:X}", boardId);
++                retry.NextLog = now + std::chrono::seconds(30);
++            }
++        }
++        else if (now >= retry.NextLog)
++        {
++            spdlog::warn("STR Missives board open request could not be queued for board {:X}", boardId);
++            retry.NextLog = now + std::chrono::seconds(30);
++        }
++    }
 +
 +    for (auto it = m_pendingPublish.begin(); it != m_pendingPublish.end();)
 +        if (now - it->second > std::chrono::seconds(3)) it = m_pendingPublish.erase(it);
@@ -3486,13 +3527,36 @@ index 00000000..abd38b33
 +    MissiveBoardListing listing;
 +    if (acEvent.Action == O::Open || acEvent.Action == O::Close)
 +    {
-+        if (!m_world.GetModSystem().GetServerModId(acEvent.Quest, listing.Board)) return;
-+        if (acEvent.Action == O::Close)
++        if (acEvent.Action == O::Open)
 +        {
++            // Record the open before trying the local-to-server form mapping.
++            // Keep the one-shot Papyrus event alive while its local form ID
++            // cannot yet be converted to the server's board ID.
++            const auto now = std::chrono::steady_clock::now();
++            auto& retry = m_openBoards[acEvent.Quest];
++            retry.NextRequest = now + std::chrono::seconds(2);
++            retry.NextLog = now;
++        }
++        else
++        {
++            m_openBoards.erase(acEvent.Quest);
 +            MissiveBoardBridge::SetBoardReady(acEvent.Quest, false);
 +            MissiveBoardBridge::SetBoardAuthority(acEvent.Quest, false);
 +        }
-+        Send(acEvent.Action == O::Open ? RequestMissivesBoard::Operation::Open : RequestMissivesBoard::Operation::Close, listing);
++
++        if (!m_world.GetModSystem().GetServerModId(acEvent.Quest, listing.Board))
++        {
++            auto retry = m_openBoards.find(acEvent.Quest);
++            if (retry != m_openBoards.end()) retry->second.NextRequest = std::chrono::steady_clock::now() + std::chrono::seconds(2);
++            return;
++        }
++        if (acEvent.Action == O::Open)
++        {
++            if (Send(RequestMissivesBoard::Operation::Open, listing))
++                spdlog::info("STR Missives board open sent: local board {:X}", acEvent.Quest);
++        }
++        else
++            Send(RequestMissivesBoard::Operation::Close, listing);
 +        return;
 +    }
 +    const auto* pSpec = FindSpec(acEvent.Quest);
@@ -3547,10 +3611,15 @@ index 00000000..abd38b33
 +    if (acMessage.Action == NotifyMissivesBoard::Operation::BoardControl)
 +    {
 +        const uint32_t boardId = m_world.GetModSystem().GetGameId(acMessage.Listing.Board);
++        if (!boardId && m_unmappedServerIds.insert(acMessage.Listing.Board.LogFormat()).second)
++            spdlog::error("STR Missives board cannot map server board id {:X}; local snapshot will retry", acMessage.Listing.Board.LogFormat());
++        if (!boardId) return;
 +        MissiveBoardBridge::SetBoardAuthority(boardId, acMessage.Authority);
 +        return;
 +    }
 +    const uint32_t boardId = m_world.GetModSystem().GetGameId(acMessage.Listing.Board);
++    if (!boardId && m_unmappedServerIds.insert(acMessage.Listing.Board.LogFormat()).second)
++        spdlog::error("STR Missives board cannot map server board id {:X}; local snapshot will retry", acMessage.Listing.Board.LogFormat());
 +    if (acMessage.Action == NotifyMissivesBoard::Operation::SnapshotBegin)
 +    {
 +        if (!boardId) return;
@@ -3559,15 +3628,22 @@ index 00000000..abd38b33
 +            else ++it;
 +        MissiveBoardBridge::SetBoardAuthority(boardId, acMessage.Authority);
 +        MissiveBoardBridge::BeginSnapshot(boardId);
++        spdlog::info("STR Missives board snapshot began: local board {:X}, authority {}", boardId, acMessage.Authority);
 +        return;
 +    }
 +    if (acMessage.Action == NotifyMissivesBoard::Operation::SnapshotEnd)
 +    {
-+        if (boardId) MissiveBoardBridge::EndSnapshot(boardId);
++        if (boardId)
++        {
++            MissiveBoardBridge::EndSnapshot(boardId);
++            spdlog::info("STR Missives board snapshot completed: local board {:X}", boardId);
++        }
 +        return;
 +    }
 +
 +    const uint32_t questId = m_world.GetModSystem().GetGameId(acMessage.Listing.Quest);
++    if (!questId && m_unmappedServerIds.insert(acMessage.Listing.Quest.LogFormat()).second)
++        spdlog::error("STR Missives board cannot map server quest id {:X}; listing skipped", acMessage.Listing.Quest.LogFormat());
 +    if (!boardId || !questId) return;
 +    const ListingKey key{questId, boardId};
 +    if (acMessage.Action == NotifyMissivesBoard::Operation::Posting
@@ -3592,6 +3668,12 @@ index 00000000..abd38b33
 +            return;
 +        }
 +        m_listings[key] = local;
++        if (acMessage.Action == NotifyMissivesBoard::Operation::Taken)
++            spdlog::info("STR Missives board claim synchronized: remove local shadow listing, board {:X}, quest {:X}", boardId, questId);
++        else if (acMessage.Action == NotifyMissivesBoard::Operation::Grant)
++            spdlog::info("STR Missives board claim granted locally: board {:X}, quest {:X}", boardId, questId);
++        else if (acMessage.Action == NotifyMissivesBoard::Operation::Retired)
++            spdlog::info("STR Missives board listing retired: board {:X}, quest {:X}", boardId, questId);
 +        if (state == 2)
 +        {
 +            m_owned.insert(key);
@@ -3680,10 +3762,10 @@ index ec897b18..703c3e09 100644
  
 diff --git a/Code/client/Services/MissiveBoardService.h b/Code/client/Services/MissiveBoardService.h
 new file mode 100644
-index 00000000..019f2a2f
+index 00000000..f76efa2d
 --- /dev/null
 +++ b/Code/client/Services/MissiveBoardService.h
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,58 @@
 +#pragma once
 +#include <Messages/NotifyMissivesBoard.h>
 +#include <Messages/RequestMissivesBoard.h>
@@ -3710,6 +3792,11 @@ index 00000000..019f2a2f
 +        MissiveBoardListing Data;
 +        int32_t State{-1};
 +    };
++    struct OpenBoardRetry
++    {
++        std::chrono::steady_clock::time_point NextRequest{};
++        std::chrono::steady_clock::time_point NextLog{};
++    };
 +    void OnConnected(const ConnectedEvent&) noexcept;
 +    void OnDisconnected(const DisconnectedEvent&) noexcept;
 +    void OnUpdate(const UpdateEvent&) noexcept;
@@ -3729,6 +3816,8 @@ index 00000000..019f2a2f
 +    std::set<ListingKey> m_owned;
 +    std::map<ListingKey, std::chrono::steady_clock::time_point> m_pendingPublish;
 +    std::map<ListingKey, std::chrono::steady_clock::time_point> m_pendingFinish;
++    std::map<uint32_t, OpenBoardRetry> m_openBoards;
++    std::set<uint64_t> m_unmappedServerIds;
 +    std::chrono::steady_clock::time_point m_nextHello{};
 +    entt::scoped_connection m_connectedConnection;
 +    entt::scoped_connection m_disconnectedConnection;
@@ -5930,10 +6019,10 @@ index 3e9a26f5..71f03609 100644
       * @brief Relays inventory changes to other clients and updates server side inventories.
 diff --git a/Code/server/Services/MissiveBoardService.cpp b/Code/server/Services/MissiveBoardService.cpp
 new file mode 100644
-index 00000000..e18a1609
+index 00000000..377dc8fc
 --- /dev/null
 +++ b/Code/server/Services/MissiveBoardService.cpp
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,198 @@
 +#include <Services/MissiveBoardService.h>
 +#include <Events/PlayerLeaveEvent.h>
 +#include <World.h>
@@ -5997,13 +6086,14 @@ index 00000000..e18a1609
 +void MissiveBoardService::Snapshot(Player* apPlayer, uint64_t aSession, const GameId& acBoard) const noexcept
 +{
 +    if (!apPlayer) return;
++    const auto records = m_ledger.Snapshot(acBoard);
 +    NotifyMissivesBoard notify;
 +    notify.ServerSession = m_serverSession;
 +    notify.Listing.Board = acBoard;
 +    notify.Authority = m_ledger.GetAuthority(acBoard) == aSession;
 +    notify.Action = NotifyMissivesBoard::Operation::SnapshotBegin;
 +    apPlayer->Send(notify);
-+    for (const auto& record : m_ledger.Snapshot(acBoard))
++    for (const auto& record : records)
 +    {
 +        const auto operation = record.Status == MissiveBoardLedger::State::Available
 +            ? NotifyMissivesBoard::Operation::Posting : NotifyMissivesBoard::Operation::Taken;
@@ -6013,6 +6103,8 @@ index 00000000..e18a1609
 +    notify.Listing = MissiveBoardListing{};
 +    notify.Listing.Board = acBoard;
 +    apPlayer->Send(notify);
++    spdlog::debug("STR Missives board snapshot sent: player {}, board {:X}, listings {}",
++        apPlayer->GetId(), acBoard.LogFormat(), records.size());
 +}
 +
 +void MissiveBoardService::Elect(const GameId& acBoard) noexcept
@@ -6082,7 +6174,12 @@ index 00000000..e18a1609
 +        if (!listing.Board) return;
 +        auto& visitors = m_visitors[listing.Board.LogFormat()];
 +        visitors.Board = listing.Board;
-+        if (action == RequestMissivesBoard::Operation::Open) visitors.Sessions.insert(session);
++        if (action == RequestMissivesBoard::Operation::Open)
++        {
++            const bool firstOpen = visitors.Sessions.insert(session).second;
++            if (firstOpen)
++                spdlog::info("STR Missives board open: player {}, board {:X}", pPlayer->GetId(), listing.Board.LogFormat());
++        }
 +        else visitors.Sessions.erase(session);
 +        Elect(listing.Board);
 +        if (action == RequestMissivesBoard::Operation::Open) Snapshot(pPlayer, session, listing.Board);

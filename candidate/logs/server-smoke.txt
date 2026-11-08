@@ -1,1 +1,1 @@
-[2026-11-08 15:49:48.768] [info] [tid 4484]  Generated D:\a\str\str/logs/STServer.ini
+[2026-11-08 17:39:47.228] [info] [tid 6304]  Generated D:\a\str\str/logs/STServer.ini
