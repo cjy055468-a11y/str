@@ -65,6 +65,17 @@ def main() -> None:
     require("STRMaintainNonEmptyBoard()" in activator, "empty-board recovery path is missing")
     require("Claim(" in alias_claim and "GetPostingStatus(" in alias_claim, "posting pickup trigger is not connected")
     require("Claim(" in alias_delivery and "GetPostingStatus(" in alias_delivery, "delivery posting pickup trigger is not connected")
+    for name, alias in (("ordinary", alias_claim), ("delivery", alias_delivery)):
+        require(re.search(
+            r"Int status\s*=\s*STRMissivesBoardBridge\.GetPostingStatus\(mission\.GetFormID\(\), board\.GetFormID\(\)\)"
+            r"[\s\S]*?If status == 0[\s\S]*?Claim\(mission\.GetFormID\(\), board\.GetFormID\(\)\)"
+            r"[\s\S]*?EndIf[\s\S]*?If status <= 0[\s\S]*?RegisterForSingleUpdate\(1\.0\)", alias
+        ) is not None,
+                f"{name} pickup path does not retry unconfirmed claims")
+    require("stage < 20 && status <= 0 && letter && Game.GetPlayer().GetItemCount(letter) > 0" in bridge_psc,
+            "picked posting may be moved off the player before the listing/claim response arrives")
+    require("stage < 20 && status <= 0 && letter && Game.GetPlayer().GetItemCount(letter) > 0" in bridge_psc,
+            "picked posting may be moved off the player before the listing/claim response arrives")
     require("If status == 2" in bridge_psc and "mission.SetStage(20)" in bridge_psc, "only-granted claimant path is missing")
     require("status == 1 || status == 3" in bridge_psc and "mission.Stop()" in bridge_psc, "non-claimant cleanup path is missing")
 
@@ -108,6 +119,7 @@ def main() -> None:
         "papyrus_native_functions": len(declared),
         "trigger_integration": "source-verified",
         "board_claim_scope": "physical-board-id",
+        "claim_retry": "one-second-until-server-result",
         "task_progress_wire_fields": 0,
         "personal_task_item_filter": "present",
         "old_board_implementation": "absent",

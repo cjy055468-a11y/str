@@ -42,6 +42,11 @@ Function RefreshPosting(Quest mission, ObjectReference targetBoard) Global
     ObjectReference sourceBoard = boardAlias.GetReference()
 
     Int status = GetPostingStatus(questId, boardId)
+    If stage < 20 && status <= 0 && letter && Game.GetPlayer().GetItemCount(letter) > 0
+        ; Keep a just-picked posting with the player while its public listing is
+        ; still being published or its claim is awaiting server confirmation.
+        Return
+    EndIf
     If status == 0 && (stage >= 103 || !mission.IsRunning())
         Finish(questId, boardId)
         STRRemoveLocalPosting(letter, sourceBoard, targetBoard)

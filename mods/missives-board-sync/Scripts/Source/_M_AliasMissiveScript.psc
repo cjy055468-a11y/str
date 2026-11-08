@@ -46,8 +46,13 @@ Event OnUpdate()
     If board
         STRMissivesBoardBridge.RefreshPosting(mission, board)
         If mission.GetStage() < 20 && Game.GetPlayer().GetItemCount(GetReference()) > 0
-            If STRMissivesBoardBridge.GetPostingStatus(mission.GetFormID(), board.GetFormID()) == 0
-                RegisterForSingleUpdate(0.1)
+            Int status = STRMissivesBoardBridge.GetPostingStatus(mission.GetFormID(), board.GetFormID())
+            If status == 0
+                ; Re-submit at a low rate until the server grants or rejects it.
+                STRMissivesBoardBridge.Claim(mission.GetFormID(), board.GetFormID())
+            EndIf
+            If status <= 0
+                RegisterForSingleUpdate(1.0)
             EndIf
         EndIf
     EndIf
