@@ -13,6 +13,7 @@ assert expected == actual, f"PEX mismatch: missing={sorted(expected-actual)}, ex
 for path in actual_paths:
     data = path.read_bytes()
     assert len(data) > 16, f"empty/truncated PEX: {path.name}"
-    assert data.startswith(b"Pex\0"), f"invalid Papyrus bytecode: {path.name}"
+    # Skyrim PEX uses the big-endian 0xFA57C0DE magic written by Caprica.
+    assert data.startswith(bytes.fromhex("FA57C0DE")), f"invalid Papyrus bytecode: {path.name}"
 assert "STRMissivesBoardBridge.pex" in actual
 print(json.dumps({"pex_count": len(actual), "source_count": len(expected), "all_bytecode_valid": True}, indent=2))
