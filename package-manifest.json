@@ -1,0 +1,10 @@
+{
+  "file": "STR-coopfix4g-corpse5-state1s-loot2-test.zip",
+  "bytes": 6483132,
+  "sha256": "c17762cacfa7a753b872a97ac104ea8b5335e0d55b7e3e0f7007592913a1987f",
+  "source_revision": "a350385402a8d8d13c3e07b695c72eaaf62219d1",
+  "run_id": 42427371334,
+  "checks": 2,
+  "tests": 110,
+  "game_tested": false
+}

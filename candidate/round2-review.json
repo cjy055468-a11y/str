@@ -1,0 +1,23 @@
+{
+  "review": "round 2: Windows build, tests, and packaged output",
+  "status": "pass",
+  "workflow_run": "https://github.com/cjy055468-a11y/str/actions/runs/42427371334",
+  "source_revision": "a350385402a8d8d13c3e07b695c72eaaf62219d1",
+  "checks": {
+    "MSVC_client_server_build": "pass",
+    "server_generate_config_smoke": "pass",
+    "unit_tests": {
+      "executed": 110,
+      "failures": 0,
+      "errors": 0
+    },
+    "baseline_tests_preserved": 103,
+    "new_tests": 7,
+    "papyrus_scripts_compiled": 18,
+    "four_PE64_binaries_and_version_markers": "pass",
+    "delivery_hashes_match_build_report": "pass",
+    "official_source_patch_replay_and_scope": "pass",
+    "gameplay_loot_test": "not run"
+  },
+  "limitation": "The reported one-to-two item count still needs in-game confirmation with the loot2 build."
+}
