@@ -3,6 +3,7 @@
   "papyrus_native_functions": 15,
   "trigger_integration": "source-verified",
   "board_claim_scope": "physical-board-id",
+  "claim_retry": "one-second-until-server-result",
   "task_progress_wire_fields": 0,
   "personal_task_item_filter": "present",
   "old_board_implementation": "absent",
