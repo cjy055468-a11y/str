@@ -8,7 +8,7 @@
     "board non-empty recovery path, regression tests, and final package contents"
   ],
   "checks": [
-    "All 15 native functions match the Papyrus bridge declarations, script calls resolve to a declared operation/helper, and both C++ authority checks pass the bridge's three-argument signature.",
+    "All 15 native functions match the Papyrus bridge declarations, script calls resolve to a declared operation/helper, both C++ authority checks pass the bridge's three-argument signature, and the server event header is included directly.",
     "Trigger enter opens the physical board, trigger leave closes it, and board generation waits for the server snapshot and authority election.",
     "Both ordinary and delivery posting pickup handlers request a server claim; only a granted claim sets local stage 20.",
     "Non-winning posting shadows are removed and their unclaimed local quest instances are stopped.",
@@ -24,11 +24,11 @@
     "Native ledger smoke executable: PASS.",
     "Native public-listing serialization smoke executable: PASS.",
     "Native request/notify factory round-trip smoke executable: PASS.",
-    "The Windows run exposed two C2660 bridge-call arity errors; both calls now pass the board ID and the required third placeholder argument. The final candidate passes scope, protocol-source, and clean-baseline patch checks."
+    "Windows builds exposed two C2660 bridge-call arity errors and then a missing direct PacketEvent include; both C++ fixes are present in the current patch. Scope, protocol-source, and clean-baseline patch checks pass."
   ],
   "result": "PASS_SOURCE_REVIEW",
   "limits": [
-    "The previous Windows run compiled Papyrus successfully but failed at the first C++ compile on two bridge-call arity errors. Those calls are fixed; the complete Windows/MSVC build and protocol tests must pass on the current candidate.",
+    "The latest Windows run reached server compilation and found the missing PacketEvent include; it is now added. The complete Windows/MSVC build and protocol tests must pass on the current candidate.",
     "Gameplay, non-empty board recovery, and task-item isolation still require two-client Skyrim validation."
   ]
 }

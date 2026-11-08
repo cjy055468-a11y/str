@@ -6126,11 +6126,12 @@ index 00000000..e18a1609
 +}
 diff --git a/Code/server/Services/MissiveBoardService.h b/Code/server/Services/MissiveBoardService.h
 new file mode 100644
-index 00000000..fa157148
+index 00000000..a0250aba
 --- /dev/null
 +++ b/Code/server/Services/MissiveBoardService.h
-@@ -0,0 +1,41 @@
+@@ -0,0 +1,42 @@
 +#pragma once
++#include <Events/PacketEvent.h>
 +#include <Game/Inventory/MissiveBoardLedger.h>
 +#include <Messages/NotifyMissivesBoard.h>
 +#include <Messages/RequestMissivesBoard.h>
