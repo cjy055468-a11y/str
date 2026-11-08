@@ -3315,7 +3315,7 @@ index 8d9f2c78..19c786ee 100644
  
 diff --git a/Code/client/Services/Generic/MissiveBoardService.cpp b/Code/client/Services/Generic/MissiveBoardService.cpp
 new file mode 100644
-index 00000000..86aa5461
+index 00000000..abd38b33
 --- /dev/null
 +++ b/Code/client/Services/Generic/MissiveBoardService.cpp
 @@ -0,0 +1,284 @@
@@ -3468,7 +3468,7 @@ index 00000000..86aa5461
 +
 +    for (auto& [key, listing] : m_listings)
 +    {
-+        if (listing.State != 0 || !MissiveBoardBridge::Call(MissiveBoardBridge::Operation::Authority, key.second)) continue;
++        if (listing.State != 0 || !MissiveBoardBridge::Call(MissiveBoardBridge::Operation::Authority, key.second, 0)) continue;
 +        auto* pQuest = Cast<TESQuest>(TESForm::GetById(key.first));
 +        if (pQuest && !pQuest->IsStopped() && pQuest->currentStage < 103) continue;
 +        if (m_pendingFinish.contains(key)) continue;
@@ -3525,7 +3525,7 @@ index 00000000..86aa5461
 +    if (acEvent.Action == O::Finish)
 +    {
 +        if (current == m_listings.end() || current->second.State != 0
-+            || !MissiveBoardBridge::Call(MissiveBoardBridge::Operation::Authority, acEvent.Board)) return;
++            || !MissiveBoardBridge::Call(MissiveBoardBridge::Operation::Authority, acEvent.Board, 0)) return;
 +        if (Send(RequestMissivesBoard::Operation::Finish, current->second.Data))
 +            m_pendingFinish[key] = std::chrono::steady_clock::now();
 +    }

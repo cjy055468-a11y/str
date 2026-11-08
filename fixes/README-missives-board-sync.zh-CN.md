@@ -14,4 +14,4 @@
 
 Windows 工作流会核验官方源码基线和补丁范围，编译 Papyrus PEX、STR 客户端与服务器，再运行协议测试。只有这些步骤全部成功才会打包四个匹配的 STR 程序文件及 `MissivesBoardSync` 脚本。所有玩家和服务器必须使用同一版修改过协议的 STR；每位客户端还需要保留原版 `Missives.esp` 和其汉化文件，并安装新包的 `MissivesBoardSync/Scripts`。
 
-本工作区尚未运行 Windows/MSVC 与 Caprica 构建，也没有 Skyrim 双客户端运行环境。因而目前是可审查的源码候选，不能标记为已编译、已安装或已通过游戏内兼容测试。工作流成功后，Windows 构建产物才是可安装包。
+Windows 工作流会构建 Windows/MSVC 客户端与服务端、编译 Papyrus PEX 并运行协议回归测试。只有该次工作流的三个构建检查全部通过且上传 `STR-v184-SSE-161170-missives-board-sync` 产物时，该产物才可用于安装测试。自动化检查通过不代表已完成 Skyrim 双客户端游戏内验证。
