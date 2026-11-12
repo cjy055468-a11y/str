@@ -3,7 +3,7 @@ Scriptname STRNoticeSlip extends ObjectReference
 Quest Property Mission Auto
 Int Property PostingAlias Auto
 Int Property BoardAlias Auto
-Container Property BoardBase Auto
+Form Property BoardBase Auto
 
 ObjectReference NoticeBoard
 ObjectReference CurrentContainer
@@ -25,9 +25,8 @@ Event OnContainerChanged(ObjectReference akNewContainer, ObjectReference akOldCo
         Return
     EndIf
     If NoticeActive
-        If akNewContainer != Game.GetPlayer() && !CommitSent
-            AbortClaim(False)
-        EndIf
+        ; ClaimLoop owns preparation and cleanup. A container event only
+        ; updates the location, so dropping cannot stop aliases mid-prepare.
         Return
     EndIf
     If akNewContainer != Game.GetPlayer()
@@ -78,6 +77,10 @@ Function ProcessClaim()
     If !NoticeActive || NoticeDone || !Mission || !NoticeBoard
         Return
     EndIf
+    If !CommitSent && (CurrentContainer != Game.GetPlayer() || !STRNoticeBridge.IsConnected())
+        AbortClaim(False)
+        Return
+    EndIf
     ; An unacknowledged commit may already have won on the server. Keep its
     ; receipt alive across a temporary disconnect rather than dropping the task.
     If !STRNoticeBridge.IsConnected() || !STRNoticeBridge.IsReady()
@@ -95,7 +98,11 @@ Function ProcessClaim()
                 Return
             EndIf
         EndIf
-        If !NoticeActive || NoticeDone || CurrentContainer != Game.GetPlayer()
+        If !NoticeActive || NoticeDone
+            Return
+        EndIf
+        If CurrentContainer != Game.GetPlayer()
+            AbortClaim(False)
             Return
         EndIf
         CommitSent = True
@@ -186,7 +193,8 @@ Function DeliverTask()
                 Game.GetPlayer().AddItem(PreparedLetter, 1, True)
             EndIf
         EndIf
-        LetterDelivered = Game.GetPlayer().GetItemCount(PreparedLetter) > 0
+        ; The original alias may accept and consume its letter immediately.
+        LetterDelivered = Game.GetPlayer().GetItemCount(PreparedLetter) > 0 || Mission.GetStage() >= 20
         If !LetterDelivered
             Return
         EndIf
