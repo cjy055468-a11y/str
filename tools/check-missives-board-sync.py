@@ -93,6 +93,25 @@ def main() -> None:
     require("If status == 2" in bridge_psc and "mission.SetStage(20)" in bridge_psc, "only-granted claimant path is missing")
     require("status == 1 || status == 3" in bridge_psc and "mission.Stop()" in bridge_psc, "non-claimant cleanup path is missing")
 
+    require("IsLocalPublisher(questId, boardId)" in refresh_posting,
+            "a stopped guest shadow quest can be mistaken for an expired authority posting")
+    require("AcknowledgeRemoval(questId, boardId)" in refresh_posting,
+            "physical posting removal is not acknowledged")
+    require("s_listings[key] = {aId, aStatus}" in bridge_cpp
+            and "case Operation::AcknowledgeRemoval:" in bridge_cpp
+            and "if (state == 3)" in bridge_cpp,
+            "retirement must survive until script cleanup and preserve newer/claimed rows")
+    require("listing.Status = 3" in bridge_cpp,
+            "snapshot replacement must retain removed rows for physical cleanup")
+    require(all("ObjectReference STRClaimBoard" in alias
+                and "STRClaimBoard = board" in alias
+                and "ObjectReference board = STRClaimBoard" in alias
+                and "!STRMissivesBoardBridge.IsBoardReady(board.GetFormID())" in alias
+                for alias in (alias_claim, alias_delivery)),
+            "claim retries must keep the actual board and wait through incomplete snapshots")
+    require("m_pendingFinish[*it] = now" in client_service,
+            "completed personal claims must retry until server retirement is confirmed")
+
     listing = (source / "Code/encoding/Structs/MissiveBoardListing.h").read_text(encoding="utf-8")
     require(set(re.findall(r"^\s+(?:uint64_t|GameId)\s+(\w+)", listing, re.M)) == {"Id", "Board", "Quest", "Book"},
             "wire listing contains task state or lacks a public-line identifier")

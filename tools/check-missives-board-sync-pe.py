@@ -11,7 +11,7 @@ reports = [inspect(path) for path in files]
 for path in files:
     if path.name != "EarlyLoad.dll":
         data = path.read_bytes()
-        assert b"coopfix4g-corpse5-state1s-loot2-missives-board-r1\0" in data, f"wrong build marker: {path.name}"
+        assert b"coopfix4g-corpse5-state1s-loot2-missives-board-r6\0" in data, f"wrong build marker: {path.name}"
 client = next(path for path in files if path.name == "SkyrimTogether.exe").read_bytes()
 server = next(path for path in files if path.name == "STServer.dll").read_bytes()
 for marker in [

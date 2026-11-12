@@ -5,6 +5,8 @@ Bool Function IsReady() Global Native
 Bool Function IsBoardReady(Int boardId) Global Native
 Bool Function IsBoardAuthority(Int boardId) Global Native
 Bool Function CanGenerate(Int questId, Int boardId) Global Native
+Bool Function IsLocalPublisher(Int questId, Int boardId) Global Native
+Function AcknowledgeRemoval(Int questId, Int boardId) Global Native
 Bool Function IsPersonalQuest(Int questId) Global Native
 Int Function GetPostingStatus(Int questId, Int boardId) Global Native
 Int Function GetPostingCount(Int boardId) Global Native
@@ -52,7 +54,7 @@ Function RefreshPosting(Quest mission, ObjectReference targetBoard) Global
         EndIf
         Return
     EndIf
-    If status == 0 && (stage >= 103 || !mission.IsRunning())
+    If status == 0 && IsBoardAuthority(boardId) && IsLocalPublisher(questId, boardId) && (stage >= 103 || !mission.IsRunning())
         Finish(questId, boardId)
         STRRemoveLocalPosting(letter, sourceBoard, targetBoard)
         Return
@@ -68,6 +70,10 @@ Function RefreshPosting(Quest mission, ObjectReference targetBoard) Global
     If status == 0
         If !mission.IsRunning()
             mission.Start()
+            Return
+        EndIf
+        If stage >= 103
+            mission.Stop()
             Return
         EndIf
         If stage >= 20
@@ -87,6 +93,9 @@ Function RefreshPosting(Quest mission, ObjectReference targetBoard) Global
         If mission.IsRunning()
             ; Stop avoids running any task or reward stage on a non-claimant.
             mission.Stop()
+        EndIf
+        If status == 3
+            AcknowledgeRemoval(questId, boardId)
         EndIf
         Return
     EndIf
@@ -123,9 +132,6 @@ Function STRRemoveLocalPosting(ObjectReference letter, ObjectReference sourceBoa
     EndIf
     If targetBoard && targetBoard.GetItemCount(letter) > 0
         targetBoard.RemoveItem(letter, 1, True)
-    EndIf
-    If sourceBoard && sourceBoard != targetBoard && sourceBoard.GetItemCount(letter) > 0
-        sourceBoard.RemoveItem(letter, 1, True)
     EndIf
     If Game.GetPlayer().GetItemCount(letter) > 0
         Game.GetPlayer().RemoveItem(letter, 1, True)

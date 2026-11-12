@@ -1,6 +1,7 @@
 Scriptname _M_AliasMissiveScript extends ReferenceAlias
 
 Message Property _M_MessageDiscard Auto
+ObjectReference STRClaimBoard
 
 Event OnContainerChanged(ObjectReference akNewContainer, ObjectReference akOldContainer)
     Quest mission = GetOwningQuest()
@@ -17,6 +18,7 @@ Event OnContainerChanged(ObjectReference akNewContainer, ObjectReference akOldCo
                 EndIf
             EndIf
             If board
+                STRClaimBoard = board
                 STRMissivesBoardBridge.Claim(mission.GetFormID(), board.GetFormID())
                 RegisterForSingleUpdate(0.1)
             EndIf
@@ -34,16 +36,21 @@ Event OnUpdate()
         EndIf
         Return
     EndIf
-    Int boardAliasId = STRMissivesBoardBridge.GetBoardAlias(mission.GetFormID())
-    If boardAliasId < 0
-        Return
+    ObjectReference board = STRClaimBoard
+    If !board
+        Int boardAliasId = STRMissivesBoardBridge.GetBoardAlias(mission.GetFormID())
+        If boardAliasId >= 0
+            ReferenceAlias boardAlias = mission.GetAlias(boardAliasId) as ReferenceAlias
+            If boardAlias
+                board = boardAlias.GetReference()
+            EndIf
+        EndIf
     EndIf
-    ReferenceAlias boardAlias = mission.GetAlias(boardAliasId) as ReferenceAlias
-    If !boardAlias
-        Return
-    EndIf
-    ObjectReference board = boardAlias.GetReference()
     If board
+        If !STRMissivesBoardBridge.IsBoardReady(board.GetFormID())
+            RegisterForSingleUpdate(1.0)
+            Return
+        EndIf
         STRMissivesBoardBridge.RefreshPosting(mission, board)
         If mission.GetStage() < 20 && Game.GetPlayer().GetItemCount(GetReference()) > 0
             Int status = STRMissivesBoardBridge.GetPostingStatus(mission.GetFormID(), board.GetFormID())
