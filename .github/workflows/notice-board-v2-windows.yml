@@ -133,7 +133,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Unit test build failed' }
           & ./build/windows/x64/release/TPTests.exe -r junit -o "$env:GITHUB_WORKSPACE/logs/tests.xml"
           if ($LASTEXITCODE -ne 0) { throw 'Unit test execution failed' }
-          python ../tools/check-notice-tests.py "$env:GITHUB_WORKSPACE/logs/tests.xml" | Tee-Object ../logs/test-summary.txt
+          python ../tools/check-notice-tests.py "$env:GITHUB_WORKSPACE/logs/tests.xml" . | Tee-Object ../logs/test-summary.txt
           if ($LASTEXITCODE -ne 0) { throw 'Required replay tests did not complete successfully' }
       - name: Check 2 - architecture, version, fix marker and imports
         run: |
@@ -239,7 +239,12 @@ jobs:
               $text | Set-Content "build-results/logs/$($_.Name)"
             }
           }
-          $publishable = (Test-Path candidate/SkyrimTogetherReborn/SkyrimTogether.exe) -and (Test-Path logs/check3.txt) -and (Test-Path archives/archive-validation.json)
+          $archivesValid = $false
+          if (Test-Path archives/archive-validation.json) {
+            try { $archivesValid = (Get-Content archives/archive-validation.json -Raw | ConvertFrom-Json).archive_content_check -eq 'PASS' }
+            catch { $archivesValid = $false }
+          }
+          $publishable = (Test-Path candidate/SkyrimTogetherReborn/SkyrimTogether.exe) -and (Test-Path logs/check3.txt) -and $archivesValid
           Get-ChildItem build-results -Filter 'STR-NoticeBoard-v2-*.zip' -File | Remove-Item -Force
           if (Test-Path build-results/archive-validation.json) { Remove-Item build-results/archive-validation.json -Force }
           @{
