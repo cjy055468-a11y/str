@@ -1,0 +1,20 @@
+{
+  "archive_content_check": "PASS",
+  "archives": [
+    {
+      "file": "STR-NoticeBoard-v2-full-test.zip",
+      "files": 47,
+      "sha256": "4bc04e05c23aa78a02d58ebc1e17f7d0cc110b677601c3b0453de441c551a103"
+    },
+    {
+      "file": "STR-NoticeBoard-v2-MO2.zip",
+      "files": 14,
+      "sha256": "fb893e4adbd071ee94a27b763dfce25af4c4b815f3bad4e9236dd701d35c915c"
+    },
+    {
+      "file": "STR-NoticeBoard-v2-programs.zip",
+      "files": 4,
+      "sha256": "92f28d63fc82ff5d9203a5798495e6ac8ca563e8987c6ec3ca140ef2bfdcbd34"
+    }
+  ]
+}

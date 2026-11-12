@@ -1,0 +1,185 @@
+
+Algorithm : SHA256
+Hash      : 82DBB27B468AEC0CCD23A434CB9000C470ECF73681E64A3B9953A02B003ACF35
+Path      : D:\a\str\str\candidate\build-validation.json
+
+Algorithm : SHA256
+Hash      : BD760A3A0553F8DA7F4060BE823A0F94C7C5A6C26FF53B5134FA48386675431D
+Path      : D:\a\str\str\candidate\LICENSE
+
+Algorithm : SHA256
+Hash      : A4EF4FC0DE1BCFCCACA10E539008B1494DB352B594DCDFF022FCE480D29DDE0B
+Path      : D:\a\str\str\candidate\notice-base-preserved.json
+
+Algorithm : SHA256
+Hash      : DEDAC5576B27EED8093486FEA1847E683CB64CDBFBF4761B6F273A3DC993B68C
+Path      : D:\a\str\str\candidate\notice-v2-review.json
+
+Algorithm : SHA256
+Hash      : CAE1EEA8084EEDBD5EEBBC1D168C8F5299038BB414598C7F353D08E044546FC6
+Path      : D:\a\str\str\candidate\notice-v2-source-manifest.json
+
+Algorithm : SHA256
+Hash      : 4F88C7C04F60F9B125BDE144DAECDE21A62FC67B4BE2A4EAF5BED9C66FE198DB
+Path      : D:\a\str\str\candidate\notice-v2-v184.patch
+
+Algorithm : SHA256
+Hash      : 30A3524E08890CB407942EED1B7169D5AF0F35126D0281C7DDBC41C2C5BB84D0
+Path      : D:\a\str\str\candidate\README.zh-CN.md
+
+Algorithm : SHA256
+Hash      : 8B8903246828152EBAC1E24FE6396FD26D49FDAD10CBBC139480D80B46F88D50
+Path      : D:\a\str\str\candidate\logs\board-sync-source-check.json
+
+Algorithm : SHA256
+Hash      : 5AB0BCE956083DA3B8D5F41C1051170A7E880E8C02292CF5F0C75B1D2D2AEF23
+Path      : D:\a\str\str\candidate\logs\build-client.txt
+
+Algorithm : SHA256
+Hash      : D0D1F051F157AB57CC00E73E7379C07CFACB4CF328CD5A23ADF5CBED5B48B34A
+Path      : D:\a\str\str\candidate\logs\build-server.txt
+
+Algorithm : SHA256
+Hash      : B4322DD87F5B042DF0AD9FAABC80E8B6B3C19B37770B2B064C60DD68CC8EE992
+Path      : D:\a\str\str\candidate\logs\build-tests.txt
+
+Algorithm : SHA256
+Hash      : 9ABADCEA592EB3B4810FAE61C48B5E6F48EEAB0B29F03836FC1B7B890D2E9C44
+Path      : D:\a\str\str\candidate\logs\changes.txt
+
+Algorithm : SHA256
+Hash      : A5D5C59DA7083D5B012009BA105F7195D8F64BF885047725ED7828047897F435
+Path      : D:\a\str\str\candidate\logs\check1.txt
+
+Algorithm : SHA256
+Hash      : A0DD4290EC5A404CE0EF1E3BCC6960E80E84038B5420D780712588D21796A3D6
+Path      : D:\a\str\str\candidate\logs\check2.json
+
+Algorithm : SHA256
+Hash      : 4CA5D7CA991337D0517755E06FDDEED575AA6358EB8E076A57C5039890EC2FC1
+Path      : D:\a\str\str\candidate\logs\check3.txt
+
+Algorithm : SHA256
+Hash      : 7FD02074A7B234100321C8AD62F61F8611CF6BB018433AE252E9A72D8C9F76C8
+Path      : D:\a\str\str\candidate\logs\configure-attempt1.txt
+
+Algorithm : SHA256
+Hash      : 7FD02074A7B234100321C8AD62F61F8611CF6BB018433AE252E9A72D8C9F76C8
+Path      : D:\a\str\str\candidate\logs\configure.txt
+
+Algorithm : SHA256
+Hash      : 2CA38EFE0A01E243ED25A69706F5C4DCD22536B77A18F6CD88F12285A2BC89C9
+Path      : D:\a\str\str\candidate\logs\papyrus-build.txt
+
+Algorithm : SHA256
+Hash      : 8DDF1D8BBABCEF1DEE2DB93737D1DAA8E10219C1180D80906535E7286A459361
+Path      : D:\a\str\str\candidate\logs\papyrus-check.json
+
+Algorithm : SHA256
+Hash      : 8B3B1843A00791062F02CA64AF00919819D2A482180A7319134EF104541B9D9A
+Path      : D:\a\str\str\candidate\logs\papyrus-help.txt
+
+Algorithm : SHA256
+Hash      : 47D19049876C9E317182DD3D536D4FB87F0912A8F221B4FBBADB6A2C293EF8D6
+Path      : D:\a\str\str\candidate\logs\server-smoke.txt
+
+Algorithm : SHA256
+Hash      : A869D32E87C4208CF41E3A1DFA346805045B4C45296D9D9714EB941667E6B8CA
+Path      : D:\a\str\str\candidate\logs\source-scope.json
+
+Algorithm : SHA256
+Hash      : 522539B9FB33C42D47FA13FD0B5A48D158C1A530D5EB6AC2E41781E4FBACDC56
+Path      : D:\a\str\str\candidate\logs\source-validation.txt
+
+Algorithm : SHA256
+Hash      : 83766DF524A3E6CA470442FB1CE78BDF06E8DA4252262763D5A3C85A78F6F4DF
+Path      : D:\a\str\str\candidate\logs\STServer.ini
+
+Algorithm : SHA256
+Hash      : 0FEA4EE4324C43C1B8F62B05958A3C70170D7452909515C69EA39804D7DFE43B
+Path      : D:\a\str\str\candidate\logs\submodules.txt
+
+Algorithm : SHA256
+Hash      : 79BA582B3B0154D60A2888D734C04B85503E7E032AF427DFBBAE5126FB6569BA
+Path      : D:\a\str\str\candidate\logs\test-summary.txt
+
+Algorithm : SHA256
+Hash      : 1B134C9A183B84C8A977BDF0B0D1456677CECC9E43923F45A9AC973267B3DAA9
+Path      : D:\a\str\str\candidate\logs\tests.xml
+
+Algorithm : SHA256
+Hash      : AB3B91469FF40E248DC1CBC77273C90782252CAF1F7D2A5C4A0E0E8241121D4B
+Path      : D:\a\str\str\candidate\logs\xmake-config.txt
+
+Algorithm : SHA256
+Hash      : DCC50E644230E0F16114237C160E5B401EFBE9022BEC336266CC47DDB9EC668B
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\catalog-provenance.json
+
+Algorithm : SHA256
+Hash      : 551D9EDA6F9F82B9D2452ADC97AE32D718E068D0F9BBE24DA02D623C6D4E17A7
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\catalog.json
+
+Algorithm : SHA256
+Hash      : C5E526E5BD414A17FF0AA068DDC9EA8D86807648E2A8775C22E43AE71AFD48BA
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\README.zh-CN.md
+
+Algorithm : SHA256
+Hash      : BDFB84DB7EAF375B2B71D4BBB447EB6DFC9A8A07CA320A89AD1B554B1E8089B9
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\STRNoticeBoard.esp
+
+Algorithm : SHA256
+Hash      : 41D2C1B1296DF2EC96976C4575C9DAAD5FD7D3CE043DD5E068D1A9021B195F7D
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\_M_ActivatorScript.pex
+
+Algorithm : SHA256
+Hash      : F61A9E7E8B85A2C788AB1ABB56091C0CEE198E410C2A21B5A32BECE8D6A82AC7
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\_M_AliasMissiveDeliverScript.pex
+
+Algorithm : SHA256
+Hash      : 40F6CDE5C1737C74E7FF51868104122C8384240D35F6014D3BD46606B5912BE0
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\_M_AliasMissiveScript.pex
+
+Algorithm : SHA256
+Hash      : D418E91A168475CB8A93476966158D1DBADC630016E73E0928B783DD19D10660
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\STRNoticeBridge.pex
+
+Algorithm : SHA256
+Hash      : 5B2C41242E0A41AD27955C35D9D2965FD488F165B4753791DB041C7A7A6DBB99
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\STRNoticeSlip.pex
+
+Algorithm : SHA256
+Hash      : 32A7B128E59B4F9D0FB42939AC146C6E47D5B13DB0F25B7D8B22834F23CDF554
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\Source\_M_ActivatorScript.psc
+
+Algorithm : SHA256
+Hash      : C398F41ADFC47768F3E45399156FFFFD570A21F0FC17B91290DD0FB5CAB21B05
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\Source\_M_AliasMissiveDeliverScript.psc
+
+Algorithm : SHA256
+Hash      : 8FC023B27A64B7325C2721433BFD00A5590AD00A8EABF594C9D44F4EE194BB5A
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\Source\_M_AliasMissiveScript.psc
+
+Algorithm : SHA256
+Hash      : DB4BDCDF071AA2E8163DA72756AD0FAE64A75652227E13E0B130514DFC7F9B07
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\Source\STRNoticeBridge.psc
+
+Algorithm : SHA256
+Hash      : 3986DB0D58E19D58C57F604ED1EA0F0024818EB37BF3084136AADCD2C1F145F6
+Path      : D:\a\str\str\candidate\NoticeBoardCompatibility\Scripts\Source\STRNoticeSlip.psc
+
+Algorithm : SHA256
+Hash      : 3D80CA82AF92F40A84BE6C4D3CFE191E6B67C21B515FCC56070BD4CADF9FF0C2
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\EarlyLoad.dll
+
+Algorithm : SHA256
+Hash      : ED479B24BA48DE46CC940DD1EC48B03ACA124B4920FE4589868D1DA192D39E9C
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\SkyrimTogether.exe
+
+Algorithm : SHA256
+Hash      : 8FDA78D9837ADE5F126E717BD6668CEE5F68E8C0E94CD3EC8CFAE8083233979B
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\SkyrimTogetherServer.exe
+
+Algorithm : SHA256
+Hash      : 748897185F2FAE5C8FFF4446B641755EBD0B3B3E4B686985E7355C1C38ABF307
+Path      : D:\a\str\str\candidate\SkyrimTogetherReborn\STServer.dll
+

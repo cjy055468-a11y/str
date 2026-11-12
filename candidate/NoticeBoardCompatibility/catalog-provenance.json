@@ -1,0 +1,17 @@
+{
+  "source_plugin": "Missives.esp",
+  "source_sha256": "5250bae11db78ac1f79d4af7aad9ae936be8469147ef858a97f0b7406bdf63bb",
+  "generated_plugin": "STRNoticeBoard.esp",
+  "generated_sha256": "bdfb84db7eaf375b2b71d4bbb447eb6dfc9a8a07ca320a89ad1b554b1e8089b9",
+  "quest_templates": 264,
+  "records_created": 264,
+  "record_types": [
+    "BOOK"
+  ],
+  "master_plugins": [
+    "Skyrim.esm",
+    "Update.esm",
+    "Missives.esp"
+  ],
+  "task_target_data_copied": false
+}

@@ -1,0 +1,10 @@
+Adding current working directory to import list: D:\a\str\str
+Adding import directory: D:\a\str\str\mods\notice-board\Scripts\Source
+Adding import directory: D:\a\str\str\papyrus-imports
+Importing files...
+Imported 280 files.
+Compiling STRNoticeBridge.psc
+Compiling STRNoticeSlip.psc
+Compiling _M_ActivatorScript.psc
+Compiling _M_AliasMissiveDeliverScript.psc
+Compiling _M_AliasMissiveScript.psc
