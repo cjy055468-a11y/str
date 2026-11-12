@@ -176,11 +176,26 @@ jobs:
           } | ConvertTo-Json | Out-File candidate/build-validation.json
           $deliveryHashes = Get-ChildItem candidate -File -Recurse | Where-Object { $_.Name -ne 'SHA256.txt' } | Get-FileHash -Algorithm SHA256
           $deliveryHashes | Format-List | Out-File candidate/SHA256.txt
+      - name: Create and verify installable test archives
+        run: |
+          New-Item -ItemType Directory -Force archives | Out-Null
+          Compress-Archive -Path candidate/* -DestinationPath archives/STR-NoticeBoard-v2-full-test.zip -CompressionLevel Optimal
+          Compress-Archive -Path candidate/NoticeBoardCompatibility/* -DestinationPath archives/STR-NoticeBoard-v2-MO2.zip -CompressionLevel Optimal
+          Compress-Archive -Path candidate/SkyrimTogetherReborn -DestinationPath archives/STR-NoticeBoard-v2-programs.zip -CompressionLevel Optimal
+          python tools/check-notice-archives.py candidate archives | Tee-Object archives/archive-validation.json
+          if ($LASTEXITCODE -ne 0) { throw 'Install archive content validation failed' }
       - name: Upload candidate after all three checks pass
         uses: actions/upload-artifact@v4
         with:
           name: STR-NoticeBoard-v2-v184-SSE161170
           path: candidate/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload installable archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: STR-NoticeBoard-v2-installable-zips
+          path: archives/
           if-no-files-found: error
           retention-days: 14
       - name: Always retain diagnostics
@@ -224,15 +239,19 @@ jobs:
               $text | Set-Content "build-results/logs/$($_.Name)"
             }
           }
+          $publishable = (Test-Path candidate/SkyrimTogetherReborn/SkyrimTogether.exe) -and (Test-Path logs/check3.txt) -and (Test-Path archives/archive-validation.json)
+          Get-ChildItem build-results -Filter 'STR-NoticeBoard-v2-*.zip' -File | Remove-Item -Force
+          if (Test-Path build-results/archive-validation.json) { Remove-Item build-results/archive-validation.json -Force }
           @{
             run_id = '${{ github.run_id }}'
             source_revision = '${{ github.sha }}'
             job_status = '${{ job.status }}'
-            checked_candidate = ((Test-Path candidate/SkyrimTogetherReborn/SkyrimTogether.exe) -and (Test-Path logs/check3.txt))
+            checked_candidate = $publishable
           } | ConvertTo-Json | Set-Content build-results/status.json
-          if ((Test-Path candidate/SkyrimTogetherReborn/SkyrimTogether.exe) -and (Test-Path logs/check3.txt)) {
+          if ($publishable) {
             if (Test-Path build-results/candidate) { Remove-Item build-results/candidate -Recurse -Force }
             Copy-Item candidate build-results/candidate -Recurse
+            Copy-Item archives/* build-results/
           } elseif (Test-Path build-results/candidate) {
             Remove-Item build-results/candidate -Recurse -Force
           }
@@ -241,6 +260,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add logs status.json
           if (Test-Path candidate) { git add candidate }
+          if (Test-Path archive-validation.json) { git add archive-validation.json '*.zip' }
           git add -u
           git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
