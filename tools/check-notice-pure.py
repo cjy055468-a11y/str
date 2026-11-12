@@ -38,11 +38,11 @@ struct GameId {
  uint64_t LogFormat()const{return(uint64_t(ModId)<<32)|BaseId;}
 };
 ''')
- ledger=(src/'Code/tests/notice_board.cpp').read_text();start=ledger.index('namespace\n{');stop=ledger.index('TEST_CASE("Notice wire protocol')
+ ledger=(src/'Code/tests/notice_board.cpp').read_text(encoding="utf-8");start=ledger.index('namespace\n{');stop=ledger.index('TEST_CASE("Notice wire protocol')
  (root/'ledger.cpp').write_text('#include <catch2/catch.hpp>\n#include <Game/Inventory/NoticeLedger.h>\n#include <atomic>\n#include <thread>\n'+ledger[start:stop])
  # Preserve the client test source verbatim; only rewrite the relative include
  # so it still points to the same production header after copying to temp.
- state=(src/'Code/tests/notice_client_state.cpp').read_text().replace('"../client/ModCompat/NoticeState.h"','<ModCompat/NoticeState.h>')
+ state=(src/'Code/tests/notice_client_state.cpp').read_text(encoding="utf-8").replace('"../client/ModCompat/NoticeState.h"','<ModCompat/NoticeState.h>')
  (root/'state.cpp').write_text(state)
  (root/'main.cpp').write_text('#include <catch2/catch.hpp>\nint main(){for(const auto& [name,fn]:NoticeTests()){fn();std::cout<<"PASS: "<<name<<"\\n";}assert(NoticeTests().size()==17);}\n')
  command=['g++','-std=c++20','-Wall','-Wextra','-Werror','-pthread','-I'+str(root),'-I'+str(src/'Code/encoding'),'-I'+str(src/'Code/server'),'-I'+str(src/'Code/client'),str(root/'ledger.cpp'),str(root/'state.cpp'),str(root/'main.cpp'),'-o',str(root/'tests')]

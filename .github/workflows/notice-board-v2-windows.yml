@@ -33,6 +33,7 @@ jobs:
       run:
         shell: pwsh
     env:
+      PYTHONUTF8: "1"
       SOURCE_COMMIT: 54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
     steps:
       - uses: actions/checkout@v4
