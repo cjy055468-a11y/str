@@ -177,7 +177,9 @@ Function FillPublicBoard()
         visited += 1
         If mission
             Int noticeStatus = STRNoticeBridge.GetNoticeState(mission.GetFormID(), boardId)
-            If (noticeStatus < 0 || noticeStatus == 5 || (noticeStatus == 3 && allowRecycle)) && !STRNoticeBridge.IsLocalTask(mission.GetFormID())
+            ; Public availability cannot depend on the publishing visitor's
+            ; personal tasks. Each claimant is checked separately on pickup.
+            If noticeStatus < 0 || noticeStatus == 5 || (noticeStatus == 3 && allowRecycle)
                 STRNoticeBridge.Offer(mission.GetFormID(), boardId)
                 offered += 1
             EndIf
