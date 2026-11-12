@@ -1,0 +1,2 @@
+PASS: all four delivery hashes match the PE report.
+

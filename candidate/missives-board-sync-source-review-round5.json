@@ -1,0 +1,20 @@
+{
+  "round": 5,
+  "scope": [
+    "retain board-open retries when the initial local-to-server light-plugin mapping is unavailable",
+    "log unmapped server board and quest identifiers instead of silently dropping snapshots",
+    "verify retry registration precedes the mapping attempt",
+    "preserve live claim-state broadcasts and remove the local shadow posting on each connected client"
+  ],
+  "checks": [
+    "The one-shot Papyrus OpenBoard event is recorded before mapping. If mapping is unavailable, the client retries the mapping and Open request every two seconds until a complete snapshot is received.",
+    "Incoming server board/quest IDs that cannot be converted to local forms are reported once per connection, making dropped snapshot data diagnosable.",
+    "The source guard now fails if mapping is attempted before the board retry record exists or if incoming mapping failures become silent again.",
+    "The complete native patch is regenerated from the pinned upstream tree; a clean-tree patch application check is required before delivery.",
+    "The server broadcasts Taken to all peers; each client records state 1, and a visitor to that physical board polls every second and removes the local shadow letter for claimed/retired states."
+  ],
+  "result": "PASS_SOURCE_REVIEW",
+  "limits": [
+    "Windows/MSVC build and live two-client game test have not been rerun for this change."
+  ]
+}

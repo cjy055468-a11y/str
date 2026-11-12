@@ -1,0 +1,12 @@
+{
+  "catalog_entries": 264,
+  "papyrus_native_functions": 17,
+  "trigger_integration": "source-verified",
+  "board_claim_scope": "physical-board-id",
+  "claim_retry": "one-second-until-server-result",
+  "snapshot_retry": "reopens-until-snapshot-end",
+  "task_progress_wire_fields": 0,
+  "personal_task_item_filter": "present",
+  "old_board_implementation": "absent",
+  "gameplay_two-client_test": "not-run-here"
+}

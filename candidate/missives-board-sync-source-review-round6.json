@@ -1,0 +1,22 @@
+{
+  "round": 6,
+  "fixes": [
+    "guest shadow initialization is no longer treated as publisher retirement",
+    "physical retirement tombstones persist until script cleanup acknowledgement",
+    "snapshot omissions create removal tombstones",
+    "retirement is restricted to local publication provenance",
+    "pickup retries retain the actual physical board and wait through snapshots",
+    "completed claims retry finish until server confirmation",
+    "late claims/publication retries receive authoritative taken state",
+    "offline board entry continues polling until connection",
+    "continuous trigger recovers loading or upgrading inside the trigger",
+    "unready boards reissue Open even if script registered state survives a fast reconnect"
+  ],
+  "validation": {
+    "production_bridge_state": "PASS_LOCAL_GCC",
+    "source_integration": "PASS_LOCAL",
+    "windows_compile": "PENDING_CI",
+    "papyrus_compile": "PENDING_CI",
+    "gameplay_two_client": "NOT_RUN"
+  }
+}
