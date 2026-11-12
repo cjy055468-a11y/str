@@ -1,2 +1,0 @@
-[2026-11-08 17:39:47.228] [info] [tid 6304]  Generated D:\a\str\str/logs/STServer.ini
-

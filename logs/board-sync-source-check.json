@@ -1,6 +1,6 @@
 {
   "catalog_entries": 264,
-  "papyrus_native_functions": 15,
+  "papyrus_native_functions": 17,
   "trigger_integration": "source-verified",
   "board_claim_scope": "physical-board-id",
   "claim_retry": "one-second-until-server-result",
