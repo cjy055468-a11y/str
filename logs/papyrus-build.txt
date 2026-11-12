@@ -8,5 +8,4 @@ Compiling STRNoticeSlip.psc
 Compiling _M_ActivatorScript.psc
 Compiling _M_AliasMissiveDeliverScript.psc
 Compiling _M_AliasMissiveScript.psc
-STRNoticeSlip.psc (46, 15:27): Fatal Error: Unresolved function name 'Notification'!
 
