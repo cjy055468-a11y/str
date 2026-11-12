@@ -1,0 +1,12 @@
+{
+  "new_book_records": 264,
+  "new_native_bindings": 19,
+  "task_instance_fields_on_wire": 0,
+  "display_starts_shadow_quests": false,
+  "old_board_implementation": "absent",
+  "previous_base_files_preserved": 71,
+  "plugin_sha256": "469fb2cda06351b3cf3399e864c8daf197b26a0c9918854d16ba2d9a5e8d0491",
+  "static_integration": "PASS",
+  "gameplay_two_client": "NOT_RUN"
+}
+
