@@ -45,18 +45,30 @@ EndEvent
 
 Event OnTriggerEnter(ObjectReference akActionRef)
     If akActionRef == Game.GetPlayer()
-        STRInside = True
-        If STRMissivesBoardBridge.IsConnected()
-            If !STRRegistered
-                STRMissivesBoardBridge.OpenBoard(MissiveBoard.GetFormID(), GetFormID())
-                STRRegistered = True
-            EndIf
-            RegisterForSingleUpdate(0.5)
-        Else
-            STRUpdateBoard(False)
-        EndIf
+        STREnterBoard()
     EndIf
 EndEvent
+
+Event OnTrigger(ObjectReference akActionRef)
+    ; Recover saves/upgrades loaded while the player is already in the trigger.
+    If akActionRef == Game.GetPlayer() && !STRInside
+        STREnterBoard()
+    EndIf
+EndEvent
+
+Function STREnterBoard()
+    STRInside = True
+    If STRMissivesBoardBridge.IsConnected()
+        If !STRRegistered || !STRMissivesBoardBridge.IsBoardReady(MissiveBoard.GetFormID())
+            STRMissivesBoardBridge.OpenBoard(MissiveBoard.GetFormID(), GetFormID())
+            STRRegistered = True
+        EndIf
+    Else
+        STRUpdateBoard(False)
+    EndIf
+    ; Continue polling even when the player connects only after approaching.
+    RegisterForSingleUpdate(0.5)
+EndFunction
 
 Event OnTriggerLeave(ObjectReference akActionRef)
     If akActionRef == Game.GetPlayer()
@@ -77,7 +89,7 @@ Event OnUpdate()
     EndIf
 
     If STRInside && online
-        If !STRRegistered
+        If !STRRegistered || !STRMissivesBoardBridge.IsBoardReady(MissiveBoard.GetFormID())
             STRMissivesBoardBridge.OpenBoard(MissiveBoard.GetFormID(), GetFormID())
             STRRegistered = True
         EndIf

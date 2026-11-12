@@ -112,6 +112,14 @@ def main() -> None:
     require("m_pendingFinish[*it] = now" in client_service,
             "completed personal claims must retry until server retirement is confirmed")
 
+    enter = activator[activator.index("Function STREnterBoard()"):activator.index("Event OnTriggerLeave")]
+    require("Event OnTrigger(ObjectReference akActionRef)" in activator
+            and enter.rstrip().endswith("EndFunction")
+            and "RegisterForSingleUpdate(0.5)\nEndFunction" in enter,
+            "offline entry and load-inside-trigger must rearm board polling")
+    require("If !STRRegistered || !STRMissivesBoardBridge.IsBoardReady(MissiveBoard.GetFormID())" in activator,
+            "fast reconnect must reopen an unready board even when the script registered flag persisted")
+
     listing = (source / "Code/encoding/Structs/MissiveBoardListing.h").read_text(encoding="utf-8")
     require(set(re.findall(r"^\s+(?:uint64_t|GameId)\s+(\w+)", listing, re.M)) == {"Id", "Board", "Quest", "Book"},
             "wire listing contains task state or lacks a public-line identifier")

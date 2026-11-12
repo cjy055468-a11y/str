@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 expected = {
+    "An authority publication retry preserves an already claimed Missives row",
     "Missives board has one public listing and an atomic board-local claimant",
     "Concurrent claims on one Missives board row elect exactly one player",
     "The same Missives quest can be listed independently on different boards",
