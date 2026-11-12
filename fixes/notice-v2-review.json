@@ -9,7 +9,10 @@
     "physical board scope",
     "late reply and generation fencing",
     "menu-mode polling",
-    "original and proxy private-item isolation"
+    "original and proxy private-item isolation",
+    "ESP header includes GRUP in record count",
+    "claim-loop-only cancellation cleanup",
+    "original shared BOOK bases protected only during pending preparation, not across accepted personal tasks"
   ],
   "local_pure_tests": 17,
   "new_protocol_tests": 18,

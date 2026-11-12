@@ -791,10 +791,10 @@ index 0000000..2312818
 +}
 diff --git a/Code/client/ModCompat/NoticeBridge.cpp b/Code/client/ModCompat/NoticeBridge.cpp
 new file mode 100644
-index 0000000..cd337e0
+index 0000000..c408642
 --- /dev/null
 +++ b/Code/client/ModCompat/NoticeBridge.cpp
-@@ -0,0 +1,176 @@
+@@ -0,0 +1,180 @@
 +#include <TiltedOnlinePCH.h>
 +#include <ModCompat/NoticeBridge.h>
 +#include <ModCompat/NoticeCatalog.h>
@@ -877,7 +877,11 @@ index 0000000..cd337e0
 +        {
 +            if (candidate.Book != spec->Book) continue;
 +            const uint32_t quest = Form("Missives.esp",candidate.Quest);
-+            if (s_personal.contains(quest) || s_state.Pending(quest)) return true;
++            // A prepared alias letter still resides in its source board until
++            // delivery completes. Afterwards it belongs to the player's
++            // inventory: protecting its shared BOOK base on every board would
++            // leave unrelated, unaccepted solo letters visible only locally.
++            if (s_state.Pending(quest)) return true;
 +        }
 +        return false;
 +    }

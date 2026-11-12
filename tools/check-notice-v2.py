@@ -15,6 +15,7 @@ need(masters==['Skyrim.esm','Update.esm','Missives.esp'],'Wrong proxy ESP master
 catalog=json.loads((mod/'catalog.json').read_text(encoding="utf-8"));need(len(catalog)==264,'Wrong notice catalog size')
 need((source/'Code/client/ModCompat/NoticeCatalog.h').read_bytes()==(mod/'NoticeCatalog.h').read_bytes(),'Native/proxy catalogs differ')
 books={fid:dict(parts) for kind,fid,parts in rows if kind=='BOOK'};need(len(books)==264,'Proxy count differs')
+need(struct.unpack('<fII',dict(rows[0][2])['HEDR'])[1:]==(len(books)+1,0x800+len(books)),'Wrong ESP record/group count or next form ID')
 def read_string(data,offset):
  n=struct.unpack_from('<H',data,offset)[0];offset+=2;return data[offset:offset+n].decode(),offset+n
 for item in catalog:

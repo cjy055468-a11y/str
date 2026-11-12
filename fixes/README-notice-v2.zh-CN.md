@@ -6,8 +6,8 @@
 
 ## 安装
 
-1. 所有客户端与 Windows 服务端更新同版 v2 STR 程序。此版本基于上次确认的 r6 基础，保留尸体搜索与装备去重等非公告板修复。
-2. 用 MO2 安装本模组，使 Scripts/ 在 Data 根下，并启用新增 STRNoticeBoard.esp。加载顺序在 Missives.esp 之后。保留原 Missives.esp、汉化及正常依赖。
+1. 保留现有 STR 基础模组。将程序包 SkyrimTogetherReborn/ 中的文件覆盖到你实际启动的 STR 程序目录；主机、客机和 Windows 服务端均使用本次同版程序。若 MO2 的启动项指向某个模组目录中的 SkyrimTogether.exe，就覆盖那个目录中的程序文件。此版本保留上次确认的 r6 尸体搜索与装备去重等非公告板修复。
+2. 将 STR-NoticeBoard-v2-MO2.zip 直接用 MO2 安装，使 Scripts/ 在 Data 根下，并启用新增 STRNoticeBoard.esp。加载顺序在 Missives.esp 之后。保留原 Missives.esp、汉化及正常依赖。
 3. 此包完整替换旧公告板兼容插件；停用旧兼容模组，避免其脚本覆盖新版。
 4. 重启游戏再连接同版服务端；不要只换脚本而保留旧 STR 程序。
 

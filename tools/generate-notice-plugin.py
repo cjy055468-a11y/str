@@ -175,7 +175,8 @@ def build(source: Path, output: Path, header: Path):
             elif tag in values:
                 parts.append((tag,values[tag]))
         books.append(record('BOOK',0x03000000|item['proxy'],parts))
-    plugin_header = [('HEDR',struct.pack('<fII',1.7,len(books),0x800+len(books))),
+    # HEDR counts both non-header records and GRUP headers.
+    plugin_header = [('HEDR',struct.pack('<fII',1.7,len(books)+1,0x800+len(books))),
                      ('CNAM',zstring('STR Notice Board Compatibility')),
                      ('SNAM',zstring('Independent public notices. Tasks remain local.'))]
     for master in masters+['Missives.esp']:
