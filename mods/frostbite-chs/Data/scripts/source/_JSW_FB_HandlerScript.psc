@@ -668,7 +668,7 @@ function RunVerboseFeedback(string msg, ImageSpaceModifier imodEffect = none)
 endFunction
 
 function UpgradeCoolingDefaults()
-{Upgrade untouched original defaults once; preserve later or custom MCM settings.}
+{Initialize the requested defaults once; preserve later and custom cooling settings.}
 	if (_coolingDefaultsUpdated)
 		return
 	endIf
@@ -681,6 +681,7 @@ function UpgradeCoolingDefaults()
 	if (FreezingDelta.GetValue() == 0.025)
 		FreezingDelta.SetValue(0.05)
 	endIf
+	WarmingAnimation.SetValueInt(1)
 	_coolingDefaultsUpdated = true
 endFunction
 

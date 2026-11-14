@@ -18,6 +18,7 @@ SWF_SHA = '971f18e31ce99f44a346d2e759efba9368369218683256276b6ac613db27faa9'
 COOLING = {'_JSW_FB_CoolDelta': (0.005, 0.0075),
            '_JSW_FB_ColdDelta': (0.01, 0.015),
            '_JSW_FB_FreezingDelta': (0.025, 0.05)}
+DEFAULTS = {**COOLING, '_JSW_FB_WarmingAnimation': (0.0, 1.0)}
 TEXT = {
     'Damage Stamina Regen': '抑制耐力恢复', 'Damage Magicka Regen': '抑制魔法恢复',
     'Damage Health Regen': '抑制生命恢复', 'Cold': '寒冷',
@@ -111,8 +112,8 @@ def generate(root):
         changed = []
         for tag, value in values:
             updated = value
-            if kind == 'GLOB' and edid in COOLING and tag == 'FLTV':
-                before, after = COOLING[edid]
+            if kind == 'GLOB' and edid in DEFAULTS and tag == 'FLTV':
+                before, after = DEFAULTS[edid]
                 assert value == struct.pack('<f', before)
                 updated = struct.pack('<f', after)
             elif kind in ('MGEF','SPEL','MESG') and tag in ('FULL','DESC','ITXT'):
@@ -127,8 +128,8 @@ def generate(root):
     generated, _ = walk(source, change)
     (root/'Data/Frostbite.esl').write_bytes(generated)
     (root/'plugin-changes.json').write_text(json.dumps(changes, ensure_ascii=False, indent=2)+'\n')
-    assert len(changes) == 20
-    print(json.dumps({'plugin_sha256': sha(generated), 'translated_fields': 17, 'cooling_defaults': 3}))
+    assert len(changes) == 21
+    print(json.dumps({'plugin_sha256': sha(generated), 'translated_fields': 17, 'cooling_defaults': 3, 'warming_animation_default': True}))
 
 
 def calls(function, method):
@@ -150,7 +151,7 @@ def check(root, compiled=None):
     _, old = walk(original)
     _, new = walk(actual)
     assert len(old) == len(new)
-    text_fields = cooling_fields = 0
+    text_fields = cooling_fields = warming_fields = 0
     quest = None
     for before, after in zip(old, new):
         assert before[:3] == after[:3]  # types, IDs, flags
@@ -162,10 +163,13 @@ def check(root, compiled=None):
             assert ta == tb
             if va == vb:
                 continue
-            if ta == 'FLTV' and edid in COOLING:
-                x, y = COOLING[edid]
+            if ta == 'FLTV' and edid in DEFAULTS:
+                x, y = DEFAULTS[edid]
                 assert va == struct.pack('<f', x) and vb == struct.pack('<f', y)
-                cooling_fields += 1
+                if edid in COOLING:
+                    cooling_fields += 1
+                else:
+                    warming_fields += 1
             else:
                 assert kind in ('MGEF','SPEL','MESG') and ta in ('FULL','DESC','ITXT')
                 assert vb == TEXT[va.rstrip(b'\0').decode()].encode('utf-8')+b'\0'
@@ -175,7 +179,7 @@ def check(root, compiled=None):
             assert next(v for t, v in a if t == 'VMAD') == next(v for t, v in b if t == 'VMAD')
             assert ('ALFR', struct.pack('<I', 0x14)) in b
             quest = f'{form:08X}'
-    assert (text_fields, cooling_fields) == (17,3)
+    assert (text_fields, cooling_fields, warming_fields) == (17,3,1)
     assert sha((root/'Data/Interface/exported/widgets/Frostbite/meter.swf').read_bytes()) == SWF_SHA
     config = (root/'Data/scripts/source/_JSW_FB_ConfigScript.psc').read_text(encoding='utf-8-sig')
     handler = (root/'Data/scripts/source/_JSW_FB_HandlerScript.psc').read_text(encoding='utf-8-sig')
@@ -189,6 +193,7 @@ def check(root, compiled=None):
     assert 'if (version >= 2)' in config and 'Pages[0] = "设置"' in config
     assert 'Frostbite/Logo.dds' not in config
     assert '_coolingDefaultsUpdated = true' in handler
+    assert 'WarmingAnimation.SetValueInt(1)' in handler
     assert handler.count('\tUpgradeCoolingDefaults()') == 2
     assert '\t\tClearColdDebuffs()\n\t\tStopWarmingAnimation()\n\tendIf' in handler
     assert handler.count('SendModEvent("FrostbiteNearHeatSource")') == 1
@@ -239,6 +244,9 @@ def check(root, compiled=None):
             assert calls(cf[('',name)], 'RepairLocalBindings')
         for state in ('enabled_toggle','enabled_warming_toggle'):
             assert calls(cf[(state,'onselectst')], 'SendModEvent')
+        warming_default = calls(cf[('enabled_warming_toggle','ondefaultst')], 'SetValueInt')
+        assert len(warming_default) == 1 and warming_default[0]['args'][-1] == 1
+        assert len(calls(funcs[('', 'upgradecoolingdefaults')], 'SetValueInt')) == 1
         for state, value in (('cool_delta_slider',0.0075),('cold_delta_slider',0.015),('freezing_delta_slider',0.05)):
             call = calls(cf[(state,'onslideropenst')], 'SetSliderDialogDefaultValue')
             assert len(call) == 1 and abs(call[0]['args'][-1]-value) < 1e-7
@@ -250,6 +258,7 @@ def check(root, compiled=None):
     result = {'status': 'PASS', 'plugin_sha256': sha(actual), 'records_preserved': len(old),
               'record_ids_flags_and_vmad_preserved': True, 'local_player_alias_preserved': True,
               'translated_plugin_fields': text_fields, 'cooling_default_fields': cooling_fields,
+              'warming_animation_default': True,
               'background_quest': quest, 'stage_less_quest': True,
               'compiled_scripts': len(pex), 'pex': pex, 'gameplay_tested': False}
     (root/'build-validation.json').write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n')

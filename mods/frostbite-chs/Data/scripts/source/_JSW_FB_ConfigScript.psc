@@ -517,11 +517,13 @@ state ENABLED_WARMING_TOGGLE
 	endEvent
 
 	event OnDefaultST()
+		WarmingAnimation.SetValueInt(1)
 		SetToggleOptionValueST(WarmingAnimation.GetValueInt())
+		SendModEvent("FrostbiteWidgetReset")
 	endEvent
 
 	event OnHighlightST()
-		SetInfoText("靠近热源时播放取暖动作。移动、交互、拔出武器、跳跃或潜行会停止动作。")
+		SetInfoText("靠近热源时播放取暖动作，默认开启。移动、交互、拔出武器、跳跃或潜行会停止动作。")
 	endEvent
 endState
 
