@@ -1,0 +1,26 @@
+{
+  "round1_source_and_plugin": "PASS",
+  "round2_downloaded_pex_and_archive": "PASS",
+  "archive": "Frostbite-2.2.5-CHS-NoMCM-r2.zip",
+  "archive_sha256": "e3824f97347a3481705594445a1fdf262b47bb6879180d2637cbc033dd548557",
+  "files": 14,
+  "hashes_verified": 13,
+  "source_commit": "4fb3d181f4f48d883ad1fe3ee737eae40413f9d1",
+  "run_id": "43643108300",
+  "final_source_text_matches_local": true,
+  "compiled_bytecode_checked": 4,
+  "mcm_calls": {
+    "SetValue": 0,
+    "SetValueInt": 0,
+    "RegisterMod": 0,
+    "UnregisterMod": 1,
+    "RegisterForKey": 0
+  },
+  "fixed_cooling": [
+    0.0075,
+    0.015,
+    0.05
+  ],
+  "warming_animation_enabled": true,
+  "gameplay_tested": false
+}
