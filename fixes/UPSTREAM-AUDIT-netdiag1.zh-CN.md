@@ -1,7 +1,0 @@
-# 官方基础与诊断边界
-
-官方v1.8.4提交54b3a858e228dc8807ed65bc3f9ac3c3f81b610d及四个子模块固定不变。保留已交付coopfix4g的游戏改动及70/60两档。本次额外源码只改服务端GameServer.cpp/.h，使用现有TiltedConnect公开GetConnectionInfo和原SDK公开SetDebugOutputFunction；不修改匹配子模块，不新增游戏引擎地址、结构偏移或虚表槽。
-
-客户端kKicked=2仅表示已连接后收到ClosedByPeer，不证明人为踢人；服务端ProblemDetectedLocally后也会清理句柄。原GameServer::OnDisconnection不打印aReason和Steam底层m_eEndReason/m_szEndDebug，这使现有日志不能区分主动踢出、传输错误与超时。普通十秒时钟同步在已同步状态不会再次触发OnConnected，现有日志没有重复认证或对应拒绝，不能因约11秒间隔定性时钟错误。
-
-SDK结束原因、主动踢人分支、最后收包时间可以缩小分支，不保证自动定位到用户网络设备或具体MOD。原尸体的角色根坐标/布娃娃/交互错位仍单独待调查，本诊断包不改尸体物理。

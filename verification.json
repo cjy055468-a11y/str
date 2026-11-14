@@ -1,0 +1,12 @@
+{
+  "round2": "PASS",
+  "archive": "Frostbite-2.2.5-CHS-Fix-r1.zip",
+  "archive_sha256": "f42b187c2ceb4f49e51c63c9d7e371b67c7d953fa8738c2a9c23aaf84444b2d8",
+  "files": 14,
+  "hashes_verified": 13,
+  "source_commit": "5e1ae5479ea1f313f2b9fa7698d4886bdbd75424",
+  "run_id": "43641936111",
+  "final_source_text_matches_local": true,
+  "compiled_bytecode_checked": 4,
+  "gameplay_tested": false
+}
