@@ -1,0 +1,11 @@
+{
+  "patch_scope": "PASS",
+  "reproducible": true,
+  "original_records_overridden": 1,
+  "weather_records_overridden": 0,
+  "new_cleanup_quests": 1,
+  "control_grants_removed": 1,
+  "season_trigger_retained": true,
+  "compiled_scripts": 1,
+  "gameplay_tested": false
+}

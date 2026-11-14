@@ -1,0 +1,12 @@
+{
+  "zip": "AzuriteNoControl-CHS.zip",
+  "sha256": "af7e4009c4ceba02d5fa1a93cf72f36cfb7a78a2f1d8c708d650ebad89881907",
+  "files": 8,
+  "zip_content_check": "PASS",
+  "source_revision": "4481020394a7b8ea36a95678270acd44d553ecff",
+  "run_id": "43582286429",
+  "checks": "PASS",
+  "compiled_pex": 1,
+  "requires_new_str_programs": false,
+  "gameplay_tested": false
+}

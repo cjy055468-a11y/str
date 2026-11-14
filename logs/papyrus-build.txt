@@ -1,0 +1,6 @@
+Adding current working directory to import list: D:\a\str\str
+Adding import directory: D:\a\str\str\mods\azurite-no-control\Scripts\Source
+Adding import directory: D:\a\str\str\papyrus-imports
+Importing files...
+Imported 267 files.
+Compiling AZW_RemoveControl.psc
