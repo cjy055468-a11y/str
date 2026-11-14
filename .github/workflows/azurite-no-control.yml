@@ -1,0 +1,108 @@
+name: Build Azurite Chinese control-power removal patch
+
+on:
+  push:
+    branches: [codex/azurite-no-control]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: azurite-no-control
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate generated ESP and preserved original script bindings
+        run: |
+          New-Item -ItemType Directory -Force logs | Out-Null
+          python tools/check-azurite-no-control.py mods/azurite-no-control | Tee-Object logs/esp-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'ESP scope validation failed' }
+      - name: Compile cleanup script with pinned Skyrim compiler and native declarations
+        run: |
+          Invoke-WebRequest 'https://github.com/Orvid/Caprica/releases/download/v0.3.0/Caprica.v0.3.0.7z' -OutFile Caprica.7z
+          if ((Get-FileHash Caprica.7z -Algorithm SHA256).Hash.ToLowerInvariant() -ne '0037e54cf3a1021e976278d9a637e8ae541aaf9ebeb8d274b6c2cfe32f4ee559') { throw 'Compiler hash mismatch' }
+          7z x Caprica.7z -ocaprica -y | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw 'Compiler extraction failed' }
+          $compiler = (Get-ChildItem caprica -Recurse -Filter Caprica.exe | Select-Object -First 1).FullName
+          git clone https://github.com/ianpatt/skse64.git papyrus-api
+          if ($LASTEXITCODE -ne 0) { throw 'Papyrus API unavailable' }
+          git -C papyrus-api checkout 25b72352adb6543fa6d0bd3795780672b2e238e0
+          if ($LASTEXITCODE -ne 0) { throw 'Wrong API revision' }
+          New-Item -ItemType Directory -Force papyrus-imports, compiled-pex | Out-Null
+          Copy-Item papyrus-api/scripts/vanilla/* papyrus-imports/
+          Copy-Item tools/papyrus-interfaces/* papyrus-imports/
+          $imports = "$env:GITHUB_WORKSPACE/mods/azurite-no-control/Scripts/Source;$env:GITHUB_WORKSPACE/papyrus-imports"
+          & $compiler --game=skyrim --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/azurite-no-control/Scripts/Source" 2>&1 | Tee-Object logs/papyrus-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Papyrus compilation failed' }
+          python tools/check-azurite-no-control.py mods/azurite-no-control --compiled compiled-pex | Tee-Object logs/compiled-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'Compiled script validation failed' }
+      - name: Package and verify MO2 archive
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          python tools/package-azurite-no-control.py mods/azurite-no-control compiled-pex artifacts/candidate | Tee-Object logs/archive-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'Archive content validation failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AzuriteNoControl-CHS
+          path: artifacts/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AzuriteNoControl-diagnostics
+          path: logs/
+          if-no-files-found: warn
+      - uses: actions/checkout@v4
+        if: always()
+        with:
+          path: build-results
+          ref: codex/azurite-no-control
+      - name: Publish checked ZIP and diagnostics on results branch
+        if: always()
+        run: |
+          $results = 'codex/azurite-no-control-results'
+          Push-Location build-results
+          $existing = git ls-remote --heads origin "refs/heads/$results"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect results branch' }
+          if ($existing) {
+            git fetch origin $results
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot fetch results branch' }
+            git switch -c $results FETCH_HEAD
+          } else { git switch --orphan $results }
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot select results branch' }
+          Pop-Location
+          if (Test-Path build-results/logs) { Remove-Item build-results/logs -Recurse -Force }
+          Copy-Item logs build-results/logs -Recurse
+          $checked = $false
+          if (Test-Path artifacts/archive-validation.json) {
+            try { $checked = (Get-Content artifacts/archive-validation.json -Raw | ConvertFrom-Json).zip_content_check -eq 'PASS' }
+            catch { $checked = $false }
+          }
+          foreach ($name in @('AzuriteNoControl-CHS.zip', 'archive-validation.json', 'candidate')) {
+            if (Test-Path "build-results/$name") { Remove-Item "build-results/$name" -Recurse -Force }
+          }
+          if ($checked) { Copy-Item artifacts/* build-results/ -Recurse }
+          @{ source_revision='${{ github.sha }}'; run_id='${{ github.run_id }}'; checked_candidate=$checked; job_status='${{ job.status }}' } | ConvertTo-Json | Set-Content build-results/status.json
+          Push-Location build-results
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m 'Record checked Azurite patch build ${{ github.run_id }}'
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot commit results' }
+            git push origin "HEAD:refs/heads/$results"
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot publish results' }
+          }
+          Pop-Location

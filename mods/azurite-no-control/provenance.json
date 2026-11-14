@@ -1,0 +1,14 @@
+{
+  "input_filename": "Azurite Weathers III.esp",
+  "input_chinese_sha256": "422ac34f9510649f3d3a74bdad0435bcd42a0a1dfa3a3e7172077a6d717d219a",
+  "generated_plugin": "AzuriteNoControl.esp",
+  "generated_sha256": "b1da8349fe3620d71b871325b0fc7cdc7346cc84f50e42528b48c1e4420524e8",
+  "control_spell_local_id": "00084F",
+  "modified_original_quest_local_id": "000850",
+  "original_alias_spell_removed": 1,
+  "original_seasonal_trigger_retained": true,
+  "weather_records_overridden": 0,
+  "new_cleanup_quests": 1,
+  "requires_skse": false,
+  "gameplay_tested": false
+}
