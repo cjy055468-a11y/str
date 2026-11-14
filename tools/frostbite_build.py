@@ -294,7 +294,7 @@ def package(root, compiled, out):
     shutil.copy2(root/'build-validation.json', candidate/'build-validation.json')
     provenance = {'mod': 'Frostbite 2.2.5 CHS r1', 'original_archive_sha256': ORIGINAL_ZIP_SHA,
                   'original_esl_sha256': ORIGINAL_ESL_SHA, 'source_commit': os.getenv('GITHUB_SHA','local'),
-                  'run_id': os.getenv('GITHUB_RUN_ID'), 'compiler': 'Caprica v0.3.0, --game=skyrim --allow-unknown-events=1',
+                  'run_id': os.getenv('GITHUB_RUN_ID'), 'compiler': 'Caprica v0.3.0, --game=skyrim --skyrim-allow-unknown-events-on-non-native-class=1',
                   'skse_api_revision': '25b72352adb6543fa6d0bd3795780672b2e238e0',
                   'skyui_revision': '835428728e2305865e220fdfc99d791434955eb1',
                   'gameplay_tested': False, 'str_native_files_modified': False}

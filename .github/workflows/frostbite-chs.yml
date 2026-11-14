@@ -57,7 +57,7 @@ jobs:
           New-Item -ItemType Directory -Force compiled-pex | Out-Null
           $compiler = (Get-ChildItem caprica -Recurse -Filter Caprica.exe | Select-Object -First 1).FullName
           $imports = "$env:GITHUB_WORKSPACE/mods/frostbite-chs/Data/scripts/source;$env:GITHUB_WORKSPACE/papyrus-imports"
-          & $compiler --game=skyrim --allow-unknown-events=1 --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/frostbite-chs/Data/scripts/source" 2>&1 | Tee-Object logs/papyrus-build.txt
+          & $compiler --game=skyrim --skyrim-allow-unknown-events-on-non-native-class=1 --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/frostbite-chs/Data/scripts/source" 2>&1 | Tee-Object logs/papyrus-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Papyrus compilation failed' }
       - name: Review compiled bytecode and package
         run: |
