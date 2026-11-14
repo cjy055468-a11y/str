@@ -87,17 +87,16 @@ float Property BodyTemp = 1.0  Auto              ; Represents the player's curre
 
 bool _idlePlaying = false
 int _idleCycles = 0
-bool _coolingDefaultsUpdated = false
 
 event OnInit()
 {Ensure everything is sorted when loading starting for the first time}
 	Debug.Notification("正在启动 Frostbite 体温系统……")
 	
-	UpgradeCoolingDefaults()
+	ApplyFixedPreset()
 	InitializeCompatibility()
 	InitializeWidget()
 	
-	RegisterForKey(WidgetHotKey.GetValueInt())
+	UnregisterForAllKeys()
 	RegisterForModEvent("FrostbiteWidgetReset", "OnFrostbiteWidgetReset")
 	RegisterForModEvent("FrostbiteNearHeatSource", "OnFrostbiteNearHeatSource")
 	RegisterForSingleUpdate(1.0)
@@ -105,11 +104,12 @@ endEvent
 
 event OnPlayerLoadGame()
 {Ensure everything is sorted when loading an existing save}
-	UpgradeCoolingDefaults()
+	ApplyFixedPreset()
+	Widget.OnGameReload()
 	InitializeCompatibility()
 	InitializeWidget()
 	
-	RegisterForKey(WidgetHotKey.GetValueInt())
+	UnregisterForAllKeys()
 	RegisterForModEvent("FrostbiteWidgetReset", "OnFrostbiteWidgetReset")
 	RegisterForModEvent("FrostbiteNearHeatSource", "OnFrostbiteNearHeatSource")
 	RegisterForSingleUpdate(1.0)
@@ -181,22 +181,7 @@ event OnUpdate()
 endEvent
 
 event OnKeyDown(int keyCode)
-{Handle the hotkey presses}
-	if (!Enabled.GetValueInt())
-		return
-	endIf
-	
-	if (!Utility.IsInMenuMode())
-		if (keyCode == WidgetHotKey.GetValueInt())
-			if (WidgetShown.GetValueInt() == 1)
-				Widget.Alpha = 0.0
-				WidgetShown.SetValueInt(0)
-			else
-				Widget.Alpha = 100.0
-				WidgetShown.SetValueInt(1)
-			endIf
-		endIf
-	endIf
+{Preset locked; the legacy key cannot change it.}
 endEvent
 
 event OnFrostbiteWidgetReset(string eventName, string strArg, float numArg, Form sender)
@@ -667,22 +652,39 @@ function RunVerboseFeedback(string msg, ImageSpaceModifier imodEffect = none)
 	Debug.Notification(msg)
 endFunction
 
-function UpgradeCoolingDefaults()
-{Initialize the requested defaults once; preserve later and custom cooling settings.}
-	if (_coolingDefaultsUpdated)
-		return
-	endIf
-	if (CoolDelta.GetValue() == 0.005)
-		CoolDelta.SetValue(0.0075)
-	endIf
-	if (ColdDelta.GetValue() == 0.01)
-		ColdDelta.SetValue(0.015)
-	endIf
-	if (FreezingDelta.GetValue() == 0.025)
-		FreezingDelta.SetValue(0.05)
-	endIf
-	WarmingAnimation.SetValueInt(1)
-	_coolingDefaultsUpdated = true
+function ApplyFixedPreset()
+{Apply the shipped fixed preset; no MCM can change it.}
+	Enabled.SetValue(1.0)
+	PollingInterval.SetValue(5.0)
+	Sunrise.SetValue(7.0)
+	Sunset.SetValue(17.0)
+	HeatSourceRadius.SetValue(200.0)
+	WarmDelta.SetValue(0.05)
+	ComfortableDelta.SetValue(0.01)
+	NoneDelta.SetValue(0.0)
+	CoolDelta.SetValue(0.0075)
+	ColdDelta.SetValue(0.015)
+	FreezingDelta.SetValue(0.05)
+	FoodDelta.SetValue(0.1)
+	HealthDebuff.SetValue(0.0)
+	StaminaDebuff.SetValue(1.0)
+	MagickaDebuff.SetValue(1.0)
+	RegenDebuff.SetValue(0.5)
+	DamageDebuff.SetValue(0.2)
+	DamageDelta.SetValue(5.0)
+	EnableVampires.SetValue(0.0)
+	EnableWerewolves.SetValue(0.0)
+	EnableLiches.SetValue(0.0)
+	WidgetWidth.SetValue(150.0)
+	WidgetHeight.SetValue(25.0)
+	WidgetTop.SetValue(680.0)
+	WidgetLeft.SetValue(566.0)
+	WidgetShown.SetValue(1.0)
+	WidgetFade.SetValue(1.0)
+	WidgetHotKey.SetValue(10.0)
+	WarmingAnimation.SetValue(1.0)
+	DetectClothing.SetValue(1.0)
+	VerboseFeedback.SetValue(1.0)
 endFunction
 
 function ClearColdDebuffs()

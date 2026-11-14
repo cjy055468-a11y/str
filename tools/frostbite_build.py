@@ -189,18 +189,21 @@ def check(root, compiled=None):
         declarations = re.findall(r'(?im)^\s*\w+(?:\[\])?\s+property\s+(\S+)', source)
         assert all(name.isascii() for name in declarations)
     assert handler.count('damage = damage * (1.0 - (frostResist / 100.0))') == 3
-    assert 'int function GetVersion()\n\treturn 2' in config
-    assert 'if (version >= 2)' in config and 'Pages[0] = "设置"' in config
+    assert 'int function GetVersion()\n\treturn 3' in config
+    assert '_hiddenManager.UnregisterMod(self)' in config
+    assert 'parent.OnGameReload()' not in config
+    assert not re.search(r'(?i)\.SetValue(?:Int)?\(', config)
     assert 'Frostbite/Logo.dds' not in config
-    assert '_coolingDefaultsUpdated = true' in handler
-    assert 'WarmingAnimation.SetValueInt(1)' in handler
-    assert handler.count('\tUpgradeCoolingDefaults()') == 2
+    assert 'WarmingAnimation.SetValue(1.0)' in handler
+    assert handler.count('\tApplyFixedPreset()') == 2
+    assert '\tWidget.OnGameReload()' in handler
+    assert '\tRegisterForKey(' not in handler
     assert '\t\tClearColdDebuffs()\n\t\tStopWarmingAnimation()\n\tendIf' in handler
     assert handler.count('SendModEvent("FrostbiteNearHeatSource")') == 1
     assert 'Game.GetPlayer' not in handler  # preserve the bound local alias
     assert handler.count('UnregisterForAllControls()') == 1
-    for value in ('0.0075', '0.015', '0.05'):
-        assert f'SetSliderDialogDefaultValue({value})' in config
+    for prop, value in (('CoolDelta','0.0075'), ('ColdDelta','0.015'), ('FreezingDelta','0.05')):
+        assert f'{prop}.SetValue({value})' in handler
     pex = []
     if compiled:
         paths = sorted(compiled.glob('*.pex'))
@@ -232,25 +235,29 @@ def check(root, compiled=None):
             assert multiplied['op'] == 'FMul' and reduced['args'][0] in multiplied['args'][1:]
         assert len(calls(f, 'DamageActorValue')) == 3
         for name in ('oninit','onplayerloadgame'):
-            assert len(calls(funcs[('',name)], 'UpgradeCoolingDefaults')) == 1
+            assert len(calls(funcs[('',name)], 'ApplyFixedPreset')) == 1
+            assert not calls(funcs[('',name)], 'RegisterForKey')
         assert len(calls(funcs[('', 'clearcolddebuffs')], 'HasSpell')) == 3
         assert len(calls(funcs[('', 'clearcolddebuffs')], 'RemoveSpell')) == 3
         assert len(calls(funcs[('', 'onupdate')], 'ClearColdDebuffs')) == 1
         assert len(calls(funcs[('', 'oncontrolDown'.lower())], 'StopWarmingAnimation')) == 1
         assert len(calls(funcs[('', 'stopwarminganimation')], 'UnregisterForAllControls')) == 1
         cf = {(s['name'].lower(), f['name'].lower()): f for s in config_obj['states'] for f in s['functions']}
-        assert any(c['op'] == 'Return' and c['args'] == [2] for c in cf[('', 'getversion')]['code'])
-        for name in ('ongamereload','onconfigopen'):
-            assert calls(cf[('',name)], 'RepairLocalBindings')
-        for state in ('enabled_toggle','enabled_warming_toggle'):
-            assert calls(cf[(state,'onselectst')], 'SendModEvent')
-        warming_default = calls(cf[('enabled_warming_toggle','ondefaultst')], 'SetValueInt')
-        assert len(warming_default) == 1 and warming_default[0]['args'][-1] == 1
-        assert len(calls(funcs[('', 'upgradecoolingdefaults')], 'SetValueInt')) == 1
-        for state, value in (('cool_delta_slider',0.0075),('cold_delta_slider',0.015),('freezing_delta_slider',0.05)):
-            call = calls(cf[(state,'onslideropenst')], 'SetSliderDialogDefaultValue')
-            assert len(call) == 1 and abs(call[0]['args'][-1]-value) < 1e-7
-            assert calls(cf[(state,'ondefaultst')], 'SetValue')
+        assert any(c['op'] == 'Return' and c['args'] == [3] for c in cf[('', 'getversion')]['code'])
+        assert calls(cf[('', 'hideownmenu')], 'UnregisterMod')
+        for function in cf.values():
+            for method in ('SetValue','SetValueInt','RegisterMod','RegisterForKey'):
+                assert not calls(function, method), (function['name'],method)
+        for state in ('enabled_toggle','enabled_warming_toggle','cool_delta_slider','cold_delta_slider','freezing_delta_slider'):
+            key = 'onselectst' if 'toggle' in state else 'onslideracceptst'
+            assert all(not c['op'].startswith('Call') for c in cf[(state,key)]['code'])
+        assert not any(c['op'].startswith('Call') for c in funcs[('', 'onkeydown')]['code'])
+        assert calls(funcs[('', 'onplayerloadgame')], 'OnGameReload')
+        preset = calls(funcs[('', 'applyfixedpreset')], 'SetValue')
+        assert len(preset) == 31
+        for prop, value in (('CoolDelta',0.0075),('ColdDelta',0.015),('FreezingDelta',0.05),('WarmingAnimation',1.0),('PollingInterval',5.0),('Enabled',1.0)):
+            call = [c for c in preset if c['args'][1].get('id','').lower() == '::'+prop.lower()+'_var']
+            assert len(call) == 1 and abs(call[0]['args'][-1]-value) < 1e-7, (prop,call)
         literal_strings = [a['string'] for s in handler_obj['states'] for f in s['functions']
                            for c in f['code'] for a in c['args'] if isinstance(a,dict) and 'string' in a]
         assert {'FrostResist','Health','Magicka','Stamina'} <= set(literal_strings)
@@ -259,6 +266,7 @@ def check(root, compiled=None):
               'record_ids_flags_and_vmad_preserved': True, 'local_player_alias_preserved': True,
               'translated_plugin_fields': text_fields, 'cooling_default_fields': cooling_fields,
               'warming_animation_default': True,
+              'mcm_editing_disabled': True, 'fixed_preset_globals': 31,
               'background_quest': quest, 'stage_less_quest': True,
               'compiled_scripts': len(pex), 'pex': pex, 'gameplay_tested': False}
     (root/'build-validation.json').write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n')
@@ -301,16 +309,17 @@ def package(root, compiled, out):
         shutil.copy2(path, candidate/'scripts'/(name+'.pex'))
     shutil.copy2(root/'README_ZH.md', candidate/'README_ZH.md')
     shutil.copy2(root/'build-validation.json', candidate/'build-validation.json')
-    provenance = {'mod': 'Frostbite 2.2.5 CHS r1', 'original_archive_sha256': ORIGINAL_ZIP_SHA,
+    provenance = {'mod': 'Frostbite 2.2.5 CHS NoMCM r2', 'original_archive_sha256': ORIGINAL_ZIP_SHA,
                   'original_esl_sha256': ORIGINAL_ESL_SHA, 'source_commit': os.getenv('GITHUB_SHA','local'),
                   'run_id': os.getenv('GITHUB_RUN_ID'), 'compiler': 'Caprica v0.3.0, --game=skyrim --skyrim-allow-unknown-events-on-non-native-class=1',
                   'skse_api_revision': '25b72352adb6543fa6d0bd3795780672b2e238e0',
                   'skyui_revision': '835428728e2305865e220fdfc99d791434955eb1',
-                  'gameplay_tested': False, 'str_native_files_modified': False}
+                  'gameplay_tested': False, 'str_native_files_modified': False,
+                  'mcm_editing_disabled': True, 'fixed_cooling': [0.0075, 0.015, 0.05], 'warming_animation_default': True}
     (candidate/'provenance.json').write_text(json.dumps(provenance, ensure_ascii=False, indent=2)+'\n')
     hashes = {p.relative_to(candidate).as_posix(): sha(p.read_bytes()) for p in sorted(candidate.rglob('*')) if p.is_file()}
     (candidate/'SHA256.json').write_text(json.dumps(hashes, ensure_ascii=False, indent=2)+'\n')
-    archive = out/'Frostbite-2.2.5-CHS-Fix-r1.zip'
+    archive = out/'Frostbite-2.2.5-CHS-NoMCM-r2.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for path in sorted(candidate.rglob('*')):
             if path.is_file():
