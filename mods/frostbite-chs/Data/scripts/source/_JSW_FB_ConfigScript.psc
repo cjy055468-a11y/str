@@ -1,4 +1,4 @@
-﻿Scriptname _JSW_FB_ConfigScript extends SKI_ConfigBase
+Scriptname _JSW_FB_ConfigScript extends SKI_ConfigBase
 
 Actor Property PlayerRef  Auto
 _JSW_FB_MeterWidget Property Widget  Auto

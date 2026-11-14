@@ -1,4 +1,4 @@
-﻿Scriptname _JSW_FB_Widget extends SKI_WidgetBase
+Scriptname _JSW_FB_Widget extends SKI_WidgetBase
 
 ; -------------------------------------------------------------------------------------------------
 ; PRIVATE VARIABLES -------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-﻿Scriptname _JSW_FB_HandlerScript extends ReferenceAlias
+Scriptname _JSW_FB_HandlerScript extends ReferenceAlias
 
 Actor Property PlayerRef  Auto
 _JSW_FB_MeterWidget Property Widget  Auto
