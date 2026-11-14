@@ -232,11 +232,16 @@ event OnFrostbiteNearHeatSource(string eventName, string strArg, float numArg, F
 			if (_idleCycles < 2)
 				_idleCycles += 1
 			else
+				bool idleStarted = false
 				if (PlayerRef.IsSneaking())
-					PlayerRef.PlayIdle(IdleWarmHandsCrouched)
+					idleStarted = PlayerRef.PlayIdle(IdleWarmHandsCrouched)
 				else
-					PlayerRef.PlayIdle(IdleWarmHandsStanding)
+					idleStarted = PlayerRef.PlayIdle(IdleWarmHandsStanding)
 				endif
+				if (!idleStarted)
+					_idleCycles = 0
+					return
+				endIf
 				
 				_idlePlaying = true
 				

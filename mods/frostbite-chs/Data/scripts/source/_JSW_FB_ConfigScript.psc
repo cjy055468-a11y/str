@@ -55,7 +55,8 @@ endEvent
 function RepairLocalBindings()
 {Recover the two references that the old binary-only translation could leave empty.}
 	if (!Widget)
-		Widget = self as _JSW_FB_MeterWidget
+		Quest ownerQuest = self as Quest
+		Widget = ownerQuest as _JSW_FB_MeterWidget
 	endIf
 	if (!Enabled)
 		_JSW_FB_HandlerScript handler = GetAlias(0) as _JSW_FB_HandlerScript
