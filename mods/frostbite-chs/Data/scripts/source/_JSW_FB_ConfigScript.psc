@@ -466,7 +466,7 @@ endState
 state FREEZING_DELTA_SLIDER
 	event OnSliderOpenST()
 		SetSliderDialogStartValue(FreezingDelta.GetValue())
-		SetSliderDialogDefaultValue(0.0375)
+		SetSliderDialogDefaultValue(0.05)
 		SetSliderDialogRange(0.0, 1.0)
 		SetSliderDialogInterval(0.0001)
 	endEvent
@@ -477,12 +477,12 @@ state FREEZING_DELTA_SLIDER
 	endEvent
 
 	event OnHighlightST()
-		SetInfoText("严寒环境中，每次检测损失的体温量。\n默认 0.0375，为原版的 1.5 倍；体温条显示为粉色。")
+		SetInfoText("严寒环境中，每次检测损失的体温量。\n默认 0.05，为原版的 2 倍；体温条显示为粉色。")
 	endEvent
 
 	event OnDefaultST()
-		FreezingDelta.SetValue(0.0375)
-		SetSliderOptionValueST(0.0375, "{4}")
+		FreezingDelta.SetValue(0.05)
+		SetSliderOptionValueST(0.05, "{4}")
 	endEvent
 endState
 

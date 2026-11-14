@@ -17,7 +17,7 @@ ORIGINAL_ZIP_SHA = '08d056b05e7af161b640fd915148b4536efd43e4cdb0295d282eb5507f37
 SWF_SHA = '971f18e31ce99f44a346d2e759efba9368369218683256276b6ac613db27faa9'
 COOLING = {'_JSW_FB_CoolDelta': (0.005, 0.0075),
            '_JSW_FB_ColdDelta': (0.01, 0.015),
-           '_JSW_FB_FreezingDelta': (0.025, 0.0375)}
+           '_JSW_FB_FreezingDelta': (0.025, 0.05)}
 TEXT = {
     'Damage Stamina Regen': '抑制耐力恢复', 'Damage Magicka Regen': '抑制魔法恢复',
     'Damage Health Regen': '抑制生命恢复', 'Cold': '寒冷',
@@ -194,7 +194,7 @@ def check(root, compiled=None):
     assert handler.count('SendModEvent("FrostbiteNearHeatSource")') == 1
     assert 'Game.GetPlayer' not in handler  # preserve the bound local alias
     assert handler.count('UnregisterForAllControls()') == 1
-    for value in ('0.0075', '0.015', '0.0375'):
+    for value in ('0.0075', '0.015', '0.05'):
         assert f'SetSliderDialogDefaultValue({value})' in config
     pex = []
     if compiled:
@@ -239,7 +239,7 @@ def check(root, compiled=None):
             assert calls(cf[('',name)], 'RepairLocalBindings')
         for state in ('enabled_toggle','enabled_warming_toggle'):
             assert calls(cf[(state,'onselectst')], 'SendModEvent')
-        for state, value in (('cool_delta_slider',0.0075),('cold_delta_slider',0.015),('freezing_delta_slider',0.0375)):
+        for state, value in (('cool_delta_slider',0.0075),('cold_delta_slider',0.015),('freezing_delta_slider',0.05)):
             call = calls(cf[(state,'onslideropenst')], 'SetSliderDialogDefaultValue')
             assert len(call) == 1 and abs(call[0]['args'][-1]-value) < 1e-7
             assert calls(cf[(state,'ondefaultst')], 'SetValue')
@@ -301,7 +301,7 @@ def package(root, compiled, out):
     (candidate/'provenance.json').write_text(json.dumps(provenance, ensure_ascii=False, indent=2)+'\n')
     hashes = {p.relative_to(candidate).as_posix(): sha(p.read_bytes()) for p in sorted(candidate.rglob('*')) if p.is_file()}
     (candidate/'SHA256.json').write_text(json.dumps(hashes, ensure_ascii=False, indent=2)+'\n')
-    archive = out/'Frostbite-2.2.5-CHS-Cold1.5-Fix-r1.zip'
+    archive = out/'Frostbite-2.2.5-CHS-Fix-r1.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for path in sorted(candidate.rglob('*')):
             if path.is_file():

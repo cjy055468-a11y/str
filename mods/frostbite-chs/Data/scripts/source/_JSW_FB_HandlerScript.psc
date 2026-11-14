@@ -679,7 +679,7 @@ function UpgradeCoolingDefaults()
 		ColdDelta.SetValue(0.015)
 	endIf
 	if (FreezingDelta.GetValue() == 0.025)
-		FreezingDelta.SetValue(0.0375)
+		FreezingDelta.SetValue(0.05)
 	endIf
 	_coolingDefaultsUpdated = true
 endFunction
