@@ -1,7 +1,10 @@
 {
   "result": "PASS",
   "record_overrides": 2,
-  "skyrim_pex_3_2": 3,
+  "new_private_forms": 13,
+  "skyrim_pex_3_2": 6,
+  "vmad_matches_compiled_properties": true,
+  "previous_runtime_binaries_preserved": true,
   "original_stats_and_effect_properties_preserved": true,
   "native_binaries_changed": false,
   "sleep_accounting": "Hours Slept delta; interrupted sleep uses completed hours",
