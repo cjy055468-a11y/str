@@ -9,7 +9,7 @@ on:
       - '.github/workflows/ineed-compat.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   compile:
     runs-on: windows-2022
@@ -44,6 +44,25 @@ jobs:
         run: |
           Copy-Item compiled-pex/*.pex mods/ineed-str/Scripts/
           Compress-Archive -Path mods/ineed-str/* -DestinationPath iNeed-STR-Alcohol-Sleep-v0.1-test.zip
+      - name: Retain reviewed binaries and package on the requested branch
+        run: |
+          New-Item -ItemType Directory -Force packages | Out-Null
+          Copy-Item iNeed-STR-Alcohol-Sleep-v0.1-test.zip packages/
+          Copy-Item logs/checks.json fixes/ineed-build-checks.json
+          Get-ChildItem compiled-pex -Filter *.pas | ForEach-Object {
+            Write-Output "ASSEMBLY: $($_.Name)"
+            Get-Content $_.FullName
+          }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f -- packages/iNeed-STR-Alcohol-Sleep-v0.1-test.zip mods/ineed-str/Scripts/*.pex fixes/ineed-build-checks.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m 'Retain compiled iNeed compatibility test package [skip ci]'
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot retain compiled files' }
+            git push origin HEAD:codex/ineed-str-compat-v184
+            if ($LASTEXITCODE -ne 0) { throw 'Branch changed during packaging; refusing overwrite' }
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
