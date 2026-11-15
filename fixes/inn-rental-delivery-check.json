@@ -1,0 +1,12 @@
+{
+  "package": "STR-Inn-Rental-Shared-Vanilla-Bruma-v0.1-test.zip",
+  "sha256": "07d5007038cb786772676b79ee375a258c48a3350b2b25af08e288b14d8263d0",
+  "commit": "5af8639c39491ae7015c0577c3442cad3e768dd6",
+  "workflow_run": 43673624272,
+  "windows_compile": "PASS",
+  "scope_and_archive": "PASS",
+  "bruma_npcs": 7,
+  "bruma_beds": 6,
+  "price_changes": false,
+  "gameplay_two_clients": "NOT RUN"
+}
