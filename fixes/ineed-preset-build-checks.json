@@ -1,0 +1,22 @@
+{
+  "result": "PASS",
+  "defaults": {
+    "Animations": 2,
+    "ForceThird": true,
+    "ValuedHarvests": true,
+    "FoodSpoilage": true,
+    "DisplayPercent": true
+  },
+  "mcm": "hidden by per-mod registration override",
+  "spoilage_quest_auto_start": true,
+  "numeric_spoilage": "original Numbers / remaining freshness percent",
+  "main_localization_and_all_function_bodies_preserved": true,
+  "validated_animation_relay_and_previous_fixes_byte_identical": true,
+  "changed_original_plugin_records": [
+    "_SNValuedHarvestsToggle",
+    "_SNValuedHarvestsDialogueToggle"
+  ],
+  "runtime_scripts": 8,
+  "animation_gameplay": "User confirmed A consumes and B can see it",
+  "new_preset_and_hidden_mcm_gameplay": "NOT RUN"
+}
