@@ -37,7 +37,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Interface preparation failed' }
           $compiler = (Get-ChildItem caprica -Recurse -Filter Caprica.exe | Select-Object -First 1).FullName
           $imports = "$env:GITHUB_WORKSPACE/mods/ineed-str/Scripts/Source;$env:GITHUB_WORKSPACE/papyrus-imports"
-          & $compiler --game=skyrim --dump-asm --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/ineed-str/Scripts/Source" 2>&1 | Tee-Object logs/papyrus-build.txt
+          & $compiler --ignorecwd --game=skyrim --dump-asm --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/ineed-str/Scripts/Source" 2>&1 | Tee-Object logs/papyrus-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Papyrus compile failed' }
           foreach ($script in '_SNPlayerAlias', '_SNSTRConsumeRelay', '_SNSTRConsumePulse') {
             Copy-Item "compiled-pex/$script.pex" mods/ineed-str/Scripts/
