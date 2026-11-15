@@ -1,4 +1,4 @@
-name: Compile standalone vanilla inn rental sharing
+name: Compile vanilla and Bruma inn rental sharing
 on:
   push:
     branches: [codex/inn-rental-sync-v184]
@@ -41,18 +41,18 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Papyrus compilation failed' }
           python tools/check-inn-rental.py mods/inn-rental compiled-pex | Tee-Object logs/checks.json
           if ($LASTEXITCODE -ne 0) { throw 'Rental overlay validation failed' }
-      - name: Retain the vanilla test package on the requested branch
+      - name: Retain the combined test package on the requested branch
         run: |
           Copy-Item compiled-pex/*.pex mods/inn-rental/Scripts/
           New-Item -ItemType Directory -Force packages | Out-Null
-          Compress-Archive -Path mods/inn-rental/* -DestinationPath packages/STR-Vanilla-Inn-Rental-Shared-v0.1-test.zip -Force
+          Compress-Archive -Path mods/inn-rental/* -DestinationPath packages/STR-Inn-Rental-Shared-Vanilla-Bruma-v0.1-test.zip -Force
           Copy-Item logs/checks.json fixes/inn-rental-build-checks.json
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f -- packages/STR-Vanilla-Inn-Rental-Shared-v0.1-test.zip mods/inn-rental/Scripts/*.pex fixes/inn-rental-build-checks.json
+          git add -f -- packages/STR-Inn-Rental-Shared-Vanilla-Bruma-v0.1-test.zip mods/inn-rental/Scripts/*.pex fixes/inn-rental-build-checks.json
           git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
-            git commit -m 'Retain compiled vanilla rental test package [skip ci]'
+            git commit -m 'Retain compiled vanilla and Bruma rental test package [skip ci]'
             if ($LASTEXITCODE -ne 0) { throw 'Cannot retain compiled files' }
             git push origin HEAD:codex/inn-rental-sync-v184
             if ($LASTEXITCODE -ne 0) { throw 'Branch changed during packaging; refusing overwrite' }
@@ -62,6 +62,6 @@ jobs:
         with:
           name: STR-Inn-Rental-Sharing
           path: |
-            packages/STR-Vanilla-Inn-Rental-Shared-v0.1-test.zip
+            packages/STR-Inn-Rental-Shared-Vanilla-Bruma-v0.1-test.zip
             compiled-pex/
             logs/

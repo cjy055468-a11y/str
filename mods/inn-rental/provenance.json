@@ -1,0 +1,83 @@
+{
+  "baseline_build": "v1.8.4-coopfix4g-corpse5-state1s-loot2-notice-board-v2-r1",
+  "game_version": "1.6.1170",
+  "native_binaries_changed": false,
+  "scope": "New vanilla and Bruma rentals shared among all installed clients; no party restriction",
+  "price_changes": false,
+  "runtime_script_source_sha256": "b87724f39dfd597c683d6777745b1c561e0968d1a76d34acd043b81e393dedb1",
+  "windows_compiler": "Caprica v0.3.0",
+  "first_successful_workflow_run": 43673184503,
+  "bruma": {
+    "input": {
+      "file": "BSHeartland.esm",
+      "bytes": 48166576,
+      "sha256": "6947e6722bdd80439ee3706dbc0073099c679d8efa4f05f8ede7771b0c325148",
+      "masters": [
+        "Skyrim.esm",
+        "BSAssets.esm"
+      ]
+    },
+    "rentroom_binding_count": 7,
+    "unique_bed_count": 6,
+    "bindings": [
+      {
+        "npc_editor_id": "CYRStantusFaleria",
+        "npc_file_form_id": "0x2003a16",
+        "script": "RentRoomScript",
+        "bed_file_form_id": "0x206efd1",
+        "bed_editor_id": "CYRBrumaJerallViewPlayerBed",
+        "wi_file_form_id": "0x35d64"
+      },
+      {
+        "npc_editor_id": "CYRBentior",
+        "npc_file_form_id": "0x202daf8",
+        "script": "RentRoomScript",
+        "bed_file_form_id": "0x2063131",
+        "bed_editor_id": "CYRRestfulWatchmanPlayerBedRef",
+        "wi_file_form_id": "0x35d64"
+      },
+      {
+        "npc_editor_id": "CYRErlusRisula",
+        "npc_file_form_id": "0x206db7e",
+        "script": "RentRoomScript",
+        "bed_file_form_id": "0x207ec0f",
+        "bed_editor_id": "CYRSnowstoneRestPlayerBedRef001",
+        "wi_file_form_id": "0x35d64"
+      },
+      {
+        "npc_editor_id": "CYRLasianaJiriium",
+        "npc_file_form_id": "0x20d25f5",
+        "script": "RentRoomScript",
+        "bed_file_form_id": "0x20b5a71",
+        "bed_editor_id": "CYRAleswellInnRentedBed",
+        "wi_file_form_id": "0x35d64"
+      },
+      {
+        "npc_editor_id": "CYRVilfreJiriium",
+        "npc_file_form_id": "0x20d25f7",
+        "script": "RentRoomScript",
+        "bed_file_form_id": "0x20b5a71",
+        "bed_editor_id": "CYRAleswellInnRentedBed",
+        "wi_file_form_id": "0x35d64"
+      },
+      {
+        "npc_editor_id": "CYRMaisy",
+        "npc_file_form_id": "0x20f9701",
+        "script": "RentRoomScript",
+        "bed_file_form_id": "0x20de47e",
+        "bed_editor_id": "",
+        "wi_file_form_id": "0x35d64"
+      },
+      {
+        "npc_editor_id": "CYRHoronMaleus",
+        "npc_file_form_id": "0x20f9735",
+        "script": "RentRoomScript",
+        "bed_file_form_id": "0x20fc4e9",
+        "bed_editor_id": "",
+        "wi_file_form_id": "0x35d64"
+      }
+    ],
+    "rental_state_condition": "GetActorValue(Variable09, AV index76) equals 0 to rent; equals1 for already-rented response"
+  },
+  "gameplay_two_clients": "NOT RUN"
+}
