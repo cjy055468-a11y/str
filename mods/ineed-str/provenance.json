@@ -1,0 +1,42 @@
+{
+  "baseline_repository_commit": "f08a21158b3146a3ed954626bafa88ebdc818c3a",
+  "baseline_branch": "codex/notice-board-v2-v184",
+  "baseline_build": "v1.8.4-coopfix4g-corpse5-state1s-loot2-notice-board-v2-r1",
+  "uploaded_server_sha256": "8fda78d9837ade5f126e717bd6668cee5f68e8c0e94cd3ec8cfae8083233979b",
+  "ineed_version": "1.95",
+  "inputs": {
+    "iNeed.esp": "ada5d1b2118a1dff121ef8f728d870b485d2fb3c910ac00a6481e786725d0fb7",
+    "iNeed.bsa": "4e67e516bf7e40f21136f46cc8aef9256b2ef59b929ce0b3ff3ba9d7550a6b78",
+    "scripts/_snquestscript.pex": "059d3dda1832e7b411a4edc5df64060c4657d4093ee186ce159bf29497e80ce3"
+  },
+  "plugin_masters": [
+    "Skyrim.esm",
+    "Update.esm",
+    "Dawnguard.esm",
+    "HearthFires.esm",
+    "Dragonborn.esm",
+    "iNeed.esp"
+  ],
+  "original_effects": {
+    "_SNDrunkFX": {
+      "form_id": 83936497,
+      "replacement_script": "_SNSTRLocalImod",
+      "non_vmad_sha256": "81b7a8e1e77240d21e59eff929f062cc059e843703ed390c60e622c225c11ff9"
+    },
+    "_SNDrunkStumbleScript": {
+      "form_id": 84186423,
+      "replacement_script": "_SNSTRLocalStumble",
+      "non_vmad_sha256": "66cfa7fdfd3ae5277516fcf471e97616b12b80c555c03b6991ddea1363648927"
+    }
+  },
+  "needs_original_source_sha256": "aa797429a7521559d44d96f0db98b6f046f737c69ea2ace7d7792f932e725d78",
+  "needs_properties": [
+    "_SNWaterskinEquipLeft",
+    "_SNWaterskinEquipRight",
+    "_SNWaterskinEquipBack",
+    "_SNDialogueQuest",
+    "_SNQuest",
+    "ScanFood",
+    "WaterskinEquip"
+  ]
+}

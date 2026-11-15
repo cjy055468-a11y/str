@@ -1,0 +1,54 @@
+name: Compile iNeed STR alcohol and sleep overlay
+on:
+  push:
+    branches: [codex/ineed-str-compat-v184]
+    paths:
+      - 'mods/ineed-str/**'
+      - 'tools/*ineed*'
+      - 'tools/ineed-interfaces/**'
+      - '.github/workflows/ineed-compat.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned Papyrus toolchain
+        run: |
+          Invoke-WebRequest 'https://github.com/Orvid/Caprica/releases/download/v0.3.0/Caprica.v0.3.0.7z' -OutFile Caprica.7z
+          if ((Get-FileHash Caprica.7z -Algorithm SHA256).Hash.ToLowerInvariant() -ne '0037e54cf3a1021e976278d9a637e8ae541aaf9ebeb8d274b6c2cfe32f4ee559') { throw 'Compiler hash mismatch' }
+          7z x Caprica.7z -ocaprica -y
+          if ($LASTEXITCODE -ne 0) { throw 'Compiler extraction failed' }
+          git clone https://github.com/ianpatt/skse64.git papyrus-api
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot retrieve native interfaces' }
+          git -C papyrus-api checkout 25b72352adb6543fa6d0bd3795780672b2e238e0
+          if ($LASTEXITCODE -ne 0) { throw 'Wrong native interfaces' }
+      - name: Compile all three runtime scripts for Skyrim
+        run: |
+          New-Item -ItemType Directory -Force compiled-pex, logs, papyrus-imports | Out-Null
+          python tools/prepare-ineed-imports.py papyrus-api papyrus-imports
+          if ($LASTEXITCODE -ne 0) { throw 'Interface preparation failed' }
+          $compiler = (Get-ChildItem caprica -Recurse -Filter Caprica.exe | Select-Object -First 1).FullName
+          $imports = "$env:GITHUB_WORKSPACE/mods/ineed-str/Scripts/Source;$env:GITHUB_WORKSPACE/papyrus-imports"
+          & $compiler --game=skyrim --dump-asm --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/ineed-str/Scripts/Source" 2>&1 | Tee-Object logs/papyrus-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Papyrus compile failed' }
+          python tools/check-ineed.py mods/ineed-str compiled-pex | Tee-Object logs/checks.json
+          if ($LASTEXITCODE -ne 0) { throw 'Overlay validation failed' }
+      - name: Package the MO2 overlay
+        run: |
+          Copy-Item compiled-pex/*.pex mods/ineed-str/Scripts/
+          Compress-Archive -Path mods/ineed-str/* -DestinationPath iNeed-STR-Alcohol-Sleep-v0.1-test.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: iNeed-STR-Alcohol-Sleep
+          path: |
+            iNeed-STR-Alcohol-Sleep-v0.1-test.zip
+            compiled-pex/
+            logs/
