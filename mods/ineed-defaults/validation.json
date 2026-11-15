@@ -1,0 +1,98 @@
+{
+  "mod": "iNeed Continued 1.95 MCM defaults",
+  "scope": "New game / initial defaults; MCM remains editable",
+  "requested_defaults": {
+    "Animations": 2,
+    "ForceThird": true,
+    "ValuedHarvests": true
+  },
+  "files": {
+    "scripts/_snquestscript.pex": {
+      "original_sha256": "059d3dda1832e7b411a4edc5df64060c4657d4093ee186ce159bf29497e80ce3",
+      "modified_sha256": "018754b31148ac41dde39f71e9ba8e8c324f204306da580a330d3d343839ee18",
+      "original_bytes": 77292,
+      "modified_bytes": 77296,
+      "edits": [
+        {
+          "original_offset": 36917,
+          "before_hex": "00009db7",
+          "after_hex": "00009dbb",
+          "reason": "Update PEX object size after typed initializers",
+          "modified_offset": 36917
+        },
+        {
+          "original_offset": 39504,
+          "before_hex": "00",
+          "after_hex": "0300000002",
+          "reason": "::Animations_var: default 2",
+          "modified_offset": 39504
+        }
+      ],
+      "exact_original_reconstruction": true,
+      "all_function_bodies_unchanged": true,
+      "ForceThird_original_and_patched": true
+    },
+    "scripts/_snskyuiconfig.pex": {
+      "original_sha256": "1b61582b2b5eb30045fb9a2ffa73c2bcab46a574eed5f08c3af46fb532b565f4",
+      "modified_sha256": "de6acab5ae5ef6aeda5f4681d3f92826cf12b5761f5a1abafff10d4f559f420e",
+      "original_bytes": 49306,
+      "modified_bytes": 49311,
+      "edits": [
+        {
+          "original_offset": 16073,
+          "before_hex": "000081d1",
+          "after_hex": "000081d6",
+          "reason": "Update PEX object size after typed initializers",
+          "modified_offset": 16073
+        },
+        {
+          "original_offset": 16308,
+          "before_hex": "00",
+          "after_hex": "0501",
+          "reason": "ValuedHarvests: default 1",
+          "modified_offset": 16308
+        },
+        {
+          "original_offset": 16505,
+          "before_hex": "00",
+          "after_hex": "0300000002",
+          "reason": "Animations: default 2",
+          "modified_offset": 16506
+        },
+        {
+          "original_offset": 38874,
+          "before_hex": "00000000",
+          "after_hex": "00000002",
+          "reason": "Animations MCM reset-default index: 0 -> 2",
+          "modified_offset": 38879
+        }
+      ],
+      "exact_original_reconstruction": true,
+      "changed_instruction_operands": 1,
+      "other_function_bodies_unchanged": true
+    },
+    "iNeed.esp": {
+      "original_sha256": "ada5d1b2118a1dff121ef8f728d870b485d2fb3c910ac00a6481e786725d0fb7",
+      "modified_sha256": "3a247c26994671b2051806156f35a0a19b4489f2a05c39301148cb94d5abab50",
+      "original_bytes": 307080,
+      "modified_bytes": 307080,
+      "edits": [
+        {
+          "original_offset": 2022,
+          "before_hex": "00000000",
+          "after_hex": "0000803f",
+          "reason": "_SNValuedHarvestsToggle: default enabled",
+          "modified_offset": 2022
+        },
+        {
+          "original_offset": 2101,
+          "before_hex": "00000000",
+          "after_hex": "0000803f",
+          "reason": "_SNValuedHarvestsDialogueToggle: default enabled",
+          "modified_offset": 2101
+        }
+      ],
+      "exact_original_reconstruction": true
+    }
+  }
+}

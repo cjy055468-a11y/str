@@ -1,0 +1,10 @@
+{
+  "package": "iNeed-MCM-Defaults-3Options-v1.zip",
+  "sha256": "8ba5aff28845aa2f10119131baa49f7e0b05b76b8c11ca7fd77199ffc1505918",
+  "input_archive_sha256": "30818706a75950b8c0348486c605424f0a63cbb4017b2215e0eafb73245c80de",
+  "scope": "Defaults only; animation Enabled, Force Camera, Valued Harvests enabled",
+  "binary_validation": "PASS",
+  "independent_disassembly": "PASS",
+  "archive_validation": "PASS",
+  "gameplay_tested": false
+}

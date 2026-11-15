@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "independent_decoder": "Champollion v1.3.2",
+  "independent_decoder_zip_sha256": "ea53054276ac8006ccd3b323286bfbc6e34a454fa419d08da9bd440cbd31b383",
+  "decoded_scripts": 2,
+  "disassembly_changed_lines": {
+    "_snquestscript": 1,
+    "_snskyuiconfig": 3
+  },
+  "verified_defaults": [
+    "Animations=2",
+    "ForceThird=True",
+    "MCM Animations=2",
+    "ValuedHarvests=True"
+  ],
+  "gameplay_tested": false
+}
