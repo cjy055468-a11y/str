@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "record_overrides": 2,
+  "skyrim_pex_3_2": 3,
+  "original_stats_and_effect_properties_preserved": true,
+  "native_binaries_changed": false,
+  "sleep_accounting": "Hours Slept delta; interrupted sleep uses completed hours",
+  "gameplay_two_clients": "NOT RUN"
+}
