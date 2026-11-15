@@ -1,0 +1,18 @@
+{
+  "result": "PASS",
+  "compiled_skyrim_pex_3_2": 1,
+  "original_vmad_properties": [
+    [
+      "ObjectReference",
+      "Bed"
+    ],
+    [
+      "WIFunctionsScript",
+      "WI"
+    ]
+  ],
+  "original_price_duration_and_walk_to_preserved": true,
+  "shared_permission": "all clients; synchronized Variable09; referenced Bed only",
+  "native_binaries_changed": false,
+  "gameplay_two_clients": "NOT RUN"
+}
