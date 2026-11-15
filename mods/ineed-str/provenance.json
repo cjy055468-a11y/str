@@ -43,8 +43,11 @@
   "previous_compatibility_commit": "17c1c33b4cc2ae71c21cdc92570d3219b55e1d83",
   "retained_runtime_sha256": {
     "_SNNeeds.pex": "083d0527ed78a7b25e1b1b29f80848d2ff7db37b4e705e402358d596befcac24",
-    "_SNSTRLocalStumble.pex": "6021f26ed57fdbf6874ebc523e8c9ff5d63cc5b8366424dcc5fa5601d0fdd4b2",
-    "_SNSTRLocalImod.pex": "a40aa4a8eaa3a8eda2f818f67ed77e6fb92e12e578568e6ce544dabdd506ea17"
+    "_SNPlayerAlias.pex": "c6cfb537ea2576d5ece8d2ba3fe4e1cf6f5809a3c7b3b21fbcad0bc9d06482be",
+    "_SNSTRConsumePulse.pex": "1bdd7b5da3f7756762a102e2214c4db5cceb299b94df88e3f8960b88412b86e3",
+    "_SNSTRConsumeRelay.pex": "4d1c8545957e28cb4725b60426fb483c0627d6abb478a430f978e3c357933d89",
+    "_SNSTRLocalImod.pex": "a40aa4a8eaa3a8eda2f818f67ed77e6fb92e12e578568e6ce544dabdd506ea17",
+    "_SNSTRLocalStumble.pex": "6021f26ed57fdbf6874ebc523e8c9ff5d63cc5b8366424dcc5fa5601d0fdd4b2"
   },
   "player_alias_original_pex_sha256": "ed46e17c674cfe2682f5e0fbd4589b7b104d5609339ade2491bccfd91b279cb4",
   "player_alias_original_source_sha256": "4f12045f4cd7575f3fbcd630850fdee35b3d78266615fff7c4d93e66b882b08a",
@@ -70,5 +73,27 @@
     "new_native_hooks": false,
     "gameplay_two_clients": "NOT RUN"
   },
-  "player_alias_preserved_source_sha256": "ab55065b65f68b3075fefaf613724beaffa599797da31370ad726c10ae516df5"
+  "player_alias_preserved_source_sha256": "ab55065b65f68b3075fefaf613724beaffa599797da31370ad726c10ae516df5",
+  "retained_compat_plugin_sha256": "dc0c61eb4b3234ad94d89c87ab958f26b301876b73b0f6014801e94bee3f416f",
+  "bundle_version": "0.3-preset-nomcm",
+  "animation_gameplay_feedback": "User confirmed animation synchronization works: A consumes and B can see it. No claim about other scenarios.",
+  "merged_animation_commit": "458febf7aa89a709b21295c3d131eb5daf687bbb",
+  "previous_defaults_commit": "ebdd905ae4541f775b754ad56c01b6d2ec65aea4",
+  "preset_gameplay": "NOT RUN: new preset, auto-start spoilage and hidden MCM still need in-game verification.",
+  "config_preserved_source_functions": {
+    "parsearray": "91b50da0c339740297b36808165678bab248acfb0de909f976d1919a074f6267",
+    "applysettings": "e98894d217be1ecee587dad104d3ff12859a355965fd37319845bf8511941dde",
+    "onpagereset": "dcb2b3b1ae487724215215b4a5bf8db3cbdb6888d386c6933e0a77e41864f46e",
+    "onoptionselect": "ca27d021c79ebf9183a062d7d10b4499884e6ca66db3eb204b4a950b9bea24bc",
+    "onoptionmenuaccept": "a271e67e2471ad0c63a46f468bd77d52c673d6379456c2101b9e0ad2368e1453",
+    "onoptionslideropen": "3c518bb8d3fe8ebd508baf7e8d3fad0af1ed75f738a2c205a46ba52f9c3b8560",
+    "onoptionslideraccept": "93fa3c46978350a5d31a860c4c1d5e78e1e4d4bf5261a8dfe8c4a88b32c31d52",
+    "onoptionkeymapchange": "ee0f5a792b74f154bb3c3fa76f510bc48f9890c51d57f580eae401482a913c98",
+    "onoptionhighlight": "646358832251ee1ca9dc11c5ab9c3962fbcc2219abf45c6c1481be175306d179",
+    "onkeydown": "98fb4a63cd139b1756bf06b3dedafa2ee4dbb6adbc301e2c8652e529d8f127b5",
+    "onanimationevent": "f83508e063a11cec76f5f3fe97a315509e40f4e3ec39112f64b82cae9b4d1e54",
+    "onconfigclose": "22bb4b8a4c10f1cc5db4b0205924f3c6e9f7d5aca62ada78ec5e8bba70336a5c",
+    "onupdate": "a770cf8e8fa2efaf929ed99837a45acc50278c01f1e3843a686d63718d05ed12"
+  },
+  "config_original_source_sha256": "c2eaac1684064fe3ff9dfcb9e935efd6a4ba11f235a35e9b05f0fdd3a8a6f91d"
 }

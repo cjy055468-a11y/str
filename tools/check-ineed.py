@@ -37,6 +37,8 @@ for record in effects:
 
 expected = {'_snneeds.pex', '_snstrlocalimod.pex', '_snstrlocalstumble.pex',
             '_snplayeralias.pex', '_snstrconsumerelay.pex', '_snstrconsumepulse.pex'}
+if (root / 'preset-validation.json').exists():
+    expected |= {'_snquestscript.pex', '_snskyuiconfig.pex'}
 paths = list(compiled.glob('*.pex'))
 assert {p.name.lower() for p in paths} == expected
 pex_objects = {p.stem.lower(): Pex(p) for p in paths}

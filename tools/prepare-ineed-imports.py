@@ -13,6 +13,8 @@ for directory in (api / 'scripts/vanilla', repo / 'tools/papyrus-interfaces', re
 # Merge SKSE's actual additions, following its scripts/build.py workflow.
 for path in (api / 'scripts/modified').glob('*.psc'):
     destination = output / path.name
-    mode = 'a' if destination.exists() else 'w'
+    # Re-running preparation must replace SKSE-only modules, rather than append
+    # a second Scriptname declaration to the previous generated import.
+    mode = 'a' if (api / 'scripts/vanilla' / path.name).exists() else 'w'
     with destination.open(mode) as file:
         file.write('\n' + path.read_text() + '\n')

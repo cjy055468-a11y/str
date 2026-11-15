@@ -1,0 +1,14 @@
+{
+  "SKI_ConfigBase.psc": {
+    "source_url": "https://github.com/schlangster/skyui/blob/master/dist/Data/Scripts/Source/SKI_ConfigBase.psc",
+    "original_source_sha256": "eca70abe2ffe0566638bea3a1ed1cdd05ad2f1259f7919b32db3a797d0bb1326"
+  },
+  "SKI_ConfigManager.psc": {
+    "source_url": "https://github.com/schlangster/skyui/blob/master/dist/Data/Scripts/Source/SKI_ConfigManager.psc",
+    "original_source_sha256": "348c00d536260945de916d10fb9a928d31dae877f07d0c08a1e427f789946415"
+  },
+  "SKI_QuestBase.psc": {
+    "source_url": "https://github.com/schlangster/skyui/blob/master/dist/Data/Scripts/Source/SKI_QuestBase.psc",
+    "original_source_sha256": "f0cf77b9c18998ed78a079e33472076dc385ffdaf5b77ff56dc0b532aa6d07c3"
+  }
+}

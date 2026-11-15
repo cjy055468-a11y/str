@@ -1,0 +1,69 @@
+{
+  "version": "0.3-preset-nomcm",
+  "requested_defaults": {
+    "Animations": 2,
+    "ForceThird": true,
+    "ValuedHarvests": true,
+    "FoodSpoilage": true,
+    "DisplayPercent": true
+  },
+  "mcm": "hidden: original quest and hotkey callbacks retained",
+  "files": {
+    "Scripts/_SNQuestScript.pex": {
+      "original_sha256": "059d3dda1832e7b411a4edc5df64060c4657d4093ee186ce159bf29497e80ce3",
+      "modified_sha256": "e835860fce56afa7f1bac5ba0b16175b91d99a6bbcb2c7b27775cd8d7abc1521",
+      "original_bytes": 77292,
+      "modified_bytes": 77297,
+      "edits": [
+        {
+          "original_offset": 36917,
+          "before_hex": "00009db7",
+          "after_hex": "00009dbc",
+          "reason": "Update PEX object size after typed initializers",
+          "modified_offset": 36917
+        },
+        {
+          "original_offset": 39504,
+          "before_hex": "00",
+          "after_hex": "0300000002",
+          "reason": "::Animations_var: default 2",
+          "modified_offset": 39504
+        },
+        {
+          "original_offset": 40408,
+          "before_hex": "00",
+          "after_hex": "0501",
+          "reason": "::FoodSpoilage_var: default 1",
+          "modified_offset": 40412
+        }
+      ],
+      "exact_original_reconstruction": true,
+      "all_function_bodies_unchanged": true
+    },
+    "iNeed.esp": {
+      "original_sha256": "ada5d1b2118a1dff121ef8f728d870b485d2fb3c910ac00a6481e786725d0fb7",
+      "modified_sha256": "3a247c26994671b2051806156f35a0a19b4489f2a05c39301148cb94d5abab50",
+      "original_bytes": 307080,
+      "modified_bytes": 307080,
+      "edits": [
+        {
+          "original_offset": 2022,
+          "before_hex": "00000000",
+          "after_hex": "0000803f",
+          "reason": "_SNValuedHarvestsToggle: default enabled",
+          "modified_offset": 2022
+        },
+        {
+          "original_offset": 2101,
+          "before_hex": "00000000",
+          "after_hex": "0000803f",
+          "reason": "_SNValuedHarvestsDialogueToggle: default enabled",
+          "modified_offset": 2101
+        }
+      ],
+      "exact_original_reconstruction": true
+    }
+  },
+  "original_main_localization_and_functions_preserved": true,
+  "preset_gameplay_tested": false
+}
