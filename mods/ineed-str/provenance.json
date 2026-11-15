@@ -38,5 +38,37 @@
     "_SNQuest",
     "ScanFood",
     "WaterskinEquip"
-  ]
+  ],
+  "animation_version": "0.2-test",
+  "previous_compatibility_commit": "17c1c33b4cc2ae71c21cdc92570d3219b55e1d83",
+  "retained_runtime_sha256": {
+    "_SNNeeds.pex": "083d0527ed78a7b25e1b1b29f80848d2ff7db37b4e705e402358d596befcac24",
+    "_SNSTRLocalStumble.pex": "6021f26ed57fdbf6874ebc523e8c9ff5d63cc5b8366424dcc5fa5601d0fdd4b2",
+    "_SNSTRLocalImod.pex": "a40aa4a8eaa3a8eda2f818f67ed77e6fb92e12e578568e6ce544dabdd506ea17"
+  },
+  "player_alias_original_pex_sha256": "ed46e17c674cfe2682f5e0fbd4589b7b104d5609339ade2491bccfd91b279cb4",
+  "player_alias_original_source_sha256": "4f12045f4cd7575f3fbcd630850fdee35b3d78266615fff7c4d93e66b882b08a",
+  "player_alias_properties": {
+    "_snapplyfollowerquest": "quest",
+    "furniturespecial": "keyword",
+    "_snquest": "_snquestscript",
+    "_snfoodunknownfoodspoilmsg": "message",
+    "_snfoodunknownfoodmsg": "message",
+    "_snfoodunknowndrinkmsg": "message",
+    "_snfoodunknownmsg": "message",
+    "_snthirstserving": "keyword",
+    "_snfoodsaltmsg": "message",
+    "_snthirstserving_unknown": "keyword",
+    "_snwaterunknownmsg": "message",
+    "_sndlcquest": "_sndlcquestscript"
+  },
+  "animation_transport": {
+    "str_source": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d + notice-v2-v184.patch",
+    "sender": "MagicTarget::HookAddTarget -> MagicService::OnAddTargetEvent",
+    "server": "MagicService::OnAddTargetRequest -> SendToPlayersInRange",
+    "receiver": "MagicService::OnNotifyAddTarget -> MagicTarget::AddTarget",
+    "new_native_hooks": false,
+    "gameplay_two_clients": "NOT RUN"
+  },
+  "player_alias_preserved_source_sha256": "ab55065b65f68b3075fefaf613724beaffa599797da31370ad726c10ae516df5"
 }

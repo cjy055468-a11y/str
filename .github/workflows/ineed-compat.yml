@@ -1,11 +1,12 @@
-name: Compile iNeed STR alcohol and sleep overlay
+name: Compile iNeed STR consume animation overlay
 on:
   push:
-    branches: [codex/ineed-str-compat-v184]
+    branches: [codex/ineed-str-animation-v184]
     paths:
       - 'mods/ineed-str/**'
       - 'tools/*ineed*'
       - 'tools/ineed-interfaces/**'
+      - 'tools/skyrim_pex.py'
       - '.github/workflows/ineed-compat.yml'
   workflow_dispatch:
 permissions:
@@ -29,7 +30,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Cannot retrieve native interfaces' }
           git -C papyrus-api checkout 25b72352adb6543fa6d0bd3795780672b2e238e0
           if ($LASTEXITCODE -ne 0) { throw 'Wrong native interfaces' }
-      - name: Compile all three runtime scripts for Skyrim
+      - name: Compile all six runtime scripts for Skyrim
         run: |
           New-Item -ItemType Directory -Force compiled-pex, logs, papyrus-imports | Out-Null
           python tools/prepare-ineed-imports.py papyrus-api papyrus-imports
@@ -38,36 +39,34 @@ jobs:
           $imports = "$env:GITHUB_WORKSPACE/mods/ineed-str/Scripts/Source;$env:GITHUB_WORKSPACE/papyrus-imports"
           & $compiler --game=skyrim --dump-asm --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/ineed-str/Scripts/Source" 2>&1 | Tee-Object logs/papyrus-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Papyrus compile failed' }
+          foreach ($script in '_SNPlayerAlias', '_SNSTRConsumeRelay', '_SNSTRConsumePulse') {
+            Copy-Item "compiled-pex/$script.pex" mods/ineed-str/Scripts/
+          }
           python tools/check-ineed.py mods/ineed-str compiled-pex | Tee-Object logs/checks.json
           if ($LASTEXITCODE -ne 0) { throw 'Overlay validation failed' }
       - name: Package the MO2 overlay
         run: |
-          Copy-Item compiled-pex/*.pex mods/ineed-str/Scripts/
-          Compress-Archive -Path mods/ineed-str/* -DestinationPath iNeed-STR-Alcohol-Sleep-v0.1-test.zip
+          Compress-Archive -Path mods/ineed-str/* -DestinationPath iNeed-STR-Compatibility-v0.2-Animation-test.zip
       - name: Retain reviewed binaries and package on the requested branch
         run: |
           New-Item -ItemType Directory -Force packages | Out-Null
-          Copy-Item iNeed-STR-Alcohol-Sleep-v0.1-test.zip packages/
+          Copy-Item iNeed-STR-Compatibility-v0.2-Animation-test.zip packages/
           Copy-Item logs/checks.json fixes/ineed-build-checks.json
-          Get-ChildItem compiled-pex -Filter *.pas | ForEach-Object {
-            Write-Output "ASSEMBLY: $($_.Name)"
-            Get-Content $_.FullName
-          }
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f -- packages/iNeed-STR-Alcohol-Sleep-v0.1-test.zip mods/ineed-str/Scripts/*.pex fixes/ineed-build-checks.json
+          git add -f -- packages/iNeed-STR-Compatibility-v0.2-Animation-test.zip mods/ineed-str/Scripts/*.pex fixes/ineed-build-checks.json
           git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
-            git commit -m 'Retain compiled iNeed compatibility test package [skip ci]'
+            git commit -m 'Retain compiled iNeed animation test package [skip ci]'
             if ($LASTEXITCODE -ne 0) { throw 'Cannot retain compiled files' }
-            git push origin HEAD:codex/ineed-str-compat-v184
+            git push origin HEAD:codex/ineed-str-animation-v184
             if ($LASTEXITCODE -ne 0) { throw 'Branch changed during packaging; refusing overwrite' }
           }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: iNeed-STR-Alcohol-Sleep
+          name: iNeed-STR-Compatibility-Animation
           path: |
-            iNeed-STR-Alcohol-Sleep-v0.1-test.zip
+            iNeed-STR-Compatibility-v0.2-Animation-test.zip
             compiled-pex/
             logs/
