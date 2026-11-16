@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "original_plugin_retained": true,
+  "plugin_fields_changed": [
+    [
+      "GLOB",
+      "04000813",
+      "FLTV"
+    ],
+    [
+      "MGEF",
+      "04000822",
+      "DNAM"
+    ],
+    [
+      "MGEF",
+      "04000823",
+      "DNAM"
+    ],
+    [
+      "MGEF",
+      "04000824",
+      "DNAM"
+    ]
+  ],
+  "handler_functions_allowed": [
+    "applyfixedpreset",
+    "runverbosefeedback",
+    "updatedebuff"
+  ],
+  "other_runtime_files_preserved": true,
+  "compiled_checks": true,
+  "gameplay_tested": false,
+  "unchanged_handler_functions": 20,
+  "compiled_logic_boundary_cases": 60,
+  "screen_effect_calls_removed": true
+}
