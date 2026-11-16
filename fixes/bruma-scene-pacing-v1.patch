@@ -1,0 +1,791 @@
+diff --git a/Code/client/Diagnostics/SceneSyncTrace.h b/Code/client/Diagnostics/SceneSyncTrace.h
+new file mode 100644
+index 00000000..8594858f
+--- /dev/null
++++ b/Code/client/Diagnostics/SceneSyncTrace.h
+@@ -0,0 +1,47 @@
++#pragma once
++
++#include <atomic>
++#include <chrono>
++#include <cstdint>
++#include <spdlog/spdlog.h>
++
++// Diagnostics only: no game calls, hooks, sleeps, queues or state changes.
++namespace SceneSyncTrace
++{
++inline std::atomic<uint64_t> s_nextSpan{0};
++
++class Scope final
++{
++public:
++    Scope(const char* apName, const uint32_t aServerId = 0, const uint32_t aActorId = 0) noexcept
++        : m_pName(apName)
++        , m_span(s_nextSpan.fetch_add(1, std::memory_order_relaxed) + 1)
++        , m_serverId(aServerId)
++        , m_actorId(aActorId)
++        , m_started(std::chrono::steady_clock::now())
++    {
++        Write("begin");
++    }
++
++    ~Scope() noexcept { Write("end"); }
++
++    Scope(const Scope&) = delete;
++    Scope& operator=(const Scope&) = delete;
++
++    void Mark(const char* apStage) const noexcept { Write(apStage); }
++
++private:
++    void Write(const char* apStage) const noexcept
++    {
++        const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - m_started).count();
++        spdlog::info("[STR scene-diag v1] span={} op={} stage={} server={:X} actor={:X} elapsed_us={}",
++            m_span, m_pName, apStage, m_serverId, m_actorId, elapsed);
++    }
++
++    const char* m_pName;
++    uint64_t m_span;
++    uint32_t m_serverId;
++    uint32_t m_actorId;
++    std::chrono::steady_clock::time_point m_started;
++};
++}
+diff --git a/Code/client/Services/Generic/CharacterService.cpp b/Code/client/Services/Generic/CharacterService.cpp
+index c85af844..495e2ce9 100644
+--- a/Code/client/Services/Generic/CharacterService.cpp
++++ b/Code/client/Services/Generic/CharacterService.cpp
+@@ -70,6 +70,7 @@
+ #include <Structs/OwnedInventory.h>
+ 
+ #include <World.h>
++#include <Diagnostics/SceneSyncTrace.h> // SCENE_SYNC_DIAG
+ #include <Games/TES.h>
+ 
+ CharacterService::CharacterService(World& aWorld, entt::dispatcher& aDispatcher, TransportService& aTransport) noexcept
+@@ -77,6 +78,7 @@ CharacterService::CharacterService(World& aWorld, entt::dispatcher& aDispatcher,
+     , m_dispatcher(aDispatcher)
+     , m_transport(aTransport)
+ {
++    spdlog::info("[STR scene-diag v1] enabled; trace actor scene synchronization stages"); // SCENE_SYNC_DIAG
+     m_referenceAddedConnection = m_dispatcher.sink<ActorAddedEvent>().connect<&CharacterService::OnActorAdded>(this);
+     m_referenceRemovedConnection = m_dispatcher.sink<ActorRemovedEvent>().connect<&CharacterService::OnActorRemoved>(this);
+ 
+@@ -134,6 +136,7 @@ void CharacterService::DeclineOwnership(const uint32_t aServerId, const uint32_t
+ void CharacterService::ReconcileActorData(
+     const entt::entity aEntity, Actor* apActor, const uint32_t aOwnershipEpoch, const ActorData& acActorData, const bool aApplyInventory, const bool aIsLocalOwner) noexcept
+ {
++    SceneSyncTrace::Scope sceneDiag("actor.initial-state", 0, apActor ? apActor->formID : 0); // SCENE_SYNC_DIAG
+     if (auto* pRemote = m_world.try_get<RemoteComponent>(aEntity))
+         pRemote->AuthoritativeDeath = acActorData.IsDead;
+ 
+@@ -150,7 +153,9 @@ void CharacterService::ReconcileActorData(
+         return;
+ 
+     apActor->GetExtension()->SetNativeCorpseProcess(false);
++    sceneDiag.Mark("before-values"); // SCENE_SYNC_DIAG
+     apActor->SetActorValues(acActorData.InitialActorValues);
++    sceneDiag.Mark("after-values"); // SCENE_SYNC_DIAG
+ 
+     if (aApplyInventory)
+     {
+@@ -159,6 +164,7 @@ void CharacterService::ReconcileActorData(
+             apActor->SetActorInventory(acActorData.InitialInventory);
+     }
+ 
++    sceneDiag.Mark("before-death-state"); // SCENE_SYNC_DIAG
+     if (apActor->IsDead() != acActorData.IsDead)
+     {
+         if (acActorData.IsDead)
+@@ -177,6 +183,7 @@ void CharacterService::ReconcileActorData(
+         }
+     }
+ 
++    sceneDiag.Mark("before-weapon-state"); // SCENE_SYNC_DIAG
+     if (aIsLocalOwner)
+     {
+         // A remote draw correction may still be queued when an ownership grant arrives.
+@@ -324,9 +331,11 @@ void CharacterService::OnUpdate(const UpdateEvent& acUpdateEvent) noexcept
+ 
+ void CharacterService::OnConnected(const ConnectedEvent& acConnectedEvent) const noexcept
+ {
++    SceneSyncTrace::Scope sceneDiag("connection.scene-registration"); // SCENE_SYNC_DIAG
+     // Go through all the forms that were previously detected
+     auto view = m_world.view<FormIdComponent>(entt::exclude<ObjectComponent>);
+     Vector<entt::entity> entities(view.begin(), view.end());
++    spdlog::info("[STR scene-diag v1] connection actor_count={}", entities.size()); // SCENE_SYNC_DIAG
+ 
+     for (auto entity : entities)
+     {
+@@ -388,6 +397,8 @@ void CharacterService::OnDisconnected(const DisconnectedEvent& acDisconnectedEve
+ 
+ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessage) noexcept
+ {
++    SceneSyncTrace::Scope sceneDiag("assignment.response", acMessage.ServerId); // SCENE_SYNC_DIAG
++    spdlog::info("[STR scene-diag v1] assignment cookie={:X} server={:X} owner={} epoch={} target_world={:X}:{:X} target_cell={:X}:{:X}", acMessage.Cookie, acMessage.ServerId, acMessage.Owner, acMessage.OwnershipEpoch, acMessage.WorldSpaceId.ModId, acMessage.WorldSpaceId.BaseId, acMessage.CellId.ModId, acMessage.CellId.BaseId); // SCENE_SYNC_DIAG
+     spdlog::info("Received for cookie {:X}, server id {:X}", acMessage.Cookie, acMessage.ServerId);
+ 
+     auto view = m_world.view<WaitingForAssignmentComponent>();
+@@ -532,29 +543,42 @@ void CharacterService::OnAssignCharacter(const AssignCharacterResponse& acMessag
+         pActor->GetExtension()->SetRemote(true);
+ 
+         m_world.remove<EarlyAnimationBufferComponent>(cEntity);
++        sceneDiag.Mark("before-interpolation-setup"); // SCENE_SYNC_DIAG
+         InterpolationSystem::Setup(m_world, cEntity);
++        sceneDiag.Mark("after-interpolation-setup"); // SCENE_SYNC_DIAG
++        sceneDiag.Mark("before-animation-setup"); // SCENE_SYNC_DIAG
+         AnimationSystem::Setup(m_world, cEntity);
++        sceneDiag.Mark("after-animation-setup"); // SCENE_SYNC_DIAG
++        sceneDiag.Mark("before-replay-cache"); // SCENE_SYNC_DIAG
+         AnimationSystem::AddActionsForReplay(m_world.get<RemoteAnimationComponent>(cEntity), acMessage.ActionsToReplay);
++        sceneDiag.Mark("after-replay-cache"); // SCENE_SYNC_DIAG
+ 
+ #if (!IS_MASTER)
+         m_world.emplace_or_replace<ReplayedActionsDebugComponent>(cEntity, acMessage.ActionsToReplay);
+ #endif
+ 
++        sceneDiag.Mark("before-replica-state"); // SCENE_SYNC_DIAG
+         ReconcileActorData(cEntity, pActor, acMessage.OwnershipEpoch, actorData, true, false);
++        sceneDiag.Mark("after-replica-state"); // SCENE_SYNC_DIAG
+ 
+         spdlog::info("STR replay audit v2: assigned replica, actor {:X}, server {:X}, epoch {}, before ({}, {}, {}), destination ({}, {}, {}), state ({:X}, {:X}), replay {}, reset {}",
+             pActor->formID, acMessage.ServerId, acMessage.OwnershipEpoch, pActor->position.x, pActor->position.y, pActor->position.z,
+             acMessage.Position.x, acMessage.Position.y, acMessage.Position.z, pActor->actorState.flags1, pActor->actorState.flags2,
+             acMessage.ActionsToReplay.Actions.size(), acMessage.ActionsToReplay.ResetAnimationGraph);
++        sceneDiag.Mark("before-position"); // SCENE_SYNC_DIAG
+         MoveActor(pActor, acMessage.WorldSpaceId, acMessage.CellId, acMessage.Position);
++        sceneDiag.Mark("after-position"); // SCENE_SYNC_DIAG
+ 
+         // The owner's leveled pick rides the assignment response for actors we discovered ourselves
++        sceneDiag.Mark("before-appearance"); // SCENE_SYNC_DIAG
+         ApplyLeveledNpcPick(pActor, acMessage.LeveledNpcPickId);
++        sceneDiag.Mark("after-appearance"); // SCENE_SYNC_DIAG
+     }
+ }
+ 
+ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage) const noexcept
+ {
++    SceneSyncTrace::Scope sceneDiag("actor.spawn", acMessage.ServerId); // SCENE_SYNC_DIAG
+     if (acMessage.OwnershipEpoch == 0)
+     {
+         spdlog::warn("Ignored spawn for actor {:X} because the ownership epoch is invalid", acMessage.ServerId);
+@@ -605,7 +629,9 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+             FaceGenSystem::Setup(m_world, *entity, acMessage.FaceTints);
+         }
+ 
++        sceneDiag.Mark("before-actor-create"); // SCENE_SYNC_DIAG
+         pActor = Actor::Create(pNpc, !acMessage.IsPlayer);
++        sceneDiag.Mark("after-actor-create"); // SCENE_SYNC_DIAG
+     }
+     else
+     {
+@@ -665,7 +691,9 @@ void CharacterService::OnCharacterSpawn(const CharacterSpawnRequest& acMessage)
+ 
+     pActor->rotation.x = acMessage.Rotation.x;
+     pActor->rotation.z = acMessage.Rotation.y;
++    sceneDiag.Mark("before-placement"); // SCENE_SYNC_DIAG
+     pActor->MoveTo(PlayerCharacter::Get()->parentCell, acMessage.Position);
++    sceneDiag.Mark("after-placement"); // SCENE_SYNC_DIAG
+     pActor->SetActorValues(acMessage.InitialActorValues);
+ 
+     pActor->GetExtension()->SetPlayer(acMessage.IsPlayer);
+@@ -811,6 +839,7 @@ void CharacterService::OnFactionsChanges(const NotifyFactionsChanges& acEvent) c
+ 
+ void CharacterService::OnOwnershipTransfer(const NotifyOwnershipTransfer& acMessage) noexcept
+ {
++    SceneSyncTrace::Scope sceneDiag("actor.ownership-transfer", acMessage.ServerId); // SCENE_SYNC_DIAG
+     if (acMessage.OwnershipEpoch == 0)
+     {
+         spdlog::warn("Ignored ownership update for actor {:X} because the epoch is invalid", acMessage.ServerId);
+@@ -1486,6 +1515,7 @@ void CharacterService::OnPartyJoinedEvent(const PartyJoinedEvent& acEvent) noexc
+ 
+ void CharacterService::MoveActor(const Actor* apActor, const GameId& acWorldSpaceId, const GameId& acCellId, const Vector3_NetQuantize& acPosition) const noexcept
+ {
++    SceneSyncTrace::Scope sceneDiag("actor.position", 0, apActor ? apActor->formID : 0); // SCENE_SYNC_DIAG
+     TESObjectCELL* pCell = nullptr;
+     if (!acWorldSpaceId)
+     {
+@@ -1500,7 +1530,9 @@ void CharacterService::MoveActor(const Actor* apActor, const GameId& acWorldSpac
+         if (pWorldSpace)
+         {
+             GridCellCoords coordinates = GridCellCoords::CalculateGridCellCoords(acPosition);
++            sceneDiag.Mark("before-exterior-cell-resolve"); // SCENE_SYNC_DIAG
+             pCell = pWorldSpace->LoadCell(coordinates.X, coordinates.Y);
++            sceneDiag.Mark("after-exterior-cell-resolve"); // SCENE_SYNC_DIAG
+         }
+     }
+ 
+@@ -1510,7 +1542,9 @@ void CharacterService::MoveActor(const Actor* apActor, const GameId& acWorldSpac
+         return;
+     }
+ 
++    sceneDiag.Mark("before-native-move"); // SCENE_SYNC_DIAG
+     apActor->MoveTo(pCell, acPosition);
++    sceneDiag.Mark("after-native-move"); // SCENE_SYNC_DIAG
+ }
+ 
+ void CharacterService::ProcessNewEntity(entt::entity aEntity) const noexcept
+@@ -1568,6 +1602,7 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+     if (!pNpc)
+         return;
+ 
++    SceneSyncTrace::Scope sceneDiag("assignment.request", 0, pActor->formID); // SCENE_SYNC_DIAG
+     AssignCharacterRequest message{};
+ 
+     message.Cookie = sCookieSeed;
+@@ -1663,7 +1698,9 @@ void CharacterService::RequestServerAssignment(const entt::entity aEntity) const
+         questLog.resize(std::distance(questLog.begin(), ip));
+     }
+ 
++    sceneDiag.Mark("before-state-capture"); // SCENE_SYNC_DIAG
+     message.CurrentActorData = BuildActorData(pActor);
++    sceneDiag.Mark("after-state-capture"); // SCENE_SYNC_DIAG
+ 
+     message.FactionsContent = pActor->GetFactions();
+     message.IsDragon = pActor->IsDragon();
+@@ -1790,6 +1827,7 @@ void CharacterService::CancelServerAssignment(const entt::entity aEntity, const
+ 
+ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const noexcept
+ {
++    SceneSyncTrace::Scope sceneDiag("actor.recreate"); // SCENE_SYNC_DIAG
+     auto* pWaitingFor3D = m_world.try_get<WaitingFor3D>(aEntity);
+     auto* pInterpolationComponent = m_world.try_get<InterpolationComponent>(aEntity);
+ 
+@@ -1831,7 +1869,9 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
+             FaceGenSystem::Setup(m_world, aEntity, acMessage.FaceTints);
+         }
+ 
++        sceneDiag.Mark("before-actor-create"); // SCENE_SYNC_DIAG
+         pActor = Actor::Create(pNpc, !acMessage.IsPlayer);
++        sceneDiag.Mark("after-actor-create"); // SCENE_SYNC_DIAG
+     }
+ 
+     auto& remoteComponent = m_world.get<RemoteComponent>(aEntity);
+@@ -1848,7 +1888,9 @@ Actor* CharacterService::CreateCharacterForEntity(entt::entity aEntity) const no
+     pActor->GetExtension()->SetRemote(true);
+     pActor->rotation.x = acMessage.Rotation.x;
+     pActor->rotation.z = acMessage.Rotation.y;
++    sceneDiag.Mark("before-placement"); // SCENE_SYNC_DIAG
+     pActor->MoveTo(PlayerCharacter::Get()->parentCell, pInterpolationComponent->Position);
++    sceneDiag.Mark("after-placement"); // SCENE_SYNC_DIAG
+     pActor->SetActorValues(acMessage.InitialActorValues);
+ 
+     pActor->GetExtension()->SetPlayer(acMessage.IsPlayer);
+@@ -2194,6 +2236,7 @@ void CharacterService::RunRemoteUpdates() noexcept
+             continue;
+ 
+         // By now, the actor has materialized in the world and is ready for further setup
++        SceneSyncTrace::Scope sceneDiag("actor.3d-initialize", waitingFor3D.SpawnRequest.ServerId, pActor->formID); // SCENE_SYNC_DIAG
+ 
+         const auto& desiredInventory = waitingFor3D.SpawnRequest.InventoryContent;
+         const Inventory currentInventory = pActor->GetActorInventory();
+diff --git a/Code/client/Services/Generic/DiscoveryService.cpp b/Code/client/Services/Generic/DiscoveryService.cpp
+index cea7919d..85e4a15d 100644
+--- a/Code/client/Services/Generic/DiscoveryService.cpp
++++ b/Code/client/Services/Generic/DiscoveryService.cpp
+@@ -19,6 +19,7 @@
+ #include <Events/ConnectionErrorEvent.h>
+ 
+ #include <World.h>
++#include <Diagnostics/SceneSyncTrace.h> // SCENE_SYNC_DIAG
+ #include <BranchInfo.h>
+ 
+ #if (IS_MASTER)
+@@ -150,6 +151,7 @@ void DiscoveryService::VisitInteriorCell(bool aForceTrigger) noexcept
+ 
+ void DiscoveryService::DetectGridCellChange(TESWorldSpace* aWorldSpace, bool aNewCellGrid) noexcept
+ {
++    SceneSyncTrace::Scope sceneDiag("scene.grid-discovery"); // SCENE_SYNC_DIAG
+     GridCellChangeEvent changeEvent{};
+ 
+     const uint32_t worldSpaceId = aWorldSpace->formID;
+@@ -200,6 +202,7 @@ void DiscoveryService::DetectGridCellChange(TESWorldSpace* aWorldSpace, bool aNe
+     }
+ 
+     changeEvent.CenterCoords = m_centerGrid = {pTES->centerGridX, pTES->centerGridY};
++    spdlog::info("[STR scene-diag v1] grid world={:X} cell={:X}:{:X} center=({}, {}) cells={} full={}", worldSpaceId, changeEvent.PlayerCell.ModId, changeEvent.PlayerCell.BaseId, changeEvent.CenterCoords.X, changeEvent.CenterCoords.Y, changeEvent.Cells.size(), aNewCellGrid); // SCENE_SYNC_DIAG
+ 
+     m_dispatcher.trigger(changeEvent);
+ 
+diff --git a/Code/client/Services/Generic/TransportService.cpp b/Code/client/Services/Generic/TransportService.cpp
+index ed490d15..02fb5fb5 100644
+--- a/Code/client/Services/Generic/TransportService.cpp
++++ b/Code/client/Services/Generic/TransportService.cpp
+@@ -25,6 +25,7 @@
+ 
+ #include <ScriptExtender.h>
+ #include <Services/DiscordService.h>
++#include <chrono>
+ 
+ // #include <imgui_internal.h>
+ 
+@@ -42,6 +43,7 @@ TransportService::TransportService(World& aWorld, entt::dispatcher& aDispatcher)
+     m_disconnectedConnection = m_dispatcher.sink<DisconnectedEvent>().connect<&TransportService::HandleDisconnected>(this);
+ 
+     m_connected = false;
++    spdlog::info("[STR scene-pacing v1] FIFO dispatch after socket polling; one scene change per update");
+ 
+     auto handlerGenerator = [this](auto& x)
+     {
+@@ -96,22 +98,43 @@ bool TransportService::Send(const ClientMessage& acMessage, const TiltedPhoques:
+ 
+ void TransportService::OnConsume(const void* apData, uint32_t aSize)
+ {
+-    ServerMessageFactory factory;
++    if (!m_receiving)
++        return;
++
++    // Read only the opcode here. Full decoding must stay in the FIFO alongside
++    // StringCacheUpdate, otherwise later packets can reference a missing string.
++    if (!apData || aSize < sizeof(ServerOpcode))
++    {
++        spdlog::error("Couldn't parse empty packet from server");
++        return;
++    }
+     TiltedPhoques::ViewBuffer buf((uint8_t*)apData, aSize);
+     Buffer::Reader reader(&buf);
+-
+-    auto pMessage = factory.Extract(reader);
+-    if (!pMessage)
++    uint64_t opcode = 0;
++    reader.ReadBits(opcode, sizeof(ServerOpcode) * 8);
++    if (opcode >= kServerOpcodeMax)
+     {
+-        spdlog::error("Couldn't parse packet from server");
++        spdlog::error("Couldn't parse packet opcode from server");
+         return;
+     }
+ 
+-    m_messageHandlers[pMessage->GetOpcode()](pMessage);
++    // Both the compressed temporary and the Steam message die after this call.
++    // Push copies the payload using the persistent allocator, including its
++    // original receive timestamp (never substitute the delayed dispatch time).
++    if (!m_inbox.Push(apData, aSize, static_cast<double>(GetCurrentMessageReceiveTime()) / 1000.0, static_cast<ServerOpcode>(opcode)))
++    {
++        spdlog::error("[STR scene-pacing v1] receive backlog limit reached: messages={} bytes={}; closing connection without replaying partial state", m_inbox.Size(), m_inbox.Bytes());
++        Close();
++    }
+ }
+ 
+ void TransportService::OnConnected()
+ {
++    m_inbox.Clear();
++    m_receiving = true;
++    m_lastPollTime = 0.0;
++    m_dispatchReceiveTime = 0.0;
++    m_lastReportedBacklog = 0;
+     AuthenticationRequest request{};
+     request.Version = BUILD_COMMIT;
+     request.SKSEActive = IsScriptExtenderLoaded();
+@@ -169,6 +192,11 @@ void TransportService::OnConnected()
+ void TransportService::OnDisconnected(EDisconnectReason aReason)
+ {
+     m_connected = false;
++    m_receiving = false;
++    m_inbox.Clear();
++    m_lastPollTime = 0.0;
++    m_dispatchReceiveTime = 0.0;
++    m_lastReportedBacklog = 0;
+ 
+     spdlog::warn("Disconnected from server {}", aReason);
+ 
+@@ -181,15 +209,45 @@ void TransportService::OnUpdate()
+ 
+ double TransportService::GetMessageReceiveTime() const noexcept
+ {
+-    return static_cast<double>(GetCurrentMessageReceiveTime()) / 1000.0;
++    return m_dispatchReceiveTime;
+ }
+ 
+ void TransportService::HandleUpdate(const UpdateEvent& acEvent) noexcept
+ {
+-    // Taken before polling, so that every message that arrived before this time gets handled by this update
+-    m_lastPollTime = static_cast<double>(SteamNetworkingUtils()->GetLocalTimestamp()) / 1000.0;
++    // Native handlers can load cells; never recursively poll/drain another batch
++    // while an earlier message is still being applied.
++    if (m_updating)
++        return;
++    m_updating = true;
++
++    const double cPollTime = static_cast<double>(SteamNetworkingUtils()->GetLocalTimestamp()) / 1000.0;
+ 
+     Update();
++
++    const auto cDispatchStart = std::chrono::steady_clock::now();
++    m_inbox.Drain([this, cDispatchStart](SceneSyncInbox::Packet& aPacket)
++    {
++        m_dispatchReceiveTime = aPacket.ReceivedAt;
++        TiltedPhoques::ViewBuffer buf(aPacket.Bytes.data(), static_cast<uint32_t>(aPacket.Bytes.size()));
++        Buffer::Reader reader(&buf);
++        auto pMessage = ServerMessageFactory{}.Extract(reader);
++        if (pMessage)
++            m_messageHandlers[pMessage->GetOpcode()](pMessage);
++        else
++            spdlog::error("Couldn't parse queued packet from server");
++
++        // This is a budget between handlers, not an interruption of native calls.
++        return std::chrono::steady_clock::now() - cDispatchStart < std::chrono::milliseconds(4);
++    });
++
++    if (m_receiving)
++        m_lastPollTime = std::max(m_lastPollTime, m_inbox.GetHandledTime(cPollTime));
++
++    const size_t cBacklog = m_inbox.Size();
++    if ((cBacklog && !m_lastReportedBacklog) || (!cBacklog && m_lastReportedBacklog) || cBacklog >= m_lastReportedBacklog + 128)
++        spdlog::info("[STR scene-pacing v1] pending_messages={} pending_bytes={}", cBacklog, m_inbox.Bytes());
++    m_lastReportedBacklog = cBacklog;
++    m_updating = false;
+ }
+ 
+ void TransportService::HandleConnected(const ConnectedEvent& acEvent) noexcept
+diff --git a/Code/client/Services/SceneSyncInbox.h b/Code/client/Services/SceneSyncInbox.h
+new file mode 100644
+index 00000000..29908c44
+--- /dev/null
++++ b/Code/client/Services/SceneSyncInbox.h
+@@ -0,0 +1,107 @@
++#pragma once
++
++#include <Opcodes.h>
++#include <TiltedCore/Stl.hpp>
++#include <algorithm>
++#include <cstddef>
++#include <cstdint>
++#include <utility>
++
++// Own wire bytes until dispatch, rather than retaining a network/decompression
++// buffer or decoding a cached string before the preceding cache update ran.
++class SceneSyncInbox final
++{
++    template <class T> static TiltedPhoques::StlAllocator<T> PersistentAllocator() noexcept
++    {
++        TiltedPhoques::StlAllocator<T> allocator;
++        allocator.m_pAllocator = TiltedPhoques::Allocator::GetDefault();
++        return allocator;
++    }
++
++public:
++    struct Packet
++    {
++        TiltedPhoques::Vector<uint8_t> Bytes{PersistentAllocator<uint8_t>()};
++        double ReceivedAt{};
++        ServerOpcode Opcode{};
++    };
++
++    static constexpr size_t kSceneChangesPerUpdate = 1;
++    static constexpr size_t kMessagesPerUpdate = 512;
++    static constexpr size_t kMaxMessages = 8192;
++    static constexpr size_t kMaxBytes = 32 * 1024 * 1024;
++
++    static bool IsSceneChange(ServerOpcode aOpcode) noexcept
++    {
++        return aOpcode == kAssignCharacterResponse || aOpcode == kCharacterSpawnRequest || aOpcode == kNotifyOwnershipTransfer;
++    }
++
++    bool Push(const void* apBytes, size_t aSize, double aReceivedAt, ServerOpcode aOpcode) noexcept
++    {
++        if (!apBytes || !aSize || m_packets.size() >= kMaxMessages || aSize > kMaxBytes - m_bytes)
++            return false;
++
++        Packet packet;
++        const auto* pBytes = static_cast<const uint8_t*>(apBytes);
++        packet.Bytes.assign(pBytes, pBytes + aSize);
++        packet.ReceivedAt = aReceivedAt;
++        packet.Opcode = aOpcode;
++        m_packets.push_back(std::move(packet));
++        m_bytes += aSize;
++        return true;
++    }
++
++    // Every message shares this FIFO. A live state update must never overtake an
++    // initial snapshot. Callbacks return false when their frame budget expires.
++    template <class TCallback> size_t Drain(TCallback&& aCallback) noexcept
++    {
++        if (m_draining)
++            return 0;
++
++        m_draining = true;
++        const uint64_t cGeneration = m_generation;
++        size_t count = 0;
++        size_t sceneChanges = 0;
++        while (!m_packets.empty() && count < kMessagesPerUpdate)
++        {
++            const bool cSceneChange = IsSceneChange(m_packets.front().Opcode);
++            if (cSceneChange && sceneChanges >= kSceneChangesPerUpdate)
++                break;
++
++            // No reference into the queue may survive a callback: disconnects
++            // clear it, and a nested callback can enqueue another message.
++            Packet packet = std::move(m_packets.front());
++            m_packets.pop_front();
++            m_bytes -= packet.Bytes.size();
++            ++count;
++            sceneChanges += cSceneChange ? 1 : 0;
++            if (!aCallback(packet) || cGeneration != m_generation)
++                break;
++        }
++        m_draining = false;
++        return count;
++    }
++
++    void Clear() noexcept
++    {
++        ++m_generation;
++        m_packets.clear();
++        m_bytes = 0;
++    }
++
++    // Playback may only advance through messages that have actually been
++    // applied. Socket polling alone is no longer a completed playback horizon.
++    [[nodiscard]] double GetHandledTime(double aPollTime) const noexcept
++    {
++        return m_packets.empty() ? aPollTime : std::min(aPollTime, m_packets.front().ReceivedAt);
++    }
++
++    [[nodiscard]] size_t Size() const noexcept { return m_packets.size(); }
++    [[nodiscard]] size_t Bytes() const noexcept { return m_bytes; }
++
++private:
++    TiltedPhoques::Deque<Packet> m_packets{PersistentAllocator<Packet>()};
++    size_t m_bytes{};
++    uint64_t m_generation{};
++    bool m_draining{};
++};
+diff --git a/Code/client/Services/TransportService.h b/Code/client/Services/TransportService.h
+index 2ef91acb..00f3f0b3 100644
+--- a/Code/client/Services/TransportService.h
++++ b/Code/client/Services/TransportService.h
+@@ -2,6 +2,7 @@
+ 
+ #include "Events/ConnectedEvent.h"
+ #include "Events/DisconnectedEvent.h"
++#include "Services/SceneSyncInbox.h"
+ 
+ #include <atomic>
+ #include <Client.hpp>
+@@ -42,7 +43,7 @@ struct TransportService : Client
+     // When the message being handled arrived from the network, it may have waited out a long frame since.
+     // Only meaningful while a received message is being handled.
+     [[nodiscard]] double GetMessageReceiveTime() const noexcept;
+-    // When received messages were last picked up, everything that arrived before then has been handled
++    // Completed dispatch horizon; queued scene initialization also limits playback.
+     [[nodiscard]] double GetLastPollTime() const noexcept { return m_lastPollTime; }
+ 
+ protected:
+@@ -62,6 +63,11 @@ private:
+     String m_serverPassword{};
+     uint32_t m_localPlayerId;
+     double m_lastPollTime{};
++    double m_dispatchReceiveTime{};
++    SceneSyncInbox m_inbox;
++    bool m_receiving{};
++    bool m_updating{};
++    size_t m_lastReportedBacklog{};
+ 
+     entt::scoped_connection m_updateConnection;
+     entt::scoped_connection m_sendServerMessageConnection;
+diff --git a/Code/tests/scene_sync_inbox.cpp b/Code/tests/scene_sync_inbox.cpp
+new file mode 100644
+index 00000000..3627936d
+--- /dev/null
++++ b/Code/tests/scene_sync_inbox.cpp
+@@ -0,0 +1,199 @@
++#include <TiltedCore/Stl.hpp>
++#include <TiltedCore/Buffer.hpp>
++#include <TiltedCore/Serialization.hpp>
++#include <TiltedCore/ScratchAllocator.hpp>
++#include <catch2/catch.hpp>
++#include <Messages/ServerMessageFactory.h>
++#include <StringCache.h>
++#include "../client/Services/SceneSyncInbox.h"
++
++namespace
++{
++void QueueByte(SceneSyncInbox& aInbox, uint8_t aValue, ServerOpcode aOpcode, double aTime = 100.0)
++{
++    REQUIRE(aInbox.Push(&aValue, 1, aTime, aOpcode));
++}
++
++void QueueEncoded(SceneSyncInbox& aInbox, const ServerMessage& acMessage, double aTime)
++{
++    TiltedPhoques::Buffer buffer(16384);
++    TiltedPhoques::Buffer::Writer writer(&buffer);
++    acMessage.Serialize(writer);
++    REQUIRE(aInbox.Push(buffer.GetWriteData(), writer.Size(), aTime, acMessage.GetOpcode()));
++}
++}
++
++TEST_CASE("Scene dispatch owns payloads beyond temporary packet and allocator lifetimes", "[scene.inbox]")
++{
++    TiltedPhoques::ScratchAllocator scratch(1 << 16);
++    TiltedPhoques::UniquePtr<SceneSyncInbox> inbox;
++    {
++        TiltedPhoques::ScopedAllocator scope(scratch);
++        // The inbox and payload explicitly choose persistent storage even if
++        // the caller happens to have selected a short-lived scratch allocator.
++        inbox = TiltedPhoques::MakeUnique<SceneSyncInbox>();
++        uint8_t bytes[]{10, 20, 30};
++        REQUIRE(inbox->Push(bytes, sizeof(bytes), 123.5, kNotifyChatMessageBroadcast));
++        bytes[0] = 99;
++    }
++    scratch.Reset();
++    TiltedPhoques::Vector<uint8_t> observed;
++    double arrival = 0.0;
++    REQUIRE(inbox->Drain([&](SceneSyncInbox::Packet& aPacket)
++    {
++        observed = aPacket.Bytes;
++        arrival = aPacket.ReceivedAt;
++        return true;
++    }) == 1);
++    REQUIRE(observed == TiltedPhoques::Vector<uint8_t>{10, 20, 30});
++    REQUIRE(arrival == 123.5);
++    REQUIRE(inbox->Bytes() == 0);
++}
++
++TEST_CASE("One scene change per update preserves FIFO for all live state", "[scene.inbox]")
++{
++    SceneSyncInbox inbox;
++    QueueByte(inbox, 1, kStringCacheUpdate);
++    QueueByte(inbox, 2, kAssignCharacterResponse);
++    QueueByte(inbox, 3, kNotifyDeathStateChange);
++    QueueByte(inbox, 4, kCharacterSpawnRequest);
++    QueueByte(inbox, 5, kNotifyEquipmentChanges);
++    QueueByte(inbox, 6, kNotifyOwnershipTransfer);
++    QueueByte(inbox, 7, kServerReferencesMoveRequest);
++    TiltedPhoques::Vector<uint8_t> order;
++    const auto consume = [&](SceneSyncInbox::Packet& aPacket)
++    {
++        order.push_back(aPacket.Bytes.front());
++        return true;
++    };
++    REQUIRE(inbox.Drain(consume) == 3);
++    REQUIRE(order == TiltedPhoques::Vector<uint8_t>{1, 2, 3});
++    REQUIRE(inbox.Drain(consume) == 2);
++    REQUIRE(order == TiltedPhoques::Vector<uint8_t>{1, 2, 3, 4, 5});
++    REQUIRE(inbox.Drain(consume) == 2);
++    REQUIRE(order == TiltedPhoques::Vector<uint8_t>{1, 2, 3, 4, 5, 6, 7});
++    REQUIRE(inbox.Size() == 0);
++}
++
++TEST_CASE("Light message bursts and elapsed frame budgets yield without dropping data", "[scene.inbox]")
++{
++    SceneSyncInbox inbox;
++    for (size_t i = 0; i < SceneSyncInbox::kMessagesPerUpdate + 3; ++i)
++        QueueByte(inbox, 1, kServerReferencesMoveRequest);
++    REQUIRE(inbox.Drain([](auto&) { return true; }) == SceneSyncInbox::kMessagesPerUpdate);
++    REQUIRE(inbox.Size() == 3);
++    REQUIRE(inbox.Drain([](auto&) { return false; }) == 1);
++    REQUIRE(inbox.Size() == 2);
++    REQUIRE(inbox.Drain([](auto&) { return true; }) == 2);
++}
++
++TEST_CASE("Playback horizon stops at the first undispatched arrival", "[scene.inbox]")
++{
++    SceneSyncInbox inbox;
++    QueueByte(inbox, 1, kCharacterSpawnRequest, 100.0);
++    QueueByte(inbox, 2, kCharacterSpawnRequest, 125.0);
++    QueueByte(inbox, 3, kServerReferencesMoveRequest, 130.0);
++    REQUIRE(inbox.GetHandledTime(90.0) == 90.0);
++    REQUIRE(inbox.GetHandledTime(200.0) == 100.0);
++    TiltedPhoques::Vector<double> times;
++    const auto consume = [&](auto& aPacket) { times.push_back(aPacket.ReceivedAt); return true; };
++    REQUIRE(inbox.Drain(consume) == 1);
++    REQUIRE(inbox.GetHandledTime(200.0) == 125.0);
++    REQUIRE(inbox.Drain(consume) == 2);
++    REQUIRE(times == TiltedPhoques::Vector<double>{100.0, 125.0, 130.0});
++    REQUIRE(inbox.GetHandledTime(200.0) == 200.0);
++}
++
++TEST_CASE("Disconnect clears old state and stops a drain before a new session", "[scene.inbox]")
++{
++    SceneSyncInbox inbox;
++    QueueByte(inbox, 1, kNotifyChatMessageBroadcast);
++    QueueByte(inbox, 2, kNotifyDeathStateChange);
++    uint8_t observed = 0;
++    REQUIRE(inbox.Drain([&](auto& aPacket)
++    {
++        inbox.Clear();
++        // The current callback owns its packet, despite clearing the inbox.
++        observed = aPacket.Bytes.front();
++        const uint8_t nextSession = 3;
++        inbox.Push(&nextSession, 1, 300.0, kAuthenticationResponse);
++        return true;
++    }) == 1);
++    REQUIRE(observed == 1);
++    REQUIRE(inbox.Size() == 1);
++    REQUIRE(inbox.Bytes() == 1);
++    REQUIRE(inbox.Drain([&](auto& aPacket) { observed = aPacket.Bytes.front(); return true; }) == 1);
++    REQUIRE(observed == 3);
++}
++
++TEST_CASE("Nested callbacks cannot drain later messages before the current handler returns", "[scene.inbox]")
++{
++    SceneSyncInbox inbox;
++    QueueByte(inbox, 1, kCharacterSpawnRequest);
++    QueueByte(inbox, 2, kCharacterSpawnRequest);
++    size_t nested = 99;
++    REQUIRE(inbox.Drain([&](auto&)
++    {
++        nested = inbox.Drain([](auto&) { return true; });
++        return true;
++    }) == 1);
++    REQUIRE(nested == 0);
++    REQUIRE(inbox.Size() == 1);
++}
++
++TEST_CASE("Inbox limits reject overflow before copying and clearing releases the budget", "[scene.inbox]")
++{
++    SceneSyncInbox inbox;
++    const uint8_t byte = 1;
++    REQUIRE_FALSE(inbox.Push(nullptr, 1, 0, kCharacterSpawnRequest));
++    REQUIRE_FALSE(inbox.Push(&byte, 0, 0, kCharacterSpawnRequest));
++    REQUIRE_FALSE(inbox.Push(&byte, SceneSyncInbox::kMaxBytes + 1, 0, kCharacterSpawnRequest));
++    for (size_t i = 0; i < SceneSyncInbox::kMaxMessages; ++i)
++        REQUIRE(inbox.Push(&byte, 1, 0, kCharacterSpawnRequest));
++    REQUIRE_FALSE(inbox.Push(&byte, 1, 0, kCharacterSpawnRequest));
++    inbox.Clear();
++    REQUIRE(inbox.Size() == 0);
++    REQUIRE(inbox.Bytes() == 0);
++    REQUIRE(inbox.Push(&byte, 1, 0, kCharacterSpawnRequest));
++}
++
++TEST_CASE("Deferred decode applies a preceding string cache update before an animation", "[scene.inbox][encoding]")
++{
++    SceneSyncInbox inbox;
++    auto& cache = StringCache::Get();
++    cache.Clear();
++    const TiltedPhoques::String animation("IdleDrink");
++    const TiltedPhoques::String event("IdleStop");
++    cache.Add(animation);
++    cache.Add(event);
++    StringCacheUpdate update;
++    update.Values = {animation, event};
++    NotifyScriptAnimation script;
++    script.FormID = 123;
++    script.Animation = animation;
++    script.EventName = event;
++    QueueByte(inbox, 1, kCharacterSpawnRequest);
++    QueueByte(inbox, 2, kCharacterSpawnRequest);
++    QueueEncoded(inbox, update, 101.0);
++    QueueEncoded(inbox, script, 102.0);
++    cache.Clear();
++    bool decoded = false;
++    const auto consume = [&](auto& aPacket)
++    {
++        if (aPacket.Opcode == kCharacterSpawnRequest)
++            return true;
++        TiltedPhoques::ViewBuffer buffer(aPacket.Bytes.data(), static_cast<uint32_t>(aPacket.Bytes.size()));
++        TiltedPhoques::Buffer::Reader reader(&buffer);
++        auto message = ServerMessageFactory{}.Extract(reader);
++        if (message->GetOpcode() == kStringCacheUpdate)
++            cache.Deserialize(*static_cast<StringCacheUpdate*>(message.get()));
++        else
++            decoded = *static_cast<NotifyScriptAnimation*>(message.get()) == script;
++        return true;
++    };
++    REQUIRE(inbox.Drain(consume) == 1);
++    REQUIRE(cache.Size() == 0);
++    REQUIRE(inbox.Drain(consume) == 3);
++    REQUIRE(decoded);
++    cache.Clear();
++}

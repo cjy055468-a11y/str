@@ -1,0 +1,133 @@
+name: Compile STR scene pacing trial fix
+on:
+  push:
+    branches: [codex/bruma-scene-pacing-v184]
+    paths:
+      - 'fixes/bruma-scene-pacing-*'
+      - 'fixes/README-bruma-scene-pacing.zh-CN.md'
+      - 'tools/check-bruma-scene-pacing.py'
+      - '.github/workflows/bruma-scene-pacing-windows.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: str-bruma-scene-pacingnostics
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONUTF8: '1'
+      SOURCE_COMMIT: 54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: tiltedphoques/TiltedEvolution
+          ref: 54b3a858e228dc8807ed65bc3f9ac3c3f81b610d
+          path: source
+          fetch-depth: 0
+          submodules: recursive
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: 3.1.0
+      - uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/.xmake/packages
+          key: windows-x64-str-v184-xmake310-${{ hashFiles('source/**/xmake.lua') }}
+          restore-keys: windows-x64-str-v184-xmake310-
+      - name: Apply the original release and reviewed scene pacing fix
+        run: |
+          New-Item -ItemType Directory -Force logs | Out-Null
+          if ((git -C source rev-parse HEAD) -ne $env:SOURCE_COMMIT) { throw 'Wrong source' }
+          git -C source apply --check ../fixes/notice-v2-v184.patch
+          if ($LASTEXITCODE -ne 0) { throw 'Baseline patch check failed' }
+          git -C source apply ../fixes/notice-v2-v184.patch
+          if ($LASTEXITCODE -ne 0) { throw 'Baseline patch failed' }
+          git -C source apply --check ../fixes/bruma-scene-pacing-v1.patch
+          if ($LASTEXITCODE -ne 0) { throw 'Scene pacing patch check failed' }
+          git -C source apply ../fixes/bruma-scene-pacing-v1.patch
+          if ($LASTEXITCODE -ne 0) { throw 'Scene pacing patch failed' }
+          git -C source diff --check
+          if ($LASTEXITCODE -ne 0) { throw 'Patch whitespace failed' }
+          python tools/check-notice-scope.py source --manifest fixes/bruma-scene-pacing-v1-source-manifest.json | Tee-Object logs/source-scope.json
+          if ($LASTEXITCODE -ne 0) { throw 'Source manifest mismatch' }
+          python tools/check-bruma-scene-pacing.py source | Tee-Object logs/scene-pacing-scope.json
+          if ($LASTEXITCODE -ne 0) { throw 'Source scope or protocol changed' }
+          git -C source switch -c master
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot preserve original build mode' }
+      - name: Configure the existing Skyrim 1.6.1170 release
+        working-directory: source
+        run: |
+          xmake config --plat=windows --arch=x64 --mode=release --skyrim_version=1.6.1170 --yes -vD 2>&1 | Tee-Object ../logs/configure.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Configure failed' }
+      - name: Compile client and unchanged matching server
+        working-directory: source
+        run: |
+          xmake build -y -vD SkyrimImmersiveLauncher 2>&1 | Tee-Object ../logs/build-client.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Client compile/link failed' }
+          xmake build -y -vD SkyrimServerRunner 2>&1 | Tee-Object ../logs/build-server.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Server verification build failed' }
+          & ./build/windows/x64/release/SkyrimTogetherServer.exe --generate-config "$env:GITHUB_WORKSPACE/logs/STServer.ini" 2>&1 | Tee-Object ../logs/server-smoke.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Matching server smoke test failed' }
+      - name: Run existing protocol and bookkeeping tests
+        working-directory: source
+        run: |
+          xmake build -y -vD TPTests 2>&1 | Tee-Object ../logs/build-tests.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Tests compile failed' }
+          & ./build/windows/x64/release/TPTests.exe -r junit -o "$env:GITHUB_WORKSPACE/logs/tests.xml"
+          if ($LASTEXITCODE -ne 0) { throw 'Existing tests failed' }
+      - name: Verify unchanged protocol tag and trial fix markers
+        run: |
+          $out = 'source/build/windows/x64/release'
+          python tools/check-notice-pe.py "$out/SkyrimTogether.exe" "$out/EarlyLoad.dll" "$out/STServer.dll" "$out/SkyrimTogetherServer.exe" | Tee-Object logs/pe-checks.json
+          if ($LASTEXITCODE -ne 0) { throw 'Release compatibility check failed' }
+          $client = [System.IO.File]::ReadAllBytes("$env:GITHUB_WORKSPACE/$out/SkyrimTogether.exe")
+          foreach ($marker in @('[STR scene-diag v1]', '[STR scene-pacing v1]')) {
+            if (-not [System.Text.Encoding]::ASCII.GetString($client).Contains($marker)) { throw "Missing client marker: $marker" }
+          }
+      - name: Package scene pacing trial client
+        run: |
+          New-Item -ItemType Directory -Force candidate/SkyrimTogetherReborn, packages | Out-Null
+          $out = 'source/build/windows/x64/release'
+          Copy-Item "$out/SkyrimTogether.exe", "$out/EarlyLoad.dll" candidate/SkyrimTogetherReborn/
+          Copy-Item fixes/README-bruma-scene-pacing.zh-CN.md candidate/README.zh-CN.md
+          Copy-Item fixes/bruma-scene-pacing-v1-review.json, fixes/bruma-scene-pacing-v1.patch, fixes/notice-v2-v184.patch candidate/
+          Copy-Item source/LICENSE candidate/LICENSE
+          Copy-Item logs/scene-pacing-scope.json, logs/pe-checks.json candidate/
+          @{
+            repository_commit = '${{ github.sha }}'
+            run_id = '${{ github.run_id }}'
+            target_game = 'Skyrim SE 1.6.1170'
+            protocol = 'master@v1.8.4-coopfix4g-corpse5-state1s-loot2-notice-board-v2-r1'
+            trial_fix = $true
+            server_replacement_required = $false
+            gameplay_tested = $false
+            hashes = @(Get-ChildItem candidate/SkyrimTogetherReborn -File | ForEach-Object {
+              @{ file = $_.Name; sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }
+            })
+          } | ConvertTo-Json -Depth 5 | Out-File candidate/build-validation.json
+          Compress-Archive -Path candidate/* -DestinationPath packages/STR-Bruma-SceneSync-Fix-Test-v1.zip -CompressionLevel Optimal
+          Copy-Item logs/scene-pacing-scope.json fixes/bruma-scene-pacing-v1-windows-checks.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f packages/STR-Bruma-SceneSync-Fix-Test-v1.zip fixes/bruma-scene-pacing-v1-windows-checks.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m 'Retain compiled scene pacing trial client [skip ci]'
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot retain package' }
+            git push origin HEAD:codex/bruma-scene-pacing-v184
+            if ($LASTEXITCODE -ne 0) { throw 'Branch moved; refusing overwrite' }
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: STR-Bruma-SceneSync-Fix-Test-v1
+          path: |
+            packages/STR-Bruma-SceneSync-Fix-Test-v1.zip
+            logs/
+          retention-days: 14

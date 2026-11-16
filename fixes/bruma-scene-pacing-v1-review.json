@@ -1,0 +1,38 @@
+{
+  "baseline_build": "master@v1.8.4-coopfix4g-corpse5-state1s-loot2-notice-board-v2-r1",
+  "base_source_commit": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
+  "base_patch_sha256": "4f88c7c04f60f9b125bde144daecde21a62fc67b4be2a4eaf5bed9c66fe198db",
+  "addon_patch_sha256": "9b691e05d86a48ebb364dbd12274def39dd495917381a1ff8876f868c6368cb8",
+  "inserted_only": {
+    "Code/client/Services/Generic/CharacterService.cpp": {
+      "before_sha256": "4961c769301c05476ea1828eb41e66b8372dba8469602d12f5e0e0620f1c0e3e",
+      "after_sha256": "3cd21a62195952051414c7dc15a7629b6c447f33556a4b97486eb9c0fd210966"
+    },
+    "Code/client/Services/Generic/DiscoveryService.cpp": {
+      "before_sha256": "572dffe176f315f1543fe02e37f9c16d150d09a099578132579eb20e918cc0f3",
+      "after_sha256": "04aa50a8a7a8aff00b1708872327c9aaa319939aee61b6242d83ab03e70c7a4c"
+    }
+  },
+  "modified_client_sources": {
+    "Code/client/Services/Generic/TransportService.cpp": {
+      "before_sha256": "73eb288679ec39e7221b5a50ad9c38f34b74ee5a3189b3412bbd0694adc5e2ac",
+      "after_sha256": "0f785700d41eec64e8e180f9080d1d2a8f7085126f3725cc248754d11bc27ae4"
+    },
+    "Code/client/Services/TransportService.h": {
+      "before_sha256": "085f6c5cf583bebbc0c3e5c4f2d0e573f6ea071f40063cd1485e61b908316069",
+      "after_sha256": "78931e783e9a865efc91a72ba760c0282ed4887f494fd5e1e749dac91eb35f50"
+    }
+  },
+  "added_files": {
+    "Code/client/Diagnostics/SceneSyncTrace.h": "7ea84e132c9f062af1383074178d19828f6f2943e51138e16ac02cd9c98fff0d",
+    "Code/client/Services/SceneSyncInbox.h": "1bf6533b1063a393f3d526844e23912857954e687459a7911570b947c2433a5b",
+    "Code/tests/scene_sync_inbox.cpp": "45872817082015f1c4cd1e37bc4129a41194babcdfa8036cb4258c09373c1fd6"
+  },
+  "protocol_changes": false,
+  "server_changes": false,
+  "client_dispatch_scheduling_changed": true,
+  "new_engine_hooks": false,
+  "new_game_calls": false,
+  "previous_esms_used": false,
+  "gameplay_tested": false
+}
