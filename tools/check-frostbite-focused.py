@@ -171,7 +171,9 @@ def check(compiled=None):
         original_functions, functions = function_map(original), function_map(obj)
         assert original_functions.keys() == functions.keys()
         for key in ('name','parent','flags','auto_state','variables','properties'):
-            assert obj[key] == original[key], key
+            # Read-only property getters also contain instruction offsets; the
+            # compiled file layout changes when the requested function shrinks.
+            assert without_offsets(obj[key]) == without_offsets(original[key]), key
         modified = {name for name in functions if without_offsets(functions[name]) != without_offsets(original_functions[name])}
         assert modified == {('', n) for n in ALLOWED_FUNCTIONS}, modified
         for f in functions.values():
