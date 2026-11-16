@@ -1,0 +1,15 @@
+{
+  "archive_sha256": "3a19ca5382fd644c4338afdfb2e424e355ece81803e7827e4a380dd69a9fc44c",
+  "runtime_files": {
+    "Frostbite.esl": "f1fdab59d46a588ba32056ecbc7ac7233c6db1bf1ff76c8e463364c16e64569a",
+    "Interface/exported/widgets/Frostbite/meter.swf": "971f18e31ce99f44a346d2e759efba9368369218683256276b6ac613db27faa9",
+    "scripts/_JSW_FB_ConfigScript.pex": "a65e7e52a2a323f5ab6610e48737e02bef466457a84450e951243440052ea20a",
+    "scripts/_JSW_FB_MeterWidget.pex": "c056cd206633587feb9df46ed8c9d613a9be98ac50512fdd7ac3ae6074e2780c",
+    "scripts/_JSW_FB_HandlerScript.pex": "a79bca03720ab4ed5d53f118f3dfdd0f0984ae28d73bd9c6c6e2a0f2594071c6",
+    "scripts/_JSW_FB_Widget.pex": "3ca8d45d2b21142e95adf86a5016268cc17095a6bdf1efbc6f78bc64dc58d259",
+    "scripts/source/_JSW_FB_MeterWidget.psc": "ef43fc7f5bfdaddf4a8f713a4cfefe5de277f6ccecbb833a3af2ed225827ac09",
+    "scripts/source/_JSW_FB_ConfigScript.psc": "bf0cbfff1c94db7a4d2e3d169bc1058fd4198aa04185632e7a70e88f4febf193",
+    "scripts/source/_JSW_FB_Widget.psc": "3890d9a9e1e668928fc68f3c067b88d1c1dc6508b4abdfbb142c1732b725c2fe",
+    "scripts/source/_JSW_FB_HandlerScript.psc": "e9b8a3fce9afb850e341ec1db341a1149f4bb69abfbca029f360d25b3ffcbfd0"
+  }
+}

@@ -18,13 +18,17 @@ SWF_SHA = '971f18e31ce99f44a346d2e759efba9368369218683256276b6ac613db27faa9'
 COOLING = {'_JSW_FB_CoolDelta': (0.005, 0.0075),
            '_JSW_FB_ColdDelta': (0.01, 0.015),
            '_JSW_FB_FreezingDelta': (0.025, 0.05)}
-DEFAULTS = {**COOLING, '_JSW_FB_WarmingAnimation': (0.0, 1.0)}
+DEFAULTS = {**COOLING, '_JSW_FB_WarmingAnimation': (0.0, 1.0),
+            '_JSW_FB_HealthDebuff': (0.0, 1.0)}
 TEXT = {
     'Damage Stamina Regen': '抑制耐力恢复', 'Damage Magicka Regen': '抑制魔法恢复',
     'Damage Health Regen': '抑制生命恢复', 'Cold': '寒冷',
     'This clothing is unrecognized by Frostbite. How much protection does it have against the cold?': 'Frostbite 尚未记录这件衣物。它能提供多少保暖效果？',
     'Unknown Clothing': '未识别的衣物', 'No Protection': '几乎不保暖',
     'Some Protection': '提供一定保暖', 'Excellent Protection': '保暖效果极佳', 'Cancel': '取消',
+    'Decrease Stamina regeneration by <mag>%.': '耐力恢复速度降低 <mag>%。体温不高于20%时，每5秒额外扣除基础耐力的5%，受冰霜抗性影响。',
+    'Decrease Magicka regeneration by <mag>%.': '魔法恢复速度降低 <mag>%。体温不高于20%时，每5秒额外扣除基础魔法的5%，受冰霜抗性影响。',
+    'Decrease Health regeneration by <mag>%.': '生命恢复速度降低 <mag>%。体温归零时，每5秒额外损失1点生命，不受冰霜抗性影响。',
     'This food is unrecognized by Frostbite. Does it have warming properties?': 'Frostbite 尚未记录这种食物。食用后能够暖身吗？',
     'Unknown Food': '未识别的食物', 'Yes': '可以暖身', 'No': '不能暖身',
 }
@@ -116,7 +120,7 @@ def generate(root):
                 before, after = DEFAULTS[edid]
                 assert value == struct.pack('<f', before)
                 updated = struct.pack('<f', after)
-            elif kind in ('MGEF','SPEL','MESG') and tag in ('FULL','DESC','ITXT'):
+            elif kind in ('MGEF','SPEL','MESG') and tag in ('FULL','DESC','DNAM','ITXT'):
                 original = value.rstrip(b'\0').decode('utf-8')
                 if original in TEXT:
                     updated = TEXT[original].encode('utf-8')+b'\0'
@@ -128,8 +132,9 @@ def generate(root):
     generated, _ = walk(source, change)
     (root/'Data/Frostbite.esl').write_bytes(generated)
     (root/'plugin-changes.json').write_text(json.dumps(changes, ensure_ascii=False, indent=2)+'\n')
-    assert len(changes) == 21
-    print(json.dumps({'plugin_sha256': sha(generated), 'translated_fields': 17, 'cooling_defaults': 3, 'warming_animation_default': True}))
+    assert len(changes) == 25
+    print(json.dumps({'plugin_sha256': sha(generated), 'translated_fields': 20, 'cooling_defaults': 3,
+                      'warming_animation_default': True, 'health_penalty_default': True}))
 
 
 def calls(function, method):
@@ -151,7 +156,7 @@ def check(root, compiled=None):
     _, old = walk(original)
     _, new = walk(actual)
     assert len(old) == len(new)
-    text_fields = cooling_fields = warming_fields = 0
+    text_fields = cooling_fields = warming_fields = health_fields = 0
     quest = None
     for before, after in zip(old, new):
         assert before[:3] == after[:3]  # types, IDs, flags
@@ -168,10 +173,13 @@ def check(root, compiled=None):
                 assert va == struct.pack('<f', x) and vb == struct.pack('<f', y)
                 if edid in COOLING:
                     cooling_fields += 1
-                else:
+                elif edid == '_JSW_FB_WarmingAnimation':
                     warming_fields += 1
+                else:
+                    assert edid == '_JSW_FB_HealthDebuff'
+                    health_fields += 1
             else:
-                assert kind in ('MGEF','SPEL','MESG') and ta in ('FULL','DESC','ITXT')
+                assert kind in ('MGEF','SPEL','MESG') and ta in ('FULL','DESC','DNAM','ITXT')
                 assert vb == TEXT[va.rstrip(b'\0').decode()].encode('utf-8')+b'\0'
                 text_fields += 1
         if kind == 'QUST':
@@ -179,7 +187,7 @@ def check(root, compiled=None):
             assert next(v for t, v in a if t == 'VMAD') == next(v for t, v in b if t == 'VMAD')
             assert ('ALFR', struct.pack('<I', 0x14)) in b
             quest = f'{form:08X}'
-    assert (text_fields, cooling_fields, warming_fields) == (17,3,1)
+    assert (text_fields, cooling_fields, warming_fields, health_fields) == (20,3,1,1)
     assert sha((root/'Data/Interface/exported/widgets/Frostbite/meter.swf').read_bytes()) == SWF_SHA
     config = (root/'Data/scripts/source/_JSW_FB_ConfigScript.psc').read_text(encoding='utf-8-sig')
     handler = (root/'Data/scripts/source/_JSW_FB_HandlerScript.psc').read_text(encoding='utf-8-sig')
@@ -188,7 +196,11 @@ def check(root, compiled=None):
     for source in (config, handler):
         declarations = re.findall(r'(?im)^\s*\w+(?:\[\])?\s+property\s+(\S+)', source)
         assert all(name.isascii() for name in declarations)
-    assert handler.count('damage = damage * (1.0 - (frostResist / 100.0))') == 3
+    assert handler.count('damage = damage * (1.0 - (frostResist / 100.0))') == 2
+    assert 'HealthDebuff.SetValue(1.0)' in handler
+    assert 'if (BodyTemp <= 0.0)\n\t\t\t\tPlayerRef.DamageActorValue("Health", 1.0)' in handler
+    assert 'imodEffect.Apply()' not in handler
+    assert 'ImageSpaceModifier.RemoveCrossFade' not in handler
     assert 'int function GetVersion()\n\treturn 3' in config
     assert '_hiddenManager.UnregisterMod(self)' in config
     assert 'parent.OnGameReload()' not in config
@@ -225,7 +237,7 @@ def check(root, compiled=None):
         f = funcs[('', 'updatedebuff')]
         divs = [c for c in f['code'] if c['op'] == 'FDiv' and
                 isinstance(c['args'][1], dict) and c['args'][1].get('id','').lower() == 'frostresist']
-        assert len(divs) == 3
+        assert len(divs) == 2
         for div in divs:
             assert div['args'][2] == 100.0
             i = f['code'].index(div)
@@ -234,6 +246,11 @@ def check(root, compiled=None):
             multiplied = f['code'][i+2]
             assert multiplied['op'] == 'FMul' and reduced['args'][0] in multiplied['args'][1:]
         assert len(calls(f, 'DamageActorValue')) == 3
+        health_damage = [c for c in calls(f, 'DamageActorValue') if c['args'][3] == {'string': 'Health'}]
+        assert len(health_damage) == 1 and health_damage[0]['args'][4] == 1.0
+        assert not calls(funcs[('', 'runverbosefeedback')], 'Apply')
+        assert not calls(funcs[('', 'runverbosefeedback')], 'RemoveCrossFade')
+        assert len(calls(funcs[('', 'runverbosefeedback')], 'Notification')) == 1
         for name in ('oninit','onplayerloadgame'):
             assert len(calls(funcs[('',name)], 'ApplyFixedPreset')) == 1
             assert not calls(funcs[('',name)], 'RegisterForKey')
@@ -255,7 +272,7 @@ def check(root, compiled=None):
         assert calls(funcs[('', 'onplayerloadgame')], 'OnGameReload')
         preset = calls(funcs[('', 'applyfixedpreset')], 'SetValue')
         assert len(preset) == 31
-        for prop, value in (('CoolDelta',0.0075),('ColdDelta',0.015),('FreezingDelta',0.05),('WarmingAnimation',1.0),('PollingInterval',5.0),('Enabled',1.0)):
+        for prop, value in (('CoolDelta',0.0075),('ColdDelta',0.015),('FreezingDelta',0.05),('WarmingAnimation',1.0),('PollingInterval',5.0),('Enabled',1.0),('HealthDebuff',1.0)):
             call = [c for c in preset if c['args'][1].get('id','').lower() == '::'+prop.lower()+'_var']
             assert len(call) == 1 and abs(call[0]['args'][-1]-value) < 1e-7, (prop,call)
         literal_strings = [a['string'] for s in handler_obj['states'] for f in s['functions']
@@ -266,6 +283,11 @@ def check(root, compiled=None):
               'record_ids_flags_and_vmad_preserved': True, 'local_player_alias_preserved': True,
               'translated_plugin_fields': text_fields, 'cooling_default_fields': cooling_fields,
               'warming_animation_default': True,
+              'temperature_transition_screen_effects': False,
+              'health_regen_penalty_at_or_below_body_temp': 0.5,
+              'health_damage_at_body_temp': 0.0, 'health_damage': 1.0,
+              'health_damage_interval_seconds': 5.0, 'health_damage_ignores_frost_resistance': True,
+              'translated_magic_effect_descriptions': 3,
               'mcm_editing_disabled': True, 'fixed_preset_globals': 31,
               'background_quest': quest, 'stage_less_quest': True,
               'compiled_scripts': len(pex), 'pex': pex, 'gameplay_tested': False}
@@ -309,17 +331,20 @@ def package(root, compiled, out):
         shutil.copy2(path, candidate/'scripts'/(name+'.pex'))
     shutil.copy2(root/'README_ZH.md', candidate/'README_ZH.md')
     shutil.copy2(root/'build-validation.json', candidate/'build-validation.json')
-    provenance = {'mod': 'Frostbite 2.2.5 CHS NoMCM r2', 'original_archive_sha256': ORIGINAL_ZIP_SHA,
+    provenance = {'mod': 'Frostbite 2.2.5 CHS NoMCM NoFlash Health1', 'original_archive_sha256': ORIGINAL_ZIP_SHA,
+                  'uploaded_baseline_archive_sha256': '3a19ca5382fd644c4338afdfb2e424e355ece81803e7827e4a380dd69a9fc44c',
                   'original_esl_sha256': ORIGINAL_ESL_SHA, 'source_commit': os.getenv('GITHUB_SHA','local'),
                   'run_id': os.getenv('GITHUB_RUN_ID'), 'compiler': 'Caprica v0.3.0, --game=skyrim --skyrim-allow-unknown-events-on-non-native-class=1',
                   'skse_api_revision': '25b72352adb6543fa6d0bd3795780672b2e238e0',
                   'skyui_revision': '835428728e2305865e220fdfc99d791434955eb1',
                   'gameplay_tested': False, 'str_native_files_modified': False,
-                  'mcm_editing_disabled': True, 'fixed_cooling': [0.0075, 0.015, 0.05], 'warming_animation_default': True}
+                  'mcm_editing_disabled': True, 'fixed_cooling': [0.0075, 0.015, 0.05], 'warming_animation_default': True,
+                  'temperature_transition_screen_effects': False, 'health_damage_only_at_zero': True,
+                  'health_damage_per_5_seconds': 1.0, 'health_damage_ignores_frost_resistance': True}
     (candidate/'provenance.json').write_text(json.dumps(provenance, ensure_ascii=False, indent=2)+'\n')
     hashes = {p.relative_to(candidate).as_posix(): sha(p.read_bytes()) for p in sorted(candidate.rglob('*')) if p.is_file()}
     (candidate/'SHA256.json').write_text(json.dumps(hashes, ensure_ascii=False, indent=2)+'\n')
-    archive = out/'Frostbite-2.2.5-CHS-NoMCM-r2.zip'
+    archive = out/'Frostbite-2.2.5-CHS-NoMCM-NoFlash-Health1.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for path in sorted(candidate.rglob('*')):
             if path.is_file():

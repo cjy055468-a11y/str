@@ -584,18 +584,12 @@ function UpdateDebuff()
 		; Apply the damage debuff
 		; The regen debuff remains as well
 		if (HealthDebuff.GetValueInt())
-			float actorValue = PlayerRef.GetBaseActorValue("Health")
-			float damage = (actorValue * DamageDelta.GetValue()) / 100.0
-			
-			; Adjust for frost resistance
-			damage = damage * (1.0 - (frostResist / 100.0))
-			
-			if (damage < 0.0)
-				damage = 0.0
-			endIf
-			
 			PlayerRef.AddSpell(RegenDebuffAbilityHealth, false)
-			PlayerRef.DamageActorValue("Health", damage)
+			; Fixed health loss starts only at zero body temperature.
+			; It deliberately ignores frost resistance and base health.
+			if (BodyTemp <= 0.0)
+				PlayerRef.DamageActorValue("Health", 1.0)
+			endIf
 		else
 			PlayerRef.RemoveSpell(RegenDebuffAbilityHealth)
 		endIf
@@ -639,14 +633,9 @@ function UpdateDebuff()
 endFunction
 
 function RunVerboseFeedback(string msg, ImageSpaceModifier imodEffect = none)
-{Apply verbose feedback effects}
+{Display status text without the temperature-transition screen flash.}
 	if (!VerboseFeedback.GetValueInt())
 		return
-	endIf
-	
-	if (imodEffect)
-		imodEffect.Apply()
-		ImageSpaceModifier.RemoveCrossFade(1.0)
 	endIf
 	
 	Debug.Notification(msg)
@@ -666,7 +655,7 @@ function ApplyFixedPreset()
 	ColdDelta.SetValue(0.015)
 	FreezingDelta.SetValue(0.05)
 	FoodDelta.SetValue(0.1)
-	HealthDebuff.SetValue(0.0)
+	HealthDebuff.SetValue(1.0)
 	StaminaDebuff.SetValue(1.0)
 	MagickaDebuff.SetValue(1.0)
 	RegenDebuff.SetValue(0.5)

@@ -1,15 +1,15 @@
-name: Build Frostbite Chinese cold-speed and bug fixes
+name: Build Frostbite no-flash and zero-temperature health loss
 
 on:
   push:
-    branches: [codex/frostbite-chs-cold15]
+    branches: [codex/frostbite-no-screen-flash]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: frostbite-chs-cold15
+  group: frostbite-no-screen-flash
   cancel-in-progress: true
 
 jobs:
@@ -30,6 +30,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Plugin generation failed' }
           python tools/frostbite_build.py check | Tee-Object logs/source-check.json
           if ($LASTEXITCODE -ne 0) { throw 'Source and plugin review failed' }
+          python tools/check-frostbite-focused.py | Tee-Object logs/focused-source-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'Requested scope changed' }
       - name: Prepare pinned compiler and official import declarations
         run: |
           Invoke-WebRequest 'https://github.com/Orvid/Caprica/releases/download/v0.3.0/Caprica.v0.3.0.7z' -OutFile Caprica.7z
@@ -52,23 +54,42 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Wrong SkyUI API revision' }
           python tools/frostbite_build.py imports --skse papyrus-api --skyui skyui-api --out papyrus-imports
           if ($LASTEXITCODE -ne 0) { throw 'Cannot construct compiler imports' }
-      - name: Compile the four actual runtime scripts
+      - name: Compile the modified handler and retain the other three runtime scripts
         run: |
           New-Item -ItemType Directory -Force compiled-pex | Out-Null
+          Copy-Item mods/frostbite-chs/Data/scripts/*.pex compiled-pex/
           $compiler = (Get-ChildItem caprica -Recurse -Filter Caprica.exe | Select-Object -First 1).FullName
           $imports = "$env:GITHUB_WORKSPACE/mods/frostbite-chs/Data/scripts/source;$env:GITHUB_WORKSPACE/papyrus-imports"
-          & $compiler --game=skyrim --skyrim-allow-unknown-events-on-non-native-class=1 --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/frostbite-chs/Data/scripts/source" 2>&1 | Tee-Object logs/papyrus-build.txt
+          & $compiler --game=skyrim --skyrim-allow-unknown-events-on-non-native-class=1 --import=$imports --flags="$env:GITHUB_WORKSPACE/papyrus-imports/TESV_Papyrus_Flags.flg" --output="$env:GITHUB_WORKSPACE/compiled-pex" "$env:GITHUB_WORKSPACE/mods/frostbite-chs/Data/scripts/source/_JSW_FB_HandlerScript.psc" 2>&1 | Tee-Object logs/papyrus-build.txt
           if ($LASTEXITCODE -ne 0) { throw 'Papyrus compilation failed' }
       - name: Review compiled bytecode and package
         run: |
           python tools/frostbite_build.py check --compiled compiled-pex | Tee-Object logs/compiled-check.json
           if ($LASTEXITCODE -ne 0) { throw 'Compiled PEX review failed' }
+          python tools/check-frostbite-focused.py --compiled compiled-pex | Tee-Object logs/focused-compiled-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'Compiled scope or health boundary checks failed' }
           New-Item -ItemType Directory -Force artifacts | Out-Null
           python tools/frostbite_build.py package --compiled compiled-pex --out artifacts | Tee-Object logs/archive-check.json
           if ($LASTEXITCODE -ne 0) { throw 'Package verification failed' }
+      - name: Retain the verified full mod package
+        run: |
+          New-Item -ItemType Directory -Force packages, fixes | Out-Null
+          Copy-Item artifacts/Frostbite-2.2.5-CHS-NoMCM-NoFlash-Health1.zip packages/
+          Copy-Item compiled-pex/_JSW_FB_HandlerScript.pex mods/frostbite-chs/Data/scripts/
+          Copy-Item logs/focused-compiled-check.json fixes/frostbite-no-flash-health1-checks.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f packages/Frostbite-2.2.5-CHS-NoMCM-NoFlash-Health1.zip mods/frostbite-chs/Data/scripts/_JSW_FB_HandlerScript.pex fixes/frostbite-no-flash-health1-checks.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m 'Retain verified Frostbite full mod with no flash and fixed health loss [skip ci]'
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot retain package' }
+            git push origin HEAD:codex/frostbite-no-screen-flash
+            if ($LASTEXITCODE -ne 0) { throw 'Branch moved; refusing overwrite' }
+          }
       - uses: actions/upload-artifact@v4
         with:
-          name: Frostbite-CHS-Cold15
+          name: Frostbite-NoFlash-Health1
           path: artifacts/
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
