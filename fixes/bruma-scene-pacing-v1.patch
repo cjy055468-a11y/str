@@ -586,14 +586,16 @@ index 2ef91acb..00f3f0b3 100644
      entt::scoped_connection m_sendServerMessageConnection;
 diff --git a/Code/tests/scene_sync_inbox.cpp b/Code/tests/scene_sync_inbox.cpp
 new file mode 100644
-index 00000000..3627936d
+index 00000000..25fe8f5f
 --- /dev/null
 +++ b/Code/tests/scene_sync_inbox.cpp
-@@ -0,0 +1,199 @@
+@@ -0,0 +1,201 @@
 +#include <TiltedCore/Stl.hpp>
 +#include <TiltedCore/Buffer.hpp>
++#include <TiltedCore/ViewBuffer.hpp>
 +#include <TiltedCore/Serialization.hpp>
 +#include <TiltedCore/ScratchAllocator.hpp>
++#include <glm/glm.hpp>
 +#include <catch2/catch.hpp>
 +#include <Messages/ServerMessageFactory.h>
 +#include <StringCache.h>

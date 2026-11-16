@@ -2,7 +2,7 @@
   "baseline_build": "master@v1.8.4-coopfix4g-corpse5-state1s-loot2-notice-board-v2-r1",
   "base_source_commit": "54b3a858e228dc8807ed65bc3f9ac3c3f81b610d",
   "base_patch_sha256": "4f88c7c04f60f9b125bde144daecde21a62fc67b4be2a4eaf5bed9c66fe198db",
-  "addon_patch_sha256": "9b691e05d86a48ebb364dbd12274def39dd495917381a1ff8876f868c6368cb8",
+  "addon_patch_sha256": "8fe461dfcb6a777ae07b8e61bb2e1b36890d9934b94c88408088ab77ae91eaef",
   "inserted_only": {
     "Code/client/Services/Generic/CharacterService.cpp": {
       "before_sha256": "4961c769301c05476ea1828eb41e66b8372dba8469602d12f5e0e0620f1c0e3e",
@@ -26,7 +26,7 @@
   "added_files": {
     "Code/client/Diagnostics/SceneSyncTrace.h": "7ea84e132c9f062af1383074178d19828f6f2943e51138e16ac02cd9c98fff0d",
     "Code/client/Services/SceneSyncInbox.h": "1bf6533b1063a393f3d526844e23912857954e687459a7911570b947c2433a5b",
-    "Code/tests/scene_sync_inbox.cpp": "45872817082015f1c4cd1e37bc4129a41194babcdfa8036cb4258c09373c1fd6"
+    "Code/tests/scene_sync_inbox.cpp": "0d4ac765fb7dfca57949635ba602825d1f3f9a2b79bcac3978b2e07013b507d5"
   },
   "protocol_changes": false,
   "server_changes": false,
