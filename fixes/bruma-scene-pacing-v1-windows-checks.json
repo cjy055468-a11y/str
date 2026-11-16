@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "protocol": "original notice-board-v2-r1",
+  "client_dispatch_scheduling_changed": true,
+  "original_actor_handlers_preserved_except_logging": true,
+  "server_and_encoding_sources_unchanged": true,
+  "new_engine_hooks": false,
+  "previous_esms_used": false,
+  "gameplay_validation": "requires two clients in Bruma city"
+}
